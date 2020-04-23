@@ -2003,6 +2003,15 @@ namespace Dune {
       static const bool v = true;
     };
 
+    /** \brief YaspGrid is twist free
+        \ingroup YaspGrid
+     */
+    template<int dim, class Coordinates>
+    struct isTwistFree< YaspGrid<dim, Coordinates> >
+    {
+      static const bool v = true;
+    };
+
     /** \brief YaspGrid has entities for all codimensions
        \ingroup YaspGrid
      */
