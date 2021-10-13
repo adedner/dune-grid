@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 dune_add_test(SOURCES entityownertest.cc
-              LINK_LIBRARIES dunegrid)
+  LINK_LIBRARIES dunegrid
+  MPI_RANKS 1 2 4
+  TIMEOUT 300
+  CMAKE_GUARD MPI_FOUND)
 
 dune_add_test(SOURCES globalindexsettest.cc
               LINK_LIBRARIES dunegrid)

@@ -48,22 +48,20 @@ private:
    **/
   template<class IS, class Vec>
   class MinimumExchange
-      : public Dune::CommDataHandleIF<MinimumExchange<IS,Vec>,typename Vec::value_type>
+      : public Dune::CommDataHandleIF<MinimumExchange<IS,Vec>,int>
   {
   public:
-    /** \brief export type of data for message buffer */
-    using ValueType = typename Vec::value_type;
-
     /** \brief constructor. */
-    MinimumExchange (const IS& indexset, Vec& vec)
+    MinimumExchange (const IS& indexset, Vec& ranks, int commSize)
       : indexset_(indexset)
-      , vec_(vec)
+      , ranks_(ranks)
+      , commSize_(commSize)
     {}
 
     /** \brief returns true if data for this codim should be communicated */
-    bool contains (int /*dim*/, int /*codim*/) const
+    bool contains (int /*dim*/, int codim) const
     {
-      return true;
+      return codim > 0;
     }
 
     /** \brief returns true if size per entity of given dim and codim is a constant */
@@ -83,7 +81,7 @@ private:
     template <class MessageBuffer, class Entity>
     void gather (MessageBuffer& buff, const Entity& e) const
     {
-      buff.write(vec_[indexset_.index(e)]);
+      buff.write(ranks_[indexset_.index(e)]);
     }
 
     /** \brief Unpack data from message buffer to user
@@ -94,20 +92,22 @@ private:
     void scatter (MessageBuffer& buff, const Entity& e, [[maybe_unused]] std::size_t n)
     {
       assert(n == 1);
-      ValueType x;
-      buff.read(x);
-      if (x >= 0) // other is -1 means, he does not want it
-        vec_[indexset_.index(e)] = std::min(x, vec_[indexset_.index(e)]);
+      int otherRank;
+      buff.read(otherRank);
+
+      auto const idx = indexset_.index(e);
+      ranks_[idx] = std::min(otherRank, ranks_[idx]);
     }
 
   private:
     const IS& indexset_;
-    Vec& vec_;
+    Vec& ranks_;
+    int commSize_;
   };
 
   static MCMGLayout layout ()
   {
-    return [](GeometryType /*gt*/, int /*dim*/) { return true; };
+    return [](GeometryType gt, int dim) { return dim - gt.dim() > 0; };
   }
 
 public:
@@ -118,13 +118,14 @@ public:
   /** \brief Constructor constructs a mapper for all entities */
   EntityOwner (const GridView& gridView)
     : indexSet_{gridView, layout()}
-    , assignment_(indexSet_.size(), -1)
+    , assignment_(indexSet_.size(), gridView.comm().size())
     , rank_{gridView.comm().rank()}
+    , size_{gridView.comm().size()}
   {
     // assign own rank to entities that I might have
     for (auto const& e : elements(gridView))
     {
-      Dune::Hybrid::forEach(Dune::StaticIntegralRange<int,GridView::dimension+1>{}, [&](auto cd)
+      Dune::Hybrid::forEach(Dune::StaticIntegralRange<int,GridView::dimension+1,1>{}, [&](auto cd)
       {
         for (unsigned int i = 0; i < e.subEntities(cd); ++i)
         {
@@ -133,31 +134,45 @@ public:
           assignment_[indexSet_.subIndex(e,i,cd)]
             = (subPartitionType == Dune::PartitionType::InteriorEntity ||
                subPartitionType == Dune::PartitionType::BorderEntity)
-            ? rank_   // set to own rank
-            : - 1;    // it is a ghost entity, I will not possibly own it.
+            ? rank_       // set to own rank
+            : size_;      // it is a ghost/overlap entity, thus I will not own it.
         }
       });
     }
 
     // exchange entity rank through communication
-    MinimumExchange dh{indexSet_, assignment_};
+    MinimumExchange dh{indexSet_, assignment_, size_};
     gridView.communicate(dh,
       Dune::InterfaceType::InteriorBorder_All_Interface,
       Dune::CommunicationDirection::ForwardCommunication);
   }
 
-  /** \brief Which rank is the entity assigned to? */
+  /** \brief Which rank is the entity assigned to?
+   *
+   *  Note: this does only work properly for entities of codim>0 or interior entities.
+   **/
   template <class Entity>
-  int owner (const Entity& entity) const
+  int ownerRank (const Entity& entity) const
   {
-    return assignment_[indexSet_.index(entity)];
+    if constexpr (Entity::codimension == 0)
+      return entity.partitionType() == Dune::PartitionType::InteriorEntity
+        ? rank_ : size_;
+    else
+      return assignment_[indexSet_.index(entity)];
   }
 
-  /** \brief Which rank is the `i`-th subentity of `entity` of given `codim` assigned to? */
+  /** \brief Which rank is the `i`-th subentity of `entity` of given `codim` assigned to?
+   *
+   *  Note: this does only work properly for entities of codim>0 or interior entities.
+   **/
   template <class Entity>
-  int owner (const Entity& entity, int i, unsigned int codim) const
+  int ownerRank (const Entity& entity, int i, unsigned int codim) const
   {
-    return assignment_[indexSet_.subIndex(entity,i,codim)];
+    if (Entity::codimension + codim == 0)
+      return entity.partitionType() == Dune::PartitionType::InteriorEntity
+        ? rank_ : size_;
+    else
+      return assignment_[indexSet_.subIndex(entity,i,codim)];
   }
 
 
@@ -169,7 +184,7 @@ public:
     if (pt != Dune::PartitionType::BorderEntity)
       return partitionTypeToOwnerType(pt);
     else
-      return owner(entity) == rank_
+      return ownerRank(entity) == rank_
         ? Dune::OwnerType::Owner
         : Dune::OwnerType::Overlap;
   }
@@ -190,7 +205,7 @@ public:
     if (pt != Dune::PartitionType::BorderEntity)
       return partitionTypeToOwnerType(pt);
     else
-      return owner(entity,i,codim) == rank_
+      return ownerRank(entity,i,codim) == rank_
         ? Dune::OwnerType::Owner
         : Dune::OwnerType::Overlap;
   }
@@ -217,6 +232,7 @@ private:
   IndexSet indexSet_;
   std::vector<int> assignment_;
   int rank_;
+  int size_;
 };
 
 } // end namespace Dune
