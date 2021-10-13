@@ -4,6 +4,7 @@
 add_subdirectory(test)
 set(HEADERS
   entitycommhelper.hh
+  entityowner.hh
   globalindexset.hh
   gridinfo-gmsh-main.hh
   gridinfo.hh
