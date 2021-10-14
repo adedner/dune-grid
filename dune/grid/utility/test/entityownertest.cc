@@ -7,6 +7,7 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/utility/entityowner.hh>
+#include <dune/grid/utility/entityownertype.hh>
 
 #if HAVE_DUNE_UGGRID
 #include <dune/grid/uggrid.hh>
@@ -55,9 +56,11 @@ public:
     println(name, ":");
 
     Dune::EntityOwner entityOwner{gridView};
+    Dune::EntityOwnerType entityOwnerType{gridView};
     for (auto const& e : elements(gridView))
     {
       testOwnership(entityOwner.ownerRank(e), e.partitionType(), entityOwner.ownerType(e));
+      testSuite_.check(entityOwner.ownerType(e) == entityOwnerType.ownerType(e));
 
       Dune::Hybrid::forEach(Dune::StaticIntegralRange<int,GridView::dimension+1>{}, [&](auto codim)
       {
@@ -68,6 +71,7 @@ public:
           Dune::OwnerType ot = entityOwner.ownerType(e,i,codim);
 
           testOwnership(ownerRank, pt, ot);
+          testSuite_.check(ot == entityOwnerType.ownerType(e,i,codim));
         }
       });
     }

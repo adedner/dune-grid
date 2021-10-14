@@ -47,7 +47,7 @@
 /** include base class functionality for the communication interface */
 #include <dune/grid/common/gridenums.hh>
 #include <dune/grid/common/datahandleif.hh>
-#include <dune/grid/utility/entityowner.hh>
+#include <dune/grid/utility/entityownertype.hh>
 
 /** include parallel capability */
 #if HAVE_MPI
@@ -218,9 +218,9 @@ namespace Dune
 
       const typename GridView::IndexSet& indexSet = gridview.indexSet();
 
-      std::unique_ptr<EntityOwner<GridView>> uniqueEntityPartition;
+      std::unique_ptr<EntityOwnerType<GridView>> uniqueEntityPartition;
       if (codim_ != 0)
-        uniqueEntityPartition = std::make_unique<EntityOwner<GridView>>(gridview, codim_);
+        uniqueEntityPartition = std::make_unique<EntityOwnerType<GridView>>(gridview, codim_);
 
       int nLocalEntity = (codim_ == 0)
         ? std::distance(

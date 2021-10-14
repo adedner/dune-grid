@@ -5,6 +5,7 @@ add_subdirectory(test)
 set(HEADERS
   entitycommhelper.hh
   entityowner.hh
+  entityownertype.hh
   globalindexset.hh
   gridinfo-gmsh-main.hh
   gridinfo.hh
@@ -12,6 +13,7 @@ set(HEADERS
   hierarchicsearch.hh
   hostgridaccess.hh
   multiindex.hh
+  ownertype.hh
   parmetisgridpartitioner.hh
   persistentcontainer.hh
   persistentcontainerinterface.hh
