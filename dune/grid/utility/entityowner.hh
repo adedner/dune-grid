@@ -22,10 +22,10 @@ namespace Dune {
 template<class GridView>
 class EntityOwner
 {
-    using IndexSet = MultipleCodimMultipleGeomTypeMapper<GridView>;
-    using Container = std::vector<int>;
-
 private:
+  using IndexSet = MultipleCodimMultipleGeomTypeMapper<GridView>;
+  using Container = std::vector<int>;
+
   /// A DataHandle class to calculate the minimum of a vector which is accompanied by an index set
   class MinimumExchange
       : public Dune::CommDataHandleIF<MinimumExchange,int>

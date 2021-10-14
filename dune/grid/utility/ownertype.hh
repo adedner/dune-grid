@@ -5,17 +5,7 @@
 
 namespace Dune {
 
-/** \brief Attributes used in the generic overlap model
- *
-   \code
-    #include <dune/grid/common/gridenums.hh>
-    \endcode
-  *
-  * The values are ordered intentionally in order to be able to
-  * define ranges of partition types.
-  *
-  * @ingroup GIRelatedTypes
-  */
+/** \brief Attributes used in the generic ownership model */
 enum class OwnerType {
   Owner=0,          //!< all interior and owned border entities
   Overlap=1,        //!< all entities lying in the overlap zone and non-owned border entities
