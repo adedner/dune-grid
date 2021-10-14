@@ -203,19 +203,6 @@ namespace Dune
       unsigned int indexSetCodim_;
     };
 
-    template <int codim>
-    int countLocalEntities (const Dune::EntityOwner<GridView>& partition, Codim<codim>) const
-    {
-      if constexpr (Dune::Capabilities::hasEntityIterator<typename GridView::Grid, codim>::v)
-      {
-        return std::accumulate(gridview_.template begin<codim>(), gridview_.template end<codim>(),
-          int(0), [&](int n, auto const& e) {
-            return n + int(partition.ownerType(e) == Dune::OwnerType::Owner); });
-      } else {
-        return 0;
-      }
-    }
-
   public:
     /** \brief Constructor for a given GridView
      *
@@ -232,26 +219,14 @@ namespace Dune
       const typename GridView::IndexSet& indexSet = gridview.indexSet();
 
       std::unique_ptr<EntityOwner<GridView>> uniqueEntityPartition;
-      if (codim_!=0)
-        uniqueEntityPartition = std::make_unique<EntityOwner<GridView>>(gridview);
+      if (codim_ != 0)
+        uniqueEntityPartition = std::make_unique<EntityOwner<GridView>>(gridview, codim_);
 
-      int nLocalEntity = -1;
-      switch (codim) {
-        case 0:
-          nLocalEntity = std::distance(
+      int nLocalEntity = (codim_ == 0)
+        ? std::distance(
             gridview.template begin<0, Dune::Interior_Partition>(),
-            gridview.template end<0, Dune::Interior_Partition>());
-          break;
-        case 1:
-          nLocalEntity = countLocalEntities(*uniqueEntityPartition, Codim<1>{});
-          break;
-        case 2:
-          nLocalEntity = countLocalEntities(*uniqueEntityPartition, Codim<2>{});
-          break;
-        case 3:
-          nLocalEntity = countLocalEntities(*uniqueEntityPartition, Codim<3>{});
-          break;
-      }
+            gridview.template end<0, Dune::Interior_Partition>())
+        : uniqueEntityPartition->countOwner();
 
       // Compute the global, non-redundant number of entities, i.e. the number of entities in the set
       // without double, aka. redundant entities, on the interprocessor boundary via global reduce. */
@@ -335,7 +310,7 @@ namespace Dune
 
           firstTime[idx] = false;
 
-          if (uniqueEntityPartition->ownerRank(*iter,i,codim_) == rank)  /** if the entity is owned by the process, go ahead with computing the global index */
+          if (uniqueEntityPartition->ownerType(*iter,i,codim_) == OwnerType::Owner)  /** if the entity is owned by the process, go ahead with computing the global index */
           {
             const Index gindex = myoffset + globalcontrib;    /** compute global index */
             globalIndex_.insert(std::make_pair(id,gindex)); /** insert pair (key, value) into the map */
