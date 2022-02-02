@@ -3,8 +3,8 @@
 #ifndef DUNE_VIRTUALIZEDGRID_INTERSECTIONITERATOR_HH
 #define DUNE_VIRTUALIZEDGRID_INTERSECTIONITERATOR_HH
 
-#include "virtualizedgridintersections.hh"
-#include "virtualizedgrvirtualized.hh"
+#include "intersections.hh"
+#include "entity.hh"
 
 #include <dune/grid/common/intersection.hh>
 
@@ -42,9 +42,9 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual bool equals ( const VirtualizedGridLeafIterator& i ) = 0;
+      virtual bool equals ( const VirtualizedGridLeafIntersectionIterator<GridImp>& i ) const = 0;
       virtual void increment () = 0;
-      virtual Intersection dereference () = 0;
+      virtual Intersection dereference () const = 0;
     };
 
     template< class I >
@@ -53,9 +53,13 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual bool equals( const VirtualizedGridLeafIntersectionIterator& i ) const override { return impl().equals(i); }
-      virtual void increment() override { impl().increment(); }
-      virtual Intersection dereference() const override { return impl().dereference(); }
+      virtual bool equals( const VirtualizedGridLeafIntersectionIterator<GridImp>& i ) const override
+      {
+        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+      }
+      virtual void increment() override { ++impl(); }
+      virtual Intersection dereference() const override {
+        return VirtualizedGridLeafIntersection<GridImp> ( *impl() ); }
 
     private:
       const auto &impl () const { return impl_; }
@@ -71,17 +75,25 @@ namespace Dune {
     {}
 
     template< class ImplLeafIntersectionIterator >
-    VirtualizedGridLeafIntersectionIterator(const GridImp* virtualizedGrid,
-                                            const ImplLeafIntersectionIterator& implIterator)
-      : virtualizedGrid_(virtualizedGrid),
-        impl_( new Implementation(implIterator) )
+    explicit VirtualizedGridLeafIntersectionIterator(ImplLeafIntersectionIterator&& implLeafIntersectionIterator)
+    : impl_( new Implementation<ImplLeafIntersectionIterator>( implLeafIntersectionIterator ) )
     {}
+
+    VirtualizedGridLeafIntersectionIterator(const VirtualizedGridLeafIntersectionIterator& other)
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    {}
+
+    VirtualizedGridLeafIntersectionIterator ( VirtualizedGridLeafIntersectionIterator && ) = default;
+
+    VirtualizedGridLeafIntersectionIterator& operator=(const VirtualizedGridLeafIntersectionIterator& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
 
     //! equality
     bool equals(const VirtualizedGridLeafIntersectionIterator& other) const {
-      return impl_ == other.impl_;
+      return *impl_ == *other.impl_;
     }
-
 
     //! prefix increment
     void increment() {
@@ -90,15 +102,10 @@ namespace Dune {
 
     //! \brief dereferencing
     Intersection dereference() const {
-      return VirtualizedGridLeafIntersection<GridImp>(virtualizedGrid_, impl_->dereference());
+      return VirtualizedGridLeafIntersection<GridImp>(*(*impl_));
     }
 
   private:
-    //**********************************************************
-    //  private data
-    //**********************************************************
-
-    const GridImp* virtualizedGrid_;
     std::unique_ptr<Interface> impl_;
   };
 
@@ -126,9 +133,9 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual bool equals ( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) = 0;
+      virtual bool equals ( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) const = 0;
       virtual void increment () = 0;
-      virtual Intersection dereference () = 0;
+      virtual Intersection dereference () const = 0;
     };
 
     template< class I >
@@ -137,9 +144,13 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual bool equals( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) const override { return impl().equals(i); }
-      virtual void increment() override { impl().increment(); }
-      virtual Intersection dereference() const override { return impl().dereference(); }
+      virtual bool equals( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) const override
+      {
+        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+      }
+      virtual void increment() override { ++impl(); }
+      virtual Intersection dereference() const override {
+        return VirtualizedGridLevelIntersection<GridImp> ( *impl() ); }
 
     private:
       const auto &impl () const { return impl_; }
@@ -154,17 +165,25 @@ namespace Dune {
     {}
 
     template< class ImplLevelIntersectionIterator >
-    VirtualizedGridLevelIntersectionIterator(const GridImp* virtualizedGrid,
-                                             const ImplLevelIntersectionIterator& implIterator)
-      : virtualizedGrid_(virtualizedGrid),
-        impl_( new Implementation(implIterator) )
+    explicit VirtualizedGridLevelIntersectionIterator(ImplLevelIntersectionIterator&& implLevelIntersectionIterator)
+    : impl_( new Implementation<ImplLevelIntersectionIterator>( implLevelIntersectionIterator ) )
     {}
+
+    VirtualizedGridLevelIntersectionIterator(const VirtualizedGridLevelIntersectionIterator& other)
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    {}
+
+    VirtualizedGridLevelIntersectionIterator ( VirtualizedGridLevelIntersectionIterator && ) = default;
+
+    VirtualizedGridLevelIntersectionIterator& operator=(const VirtualizedGridLevelIntersectionIterator& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
 
     //! equality
     bool equals(const VirtualizedGridLevelIntersectionIterator<GridImp>& other) const {
-      return impl_ == other.impl_;
+      return *impl_ == *other.impl_;
     }
-
 
     //! prefix increment
     void increment() {
@@ -173,11 +192,9 @@ namespace Dune {
 
     //! \brief dereferencing
     Intersection dereference() const {
-      return VirtualizedGridLevelIntersection<GridImp>(virtualizedGrid_, impl_->dereference());
+      return VirtualizedGridLevelIntersection<GridImp>(*(*impl_));
     }
 
-  private:
-    const GridImp* virtualizedGrid_;
     std::unique_ptr<Interface> impl_;
   };
 

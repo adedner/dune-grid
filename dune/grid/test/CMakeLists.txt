@@ -28,6 +28,8 @@ dune_add_test(SOURCES test-gridinfo.cc)
 
 dune_add_test(SOURCES test-identitygrid.cc)
 
+dune_add_test(SOURCES test-virtualizedgrid.cc)
+
 dune_add_test(SOURCES test-oned.cc
               LINK_LIBRARIES dunegrid)
 

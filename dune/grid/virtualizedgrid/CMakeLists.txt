@@ -1,13 +1,13 @@
 set(HEADERS
-  virtualizedgrvirtualized.hh
-  virtualizedgrvirtualizedseed.hh
-  virtualizedgridhierarchiciterator.hh
-  virtualizedgridgeometry.hh
-  virtualizedgridintersectioniterator.hh
-  virtualizedgridintersections.hh
-  virtualizedgridindexsets.hh
-  virtualizedgridleafiterator.hh
-  virtualizedgridleveliterator.hh)
+  entity.hh
+  entityseed.hh
+  geometry.hh
+  hierarchiciterator.hh
+  indexsets.hh
+  intersectioniterator.hh
+  intersections.hh
+  leafiterator.hh
+  leveliterator.hh)
 
 install(FILES ${HEADERS}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/grid/virtualizedgrid)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/grid/virtualizedgrid/)

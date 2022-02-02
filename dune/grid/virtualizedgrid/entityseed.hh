@@ -38,15 +38,15 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I& i ) : impl_( i ) {}
+      Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual bool isValid() const override { impl().increment(); }
+      virtual bool isValid() const override { return impl().isValid(); }
 
     private:
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      I& impl_;
+      const I& impl_;
     };
     // VIRTUALIZATION END
 
@@ -61,14 +61,25 @@ namespace Dune {
     {}
 
     /**
-     * \brief Create EntitySeed from hostgrid Entity
-     *
-     * We call hostEntity.seed() directly in the constructor
-     * of VirtualizedGridEntitySeed to allow for return value optimization.
+     * \brief Create EntitySeed from implementation entity
      */
-    VirtualizedGridEntitySeed(const Entity& entity)
-    : impl_( new Implementation( entity.impl().impl_ ) )
+    template< class ImplEntitySeed >
+    VirtualizedGridEntitySeed(const ImplEntitySeed& implEntitySeed)
+    : impl_( new Implementation<ImplEntitySeed>(implEntitySeed) )
     {}
+
+    VirtualizedGridEntitySeed(const VirtualizedGridEntitySeed& other)
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    {}
+
+    VirtualizedGridEntitySeed ( VirtualizedGridEntitySeed && ) = default;
+
+    VirtualizedGridEntitySeed& operator=(const VirtualizedGridEntitySeed& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
+
+    VirtualizedGridEntitySeed& operator=( VirtualizedGridEntitySeed&& ) = default;
 
     /**
      * \brief Check whether it is safe to create an Entity from this Seed
@@ -77,7 +88,6 @@ namespace Dune {
     {
       return impl_->isValid();
     }
-  private:
 
     std::unique_ptr<Interface> impl_;
   };

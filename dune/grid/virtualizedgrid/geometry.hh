@@ -19,8 +19,8 @@ namespace Dune {
   {
   public:
     typedef typename GridImp::ctype ctype;
-    typedef FieldMatrix< ctype, mydimension, coorddimension > JacobianTransposed;
-    typedef FieldMatrix< ctype, coorddimension, mydimension > JacobianInverseTransposed;
+    typedef FieldMatrix< ctype, mydim, coorddim > JacobianTransposed;
+    typedef FieldMatrix< ctype, coorddim, mydim > JacobianInverseTransposed;
 
   private:
     // VIRTUALIZATION BEGIN
@@ -35,7 +35,6 @@ namespace Dune {
       virtual FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const = 0;
       virtual JacobianTransposed jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const = 0;
       virtual FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const = 0;
-      virtual bool checkInside(const FieldVector<ctype, mydim> &local) const = 0;
       virtual ctype integrationElement (const FieldVector<ctype, mydim>& local) const = 0;
       virtual JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const = 0;
     };
@@ -44,7 +43,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I& i ) : impl_( i ) {}
+      Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual GeometryType type () const override { return impl().type(); }
@@ -54,7 +53,6 @@ namespace Dune {
       virtual FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const override { return impl().global(local); }
       virtual JacobianTransposed jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const override { return impl().jacobianTransposed(local); }
       virtual FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const override { return impl().local(global); }
-      virtual bool checkInside(const FieldVector<ctype, mydim> &local) const override { return impl().checkInside(local); }
       virtual ctype integrationElement (const FieldVector<ctype, mydim>& local) const override { return impl().integrationElement(local); }
       virtual JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const override { return impl().jacobianInverseTransposed(local); }
 
@@ -62,7 +60,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      I& impl_;
+      const I& impl_;
     };
     // VIRTUALIZATION END
 
@@ -72,8 +70,19 @@ namespace Dune {
      */
     template< class ImplGridGeometry >
     VirtualizedGridGeometry(const ImplGridGeometry& implGridGeometry)
-      : impl_( new Implementation(implGridGeometry) )
+      : impl_( new Implementation<ImplGridGeometry>(implGridGeometry) )
     {}
+
+    VirtualizedGridGeometry(const VirtualizedGridGeometry& other)
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    {}
+
+    VirtualizedGridGeometry ( VirtualizedGridGeometry && ) = default;
+
+    VirtualizedGridGeometry& operator=(const VirtualizedGridGeometry& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
 
     /** \brief Return the element type identifier
      */
@@ -115,12 +124,6 @@ namespace Dune {
      * local coordinate in its reference element */
     FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const {
       return impl_->local(global);
-    }
-
-
-    //! Returns true if the point is in the current element
-    bool checkInside(const FieldVector<ctype, mydim> &local) const {
-      return impl_->checkInside(local);
     }
 
 

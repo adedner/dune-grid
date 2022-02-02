@@ -30,8 +30,8 @@ namespace Dune {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
       virtual void increment () = 0;
-      virtual Entity dereference () = 0;
-      virtual bool equals ( const VirtualizedGridLeafIterator& i ) = 0;
+      virtual Entity dereference () const = 0;
+      virtual bool equals ( const VirtualizedGridLeafIterator& i ) const = 0;
     };
 
     template< class I >
@@ -40,9 +40,15 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual void increment() override { impl().increment(); }
-      virtual Entity dereference() const override { return impl().dereference(); }
-      virtual bool equals( const VirtualizedGridLeafIterator& i ) const override { return impl().equals(i); }
+      virtual void increment() override { ++impl(); }
+      virtual Entity dereference() const override
+      {
+        return VirtualizedGridEntity<codim, GridImp::dimension, GridImp> ( *impl() );
+      }
+      virtual bool equals( const VirtualizedGridLeafIterator& i ) const override
+      {
+        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+      }
 
     private:
       const auto &impl () const { return impl_; }
@@ -54,20 +60,21 @@ namespace Dune {
 
 
   public:
-    explicit VirtualizedGridLeafIterator(const GridImp* virtualizedGrid)
-    : virtualizedGrid_(virtualizedGrid),
-      impl_( new Implementation( virtualizedGrid->impl_->leafGridView().template begin<codim,pitype>() ) )
+    template< class ImplLeafIterator >
+    explicit VirtualizedGridLeafIterator(ImplLeafIterator&& implLeafIterator)
+    : impl_( new Implementation<ImplLeafIterator>( implLeafIterator ) )
     {}
 
-    /** \brief Constructor which create the end iterator
-     *  \param endDummy      Here only to distinguish it from the other constructor
-     *  \param virtualizedGrid  pointer to grid instance
-     */
-    explicit VirtualizedGridLeafIterator(const GridImp* virtualizedGrid, [[maybe_unused]] bool endDummy)
-    : virtualizedGrid_(virtualizedGrid),
-      impl_( new Implementation( virtualizedGrid->impl_->leafGridView().template end<codim,pitype>() ) )
+    VirtualizedGridLeafIterator(const VirtualizedGridLeafIterator& other)
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
     {}
 
+    VirtualizedGridLeafIterator ( VirtualizedGridLeafIterator && ) = default;
+
+    VirtualizedGridLeafIterator& operator=(const VirtualizedGridLeafIterator& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
 
     //! prefix increment
     void increment() {
@@ -76,18 +83,15 @@ namespace Dune {
 
     //! dereferencing
     Entity dereference() const {
-      return Entity{{virtualizedGrid_, impl_->dereference()}};
+      return VirtualizedGridEntity<codim, GridImp::dimension, GridImp>(*(*impl_));
     }
 
     //! equality
     bool equals(const VirtualizedGridLeafIterator& i) const {
-      return impl_ == i.impl_;
+      return *impl_ == *i.impl_;
     }
 
-  private:
-    const GridImp* virtualizedGrid_;
     std::unique_ptr<Interface> impl_;
-
   };
 
 

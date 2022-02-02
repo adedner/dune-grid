@@ -22,15 +22,20 @@ namespace Dune {
   template<class GridImp>
   class VirtualizedGridHierarchicIterator
   {
+  public:
+    enum {codimension = 0};
 
+    typedef typename GridImp::template Codim<0>::Entity Entity;
+
+  private:
     // VIRTUALIZATION BEGIN
     struct Interface
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
       virtual void increment () = 0;
-      virtual Entity dereference () = 0;
-      virtual bool equals ( const VirtualizedGridLeafIterator& i ) = 0;
+      virtual Entity dereference () const = 0;
+      virtual bool equals ( const VirtualizedGridHierarchicIterator<GridImp>& i ) const = 0;
     };
 
     template< class I >
@@ -39,9 +44,15 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual void increment() override { impl().increment(); }
-      virtual Entity dereference() const override { return impl().dereference(); }
-      virtual bool equals( const VirtualizedGridHierarchicIterator& i ) const override { return impl().equals(i); }
+      virtual void increment() override { ++impl(); }
+      virtual Entity dereference() const override
+      {
+        return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp> ( *impl() );
+      }
+      virtual bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
+      {
+        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+      }
 
     private:
       const auto &impl () const { return impl_; }
@@ -52,24 +63,21 @@ namespace Dune {
     // VIRTUALIZATION END
 
   public:
-
-    enum {codimension = 0};
-
-    typedef typename GridImp::template Codim<0>::Entity Entity;
-
-    //! the default Constructor
-    explicit VirtualizedGridHierarchicIterator(const GridImp* virtualizedGrid, const Entity& startEntity, int maxLevel) :
-      virtualizedGrid_(virtualizedGrid),
-      impl_( new Implementation( startEntity.impl().impl_.hbegin(maxLevel) )
+    template< class ImplHierarchicIterator >
+    explicit VirtualizedGridHierarchicIterator(ImplHierarchicIterator&& implHierarchicIterator)
+    : impl_( new Implementation<ImplHierarchicIterator>( implHierarchicIterator ) )
     {}
 
-
-    //! \todo Please doc me !
-    explicit VirtualizedGridHierarchicIterator(const GridImp* virtualizedGrid, const Entity& startEntity, int maxLevel, [[maybe_unused]] bool endDummy) :
-      virtualizedGrid_(virtualizedGrid),
-      impl_( new Implementation( startEntity.impl().impl_.hend(maxLevel) )
+    VirtualizedGridHierarchicIterator(const VirtualizedGridHierarchicIterator& other)
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
     {}
 
+    VirtualizedGridHierarchicIterator ( VirtualizedGridHierarchicIterator && ) = default;
+
+    VirtualizedGridHierarchicIterator& operator=(const VirtualizedGridHierarchicIterator& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
 
     //! \todo Please doc me !
     void increment()
@@ -79,18 +87,15 @@ namespace Dune {
 
     //! dereferencing
     Entity dereference() const {
-      return Entity{{virtualizedGrid_,*hostHierarchicIterator_}};
+      return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp>(*(*impl_));
     }
 
     //! equality
     bool equals(const VirtualizedGridHierarchicIterator& i) const {
-      return impl_ == i.impl_;
+      return *impl_ == *i.impl_;
     }
 
-  private:
-    const GridImp* virtualizedGrid_;
     std::unique_ptr<Interface> impl_;
-
   };
 
 
