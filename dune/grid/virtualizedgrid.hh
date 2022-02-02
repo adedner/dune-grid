@@ -78,13 +78,15 @@ namespace Dune
   class VirtualizedGrid
   : public GridDefaultImplementation<dimension, dimensionworld, ct, VirtualizedGridFamily<dimension, dimensionworld, ct>>
   {
-    friend class VirtualizedGridLevelIndexSet<const VirtualizedGrid>;
-    friend class VirtualizedGridLeafIndexSet<const VirtualizedGrid>;
-    friend class VirtualizedGridGlobalIdSet<const VirtualizedGrid>;
-    friend class VirtualizedGridLocalIdSet<const VirtualizedGrid>;
-    friend class VirtualizedGridHierarchicIterator<const VirtualizedGrid>;
-    friend class VirtualizedGridLevelIntersectionIterator<const VirtualizedGrid>;
-    friend class VirtualizedGridLeafIntersectionIterator<const VirtualizedGrid>;
+    typedef VirtualizedGrid<dimension, dimensionworld, ct> ThisType;
+
+    friend class VirtualizedGridLevelIndexSet<const ThisType>;
+    friend class VirtualizedGridLeafIndexSet<const ThisType>;
+    friend class VirtualizedGridGlobalIdSet<const ThisType>;
+    friend class VirtualizedGridLocalIdSet<const ThisType>;
+    friend class VirtualizedGridHierarchicIterator<const ThisType>;
+    friend class VirtualizedGridLevelIntersectionIterator<const ThisType>;
+    friend class VirtualizedGridLeafIntersectionIterator<const ThisType>;
 
     template<int codim, PartitionIteratorType pitype, class GridImp_>
     friend class VirtualizedGridLevelIterator;
@@ -95,9 +97,9 @@ namespace Dune
     template<int codim_, int dim_, class GridImp_>
     friend class VirtualizedGridEntity;
 
-    typedef VirtualizedGrid<dimension, dimensionworld, ct> ThisType;
-
-    typedef VirtualizedGridEntitySeed<0, ThisType> EntitySeed;
+    typedef VirtualizedGridEntitySeed<0, ThisType> EntitySeed0;
+    typedef VirtualizedGridEntitySeed<1, ThisType> EntitySeed1;
+    typedef VirtualizedGridEntitySeed<dimension, ThisType> EntitySeedDim;
 
   public:
     //! type of the used GridFamily for this grid
@@ -117,14 +119,18 @@ namespace Dune
       virtual Interface *clone () const = 0;
 
       virtual int maxLevel() const = 0;
-      virtual typename Traits::template Codim<0>::LevelIterator lbegin (int level) const = 0; // TODO: other codims
-      virtual typename Traits::template Codim<0>::LevelIterator lend (int level) const = 0; // TODO: other codims
-      // virtual typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin (int level) const = 0; // TODO
-      // virtual typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend (int level) const = 0; // TODO
-      virtual typename Traits::template Codim<0>::LeafIterator leafbegin () const = 0; // TODO: other codims
-      virtual typename Traits::template Codim<0>::LeafIterator leafend () const = 0; // TODO: other codims
-      // virtual typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafbegin() const = 0; // TODO
-      // virtual typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafend() const = 0; // TODO
+      virtual typename Traits::template Codim<0>::LevelIterator lbegin (int level) const = 0;
+      virtual typename Traits::template Codim<0>::LevelIterator lend (int level) const = 0;
+      virtual typename Traits::template Codim<1>::LevelIterator lbegin1 (int level) const = 0;
+      virtual typename Traits::template Codim<1>::LevelIterator lend1 (int level) const = 0;
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lbeginGhost (int level) const = 0;
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lendGhost (int level) const = 0;
+      virtual typename Traits::template Codim<0>::LeafIterator leafbegin () const = 0;
+      virtual typename Traits::template Codim<0>::LeafIterator leafend () const = 0;
+      virtual typename Traits::template Codim<1>::LeafIterator leafbegin1 () const = 0;
+      virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const = 0;
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost() const = 0;
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafendGhost() const = 0;
       virtual int size (int level, int codim) const = 0;
       virtual size_t numBoundarySegments () const = 0;
       virtual int size (int codim) const = 0;
@@ -134,7 +140,9 @@ namespace Dune
       virtual const typename Traits::LocalIdSet& localIdSet() const = 0;
       virtual const typename Traits::LevelIndexSet& levelIndexSet(int level) const = 0;
       virtual const typename Traits::LeafIndexSet& leafIndexSet() const = 0;
-      virtual typename Traits::template Codim<0>::Entity entity(const EntitySeed& seed) const = 0; // TODO: other codims
+      virtual typename Traits::template Codim<0>::Entity entity0(const EntitySeed0& seed) const = 0;
+      virtual typename Traits::template Codim<1>::Entity entity1(const EntitySeed1& seed) const = 0;
+      virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const = 0;
       virtual void globalRefine (int refCount) = 0;
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) = 0;
       virtual int getMark(const typename Traits::template Codim<0>::Entity & e) const = 0;
@@ -153,7 +161,9 @@ namespace Dune
       : public Interface
     {
       typedef typename std::decay<I>::type::template Codim<0>::Entity ImplEntity;
-      typedef typename std::decay<I>::type::template Codim<0>::EntitySeed ImplSeed;
+      typedef typename std::decay<I>::type::template Codim<0>::EntitySeed ImplSeed0;
+      typedef typename std::decay<I>::type::template Codim<1>::EntitySeed ImplSeed1;
+      typedef typename std::decay<I>::type::template Codim<dimension>::EntitySeed ImplSeedDim;
 
       Implementation ( I& i )
       : impl_( i ),
@@ -162,7 +172,11 @@ namespace Dune
         leafIndexSet_( impl().leafIndexSet() )
       {
         for (int i = 0; i <= maxLevel(); i++)
-          levelIndexSets_.emplace_back( new VirtualizedGridLevelIndexSet<ThisType>( impl().levelIndexSet(i) ) );
+        {
+          VirtualizedGridLevelIndexSet<const ThisType>* p
+            = new VirtualizedGridLevelIndexSet<const ThisType>( impl().levelIndexSet(i) );
+          levelIndexSets_.push_back(p);
+        }
       }
 
       ~Implementation()
@@ -187,6 +201,26 @@ namespace Dune
         return VirtualizedGridLevelIterator<0, All_Partition, const ThisType> ( impl().template lend<0>(level) );
       }
 
+      virtual typename Traits::template Codim<1>::LevelIterator lbegin1 (int level) const override
+      {
+        return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( impl().template lbegin<1>(level) );
+      }
+
+      virtual typename Traits::template Codim<1>::LevelIterator lend1 (int level) const override
+      {
+        return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( impl().template lend<1>(level) );
+      }
+
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lbeginGhost (int level) const override
+      {
+        return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( impl().template lbegin<0, Ghost_Partition>(level) );
+      }
+
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lendGhost (int level) const override
+      {
+        return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( impl().template lend<0, Ghost_Partition>(level) );
+      }
+
       virtual typename Traits::template Codim<0>::LeafIterator leafbegin () const override
       {
         return VirtualizedGridLeafIterator<0, All_Partition, const ThisType> ( impl().template leafbegin<0>() );
@@ -197,6 +231,26 @@ namespace Dune
         return VirtualizedGridLeafIterator<0, All_Partition, const ThisType> ( impl().template leafend<0>() );
       }
 
+      virtual typename Traits::template Codim<1>::LeafIterator leafbegin1 () const override
+      {
+        return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( impl().template leafbegin<1>() );
+      }
+
+      virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const override
+      {
+        return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( impl().template leafend<1>() );
+      }
+
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost () const override
+      {
+        return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( impl().template leafbegin<0, Ghost_Partition>() );
+      }
+
+      virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafendGhost () const override
+      {
+        return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( impl().template leafend<0, Ghost_Partition>() );
+      }
+
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
       virtual size_t numBoundarySegments () const override { return impl().numBoundarySegments(); }
       virtual int size (int codim) const override { return impl().size(codim); }
@@ -205,27 +259,42 @@ namespace Dune
 
       virtual const typename Traits::GlobalIdSet& globalIdSet() const override
       {
-        return *dynamic_cast<typename Traits::GlobalIdSet*>( &(*globalIdSet_.impl_) );
+        return *dynamic_cast<const typename Traits::GlobalIdSet*>( &(*globalIdSet_.impl_) );
       }
       virtual const typename Traits::LocalIdSet& localIdSet() const override
       {
-        return *dynamic_cast<typename Traits::LocalIdSet*>( &(*localIdSet_.impl_) );
+        return *dynamic_cast<const typename Traits::LocalIdSet*>( &(*localIdSet_.impl_) );
       }
       virtual const typename Traits::LevelIndexSet& levelIndexSet(int level) const override
       {
-        return *dynamic_cast<typename Traits::LevelIndexSet*>( &(*levelIndexSets_[level]->impl_) );
+        return *dynamic_cast<const typename Traits::LevelIndexSet*>( &(*levelIndexSets_[level]->impl_) );
       }
       virtual const typename Traits::LeafIndexSet& leafIndexSet() const override
       {
-        return *dynamic_cast<typename Traits::LeafIndexSet*>( &(*leafIndexSet_.impl_) );
+        return *dynamic_cast<const typename Traits::LeafIndexSet*>( &(*leafIndexSet_.impl_) );
       }
 
-      virtual typename Traits::template Codim<0>::Entity entity(const EntitySeed& seed) const override
+      virtual typename Traits::template Codim<0>::Entity entity0(const EntitySeed0& seed) const override
       {
         return VirtualizedGridEntity<0, dimension, const ThisType>( impl().entity(
-          *dynamic_cast<ImplSeed*>(&(*seed.impl_))
+          *dynamic_cast<ImplSeed0*>(&(*seed.impl_))
         ) );
-      } // TODO: other codims
+      }
+
+      virtual typename Traits::template Codim<1>::Entity entity1(const EntitySeed1& seed) const override
+      {
+        return VirtualizedGridEntity<1, dimension, const ThisType>( impl().entity(
+          *dynamic_cast<ImplSeed1*>(&(*seed.impl_))
+        ) );
+      }
+
+      virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const override
+      {
+        return VirtualizedGridEntity<dimension, dimension, const ThisType>( impl().entity(
+          *dynamic_cast<ImplSeedDim*>(&(*seed.impl_))
+        ) );
+      }
+      // TODO: other codims
 
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) override
@@ -256,10 +325,10 @@ namespace Dune
       auto &impl () { return impl_; }
 
       I& impl_;
-      VirtualizedGridGlobalIdSet<ThisType> globalIdSet_;
-      VirtualizedGridLocalIdSet<ThisType> localIdSet_;
-      std::vector<VirtualizedGridLevelIndexSet<ThisType>*> levelIndexSets_;
-      VirtualizedGridLeafIndexSet<ThisType> leafIndexSet_;
+      VirtualizedGridGlobalIdSet<const ThisType> globalIdSet_;
+      VirtualizedGridLocalIdSet<const ThisType> localIdSet_;
+      std::vector<VirtualizedGridLevelIndexSet<const ThisType>*> levelIndexSets_;
+      VirtualizedGridLeafIndexSet<const ThisType> leafIndexSet_;
     };
     // VIRTUALIZATION END
 
@@ -315,14 +384,36 @@ namespace Dune
     //! Iterator to first entity of given codim on level
     template<int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin (int level) const {
-      return impl_->lbegin(level);
+      if constexpr (codim == 0)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lbegin(level);
+        if constexpr (PiType == Ghost_Partition)
+          return impl_->lbeginGhost(level);
+      }
+      if constexpr (codim == 1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lbegin1(level);
+      }
     }
 
 
     //! one past the end on this level
     template<int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend (int level) const {
-      return impl_->lend(level);
+      if constexpr (codim == 0)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lend(level);
+        if constexpr (PiType == Ghost_Partition)
+          return impl_->lendGhost(level);
+      }
+      if constexpr (codim == 1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lend1(level);
+      }
     }
 
 
@@ -343,14 +434,36 @@ namespace Dune
     //! Iterator to first leaf entity of given codim
     template<int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafbegin() const {
-      return impl_->leafbegin();
+      if constexpr (codim == 0)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafbegin();
+        if constexpr (PiType == Ghost_Partition)
+          return impl_->leafbeginGhost();
+      }
+      if constexpr (codim == 1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafbegin1();
+      }
     }
 
 
     //! one past the end of the sequence of leaf entities
     template<int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafend() const {
-      return impl_->leafend();
+      if constexpr (codim == 0)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafend();
+        if constexpr (PiType == Ghost_Partition)
+          return impl_->leafendGhost();
+      }
+      if constexpr (codim == 1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafend1();
+      }
     }
 
 
@@ -416,13 +529,12 @@ namespace Dune
     typename Traits::template Codim<EntitySeed::codimension>::Entity
     entity(const EntitySeed& seed) const
     {
-      typedef VirtualizedGridEntity<
-        EntitySeed::codimension,
-        dimension,
-        const typename Traits::Grid
-        > EntityImp;
-
-      return EntityImp(this, impl_->entity(seed));
+      if constexpr (EntitySeed::codimension == 0)
+        return impl_->entity0(seed);
+      if constexpr (EntitySeed::codimension == 1)
+        return impl_->entity1(seed);
+      if constexpr (EntitySeed::codimension == dimension)
+        return impl_->entityDim(seed);
     }
 
 
@@ -483,25 +595,25 @@ namespace Dune
 
     /** \brief Size of the overlap on the leaf level */
     unsigned int overlapSize(int codim) const {
-      return impl_->leafGridView().overlapSize(codim);
+      return this->leafGridView().overlapSize(codim);
     }
 
 
     /** \brief Size of the ghost cell layer on the leaf level */
     unsigned int ghostSize(int codim) const {
-      return impl_->leafGridView().ghostSize(codim);
+      return this->leafGridView().ghostSize(codim);
     }
 
 
     /** \brief Size of the overlap on a given level */
     unsigned int overlapSize(int level, int codim) const {
-      return impl_->levelGridView(level).overlapSize(codim);
+      return this->levelGridView(level).overlapSize(codim);
     }
 
 
     /** \brief Size of the ghost cell layer on a given level */
     unsigned int ghostSize(int level, int codim) const {
-      return impl_->levelGridView(level).ghostSize(codim);
+      return this->levelGridView(level).ghostSize(codim);
     }
 
 

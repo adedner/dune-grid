@@ -77,6 +77,7 @@ namespace Dune {
     VirtualizedGridEntitySeed& operator=(const VirtualizedGridEntitySeed& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     VirtualizedGridEntitySeed& operator=( VirtualizedGridEntitySeed&& ) = default;

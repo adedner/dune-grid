@@ -88,11 +88,12 @@ namespace Dune {
     VirtualizedGridLeafIntersectionIterator& operator=(const VirtualizedGridLeafIntersectionIterator& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     //! equality
     bool equals(const VirtualizedGridLeafIntersectionIterator& other) const {
-      return *impl_ == *other.impl_;
+      return impl_->equals(other);
     }
 
     //! prefix increment
@@ -102,7 +103,7 @@ namespace Dune {
 
     //! \brief dereferencing
     Intersection dereference() const {
-      return VirtualizedGridLeafIntersection<GridImp>(*(*impl_));
+      return impl_->dereference();
     }
 
   private:
@@ -178,11 +179,12 @@ namespace Dune {
     VirtualizedGridLevelIntersectionIterator& operator=(const VirtualizedGridLevelIntersectionIterator& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     //! equality
     bool equals(const VirtualizedGridLevelIntersectionIterator<GridImp>& other) const {
-      return *impl_ == *other.impl_;
+      return impl_->equals(other);
     }
 
     //! prefix increment
@@ -192,7 +194,7 @@ namespace Dune {
 
     //! \brief dereferencing
     Intersection dereference() const {
-      return VirtualizedGridLevelIntersection<GridImp>(*(*impl_));
+      return impl_->dereference();
     }
 
     std::unique_ptr<Interface> impl_;

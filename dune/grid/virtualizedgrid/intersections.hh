@@ -117,11 +117,12 @@ namespace Dune {
     VirtualizedGridLeafIntersection& operator=(const VirtualizedGridLeafIntersection& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     bool equals(const VirtualizedGridLeafIntersection& other) const
     {
-      return *impl_ == *other.impl_;
+      return impl_->equals(other);
     }
 
     //! return Entity on the inside of this intersection
@@ -256,7 +257,7 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual bool equals(const VirtualizedGridLeafIntersection<GridImp>& other) const = 0;
+      virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& other) const = 0;
       virtual Entity inside() const = 0;
       virtual Entity outside() const = 0;
       virtual bool boundary () const = 0;
@@ -281,7 +282,7 @@ namespace Dune {
     {
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual bool equals(const VirtualizedGridLeafIntersection<GridImp>& i) const override
+      virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
       {
         return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
       }
@@ -327,11 +328,12 @@ namespace Dune {
     VirtualizedGridLevelIntersection& operator=(const VirtualizedGridLevelIntersection& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     bool equals(const VirtualizedGridLevelIntersection& other) const
     {
-      return *impl_ == *other.impl_;
+      return impl_->equals(other);
     }
 
     //! return Entity on the inside of this intersection

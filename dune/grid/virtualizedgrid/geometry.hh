@@ -82,6 +82,7 @@ namespace Dune {
     VirtualizedGridGeometry& operator=(const VirtualizedGridGeometry& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     /** \brief Return the element type identifier

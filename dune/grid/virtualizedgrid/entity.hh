@@ -75,7 +75,7 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      // virtual bool equals(const VirtualizedGridEntity& other) const = 0; // TODO
+      virtual bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const = 0;
       virtual EntitySeed seed () const = 0;
       virtual int level () const = 0;
       virtual PartitionType partitionType () const = 0;
@@ -89,7 +89,10 @@ namespace Dune {
     {
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      // virtual bool equals(const VirtualizedGridEntity& other) const override { return impl().equals(other); } // TODO
+      virtual bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const override
+      {
+        return impl() == dynamic_cast<Implementation<I>*>(&(*other.impl_))->impl();
+      }
       virtual EntitySeed seed () const override { return VirtualizedGridEntitySeed<codim, GridImp>( impl().seed() ); }
       virtual int level () const override { return impl().level(); }
       virtual PartitionType partitionType () const override { return impl().partitionType(); }
@@ -115,27 +118,28 @@ namespace Dune {
     {}
 
     VirtualizedGridEntity(const VirtualizedGridEntity& other)
-    : impl_( other ? other.impl_->clone() : nullptr )
+    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
     {}
 
     VirtualizedGridEntity ( VirtualizedGridEntity && ) = default;
 
     VirtualizedGridEntity& operator=(const VirtualizedGridEntity& other)
     {
-      impl_.reset( other ? other.impl_->clone() : nullptr );
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     VirtualizedGridEntity& operator=( VirtualizedGridEntity&& ) = default;
 
     bool equals(const VirtualizedGridEntity& other) const
     {
-      return impl_ == other.impl_; // TODO shouldn't this be *impl_?
+      return impl_->equals(other);
     }
 
     //! Create EntitySeed
     EntitySeed seed () const
     {
-      return EntitySeed(*impl_);
+      return EntitySeed(impl_->seed());
     }
 
     //! level of this element
@@ -210,14 +214,16 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      // virtual bool equals(const typename GridImp::template Codim<0>::Entity& other) const = 0; // TODO
+      virtual bool equals(const VirtualizedGridEntity<0,dim,GridImp>& other) const = 0;
       virtual bool hasFather () const = 0;
       virtual EntitySeed seed () const = 0;
       virtual int level () const = 0;
       virtual PartitionType partitionType () const = 0;
       virtual Geometry geometry () const = 0;
       virtual unsigned int subEntities (unsigned int cc) const = 0;
-      virtual typename GridImp::template Codim<1>::Entity subEntity (int i) const = 0; // TODO: other codims
+      virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const = 0;
+      virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const = 0;
+      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0; // TODO: other codims
       virtual LevelIntersectionIterator ilevelbegin () const = 0;
       virtual LevelIntersectionIterator ilevelend () const = 0;
       virtual LeafIntersectionIterator ileafbegin () const = 0;
@@ -235,7 +241,9 @@ namespace Dune {
     {
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      // virtual bool equals(const typename GridImp::template Codim<0>::Entity& other) const override { return impl() == other.impl(); } // TODO
+      virtual bool equals(const VirtualizedGridEntity<0,dim,GridImp>& other) const override {
+        return impl() == dynamic_cast<Implementation<I>*>(&(*other.impl_))->impl();
+      }
       virtual bool hasFather () const override { return impl().hasFather(); }
       virtual EntitySeed seed () const override {
         return VirtualizedGridEntitySeed<0, GridImp>( impl().seed() );
@@ -246,10 +254,24 @@ namespace Dune {
         return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometry() ) );
       }
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
-      virtual typename GridImp::template Codim<1>::Entity subEntity (int i) const override
+
+      virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
+      {
+        return VirtualizedGridEntity<0, dim, GridImp>( impl().template subEntity<0>(i) );
+      }
+
+      virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const override
       {
         return VirtualizedGridEntity<1, dim, GridImp>( impl().template subEntity<1>(i) );
-      } // TODO: other codims
+      }
+
+      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
+      {
+        return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
+      }
+
+      // TODO: other codims
+
       virtual LevelIntersectionIterator ilevelbegin () const override
       {
         return VirtualizedGridLevelIntersectionIterator<GridImp>( impl().impl().ilevelbegin() );
@@ -310,13 +332,14 @@ namespace Dune {
     VirtualizedGridEntity& operator=(const VirtualizedGridEntity& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     VirtualizedGridEntity& operator=( VirtualizedGridEntity&& ) = default;
 
     bool equals(const VirtualizedGridEntity& other) const
     {
-      return impl_ == other.impl_; // TODO shouldn't this be *impl_?
+      return impl_->equals(other);
     }
 
     //! returns true if father entity exists
@@ -327,7 +350,7 @@ namespace Dune {
     //! Create EntitySeed
     EntitySeed seed () const
     {
-      return EntitySeed(impl_);
+      return EntitySeed(impl_->seed());
     }
 
     //! Level of this element
@@ -361,11 +384,16 @@ namespace Dune {
     /** \brief Provide access to sub entity i of given codimension. Entities
      *  are numbered 0 ... subEntities(cc)-1
      */
-    template<int cc>
+    template< int cc >
     typename GridImp::template Codim<cc>::Entity subEntity (int i) const {
-      return VirtualizedGridEntity<cc,dim,GridImp>(impl_->template subEntity<cc>(i));
+      if constexpr (cc == 0)
+        return VirtualizedGridEntity<cc,dim,GridImp>(impl_->subEntity0(i));
+      if constexpr (cc == 1)
+        return VirtualizedGridEntity<cc,dim,GridImp>(impl_->subEntity1(i));
+      if constexpr (cc == dim)
+        return VirtualizedGridEntity<cc,dim,GridImp>(impl_->subEntityDim(i));
     }
-
+    // TODO Add further codims
 
     //! First level intersection
     VirtualizedGridLevelIntersectionIterator<GridImp> ilevelbegin () const {
@@ -429,14 +457,14 @@ namespace Dune {
      */
     VirtualizedGridHierarchicIterator<GridImp> hbegin (int maxLevel) const
     {
-      return VirtualizedGridHierarchicIterator<const GridImp>(*this, maxLevel);
+      return VirtualizedGridHierarchicIterator<const GridImp>( impl_->hbegin(maxLevel) );
     }
 
 
     //! Returns iterator to one past the last son
     VirtualizedGridHierarchicIterator<GridImp> hend (int maxLevel) const
     {
-      return VirtualizedGridHierarchicIterator<const GridImp>(*this, maxLevel, true);
+      return VirtualizedGridHierarchicIterator<const GridImp>( impl_->hend(maxLevel) );
     }
 
     std::unique_ptr<Interface> impl_;

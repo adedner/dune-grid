@@ -74,6 +74,7 @@ namespace Dune {
     VirtualizedGridLeafIterator& operator=(const VirtualizedGridLeafIterator& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     //! prefix increment
@@ -83,12 +84,12 @@ namespace Dune {
 
     //! dereferencing
     Entity dereference() const {
-      return VirtualizedGridEntity<codim, GridImp::dimension, GridImp>(*(*impl_));
+      return impl_->dereference();
     }
 
     //! equality
     bool equals(const VirtualizedGridLeafIterator& i) const {
-      return *impl_ == *i.impl_;
+      return impl_->equals(i);
     }
 
     std::unique_ptr<Interface> impl_;

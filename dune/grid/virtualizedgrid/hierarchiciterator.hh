@@ -77,6 +77,7 @@ namespace Dune {
     VirtualizedGridHierarchicIterator& operator=(const VirtualizedGridHierarchicIterator& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     //! \todo Please doc me !
@@ -87,12 +88,12 @@ namespace Dune {
 
     //! dereferencing
     Entity dereference() const {
-      return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp>(*(*impl_));
+      return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp>( impl_->dereference() );
     }
 
     //! equality
     bool equals(const VirtualizedGridHierarchicIterator& i) const {
-      return *impl_ == *i.impl_;
+      return impl_->equals(i);
     }
 
     std::unique_ptr<Interface> impl_;

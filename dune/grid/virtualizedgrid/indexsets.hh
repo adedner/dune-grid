@@ -16,11 +16,11 @@ namespace Dune {
   /** \todo Take the index types from the host grid */
   template<class GridImp>
   class VirtualizedGridLevelIndexSet :
-    public IndexSet<GridImp, VirtualizedGridLevelIndexSet<GridImp>, int, std::vector< GeometryType >>
+    public IndexSet<GridImp, VirtualizedGridLevelIndexSet<GridImp>>
   {
   public:
 
-    typedef std::vector< GeometryType > Types;
+    typedef typename IndexSet<GridImp, VirtualizedGridLevelIndexSet<GridImp>>::Types Types;
 
     enum {dim = GridImp::dimension};
 
@@ -30,47 +30,100 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual int index (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
-      virtual int subIndex (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const = 0;
+      virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual int index1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const = 0;
+      virtual int indexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const = 0;
+      virtual int subIndex0 (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const = 0;
+      virtual int subIndex1 (const typename GridImp::Traits::template Codim<1>::Entity& e, int i, int codim) const = 0;
+      virtual int subIndexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e, int i, int codim) const = 0;
       virtual std::size_t size (int codim) const = 0;
       virtual std::size_t size (GeometryType type) const = 0;
       virtual Types types (int codim) const = 0;
-      virtual bool contains (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual bool contains0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual bool contains1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const = 0;
+      virtual bool containsDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const = 0;
     };
 
     template< class I >
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename I::template Codim<0>::Entity ImplEntity;
+      typedef typename I::template Codim<0>::Entity ImplEntity0;
+      typedef typename I::template Codim<1>::Entity ImplEntity1;
+      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual int index (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
+      virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
         );
-      } // TODO: other codims
+      }
 
-      virtual int subIndex (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
+      virtual int index1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
       {
-        return impl().subIndex(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_)), i, codim
+        return impl().index(
+          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_))
         );
-      }  // TODO: other codims
+      }
+
+      virtual int indexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
+      {
+        return impl().index(
+          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
+        );
+      }
+      // TODO: other codims
+
+      virtual int subIndex0 (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
+      {
+        return impl().template subIndex<0>(
+          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_)), i, codim
+        );
+      }
+
+      virtual int subIndex1 (const typename GridImp::Traits::template Codim<1>::Entity& e, int i, int codim) const override
+      {
+        return impl().template subIndex<1>(
+          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_)), i, codim
+        );
+      }
+
+      virtual int subIndexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e, int i, int codim) const override
+      {
+        return impl().template subIndex<dim>(
+          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_)), i, codim
+        );
+      }
+      // TODO: other codims
 
       virtual std::size_t size (int codim) const override { return impl().size(codim); }
       virtual std::size_t size (GeometryType type) const override { return impl().size(type); }
       virtual Types types (int codim) const override { return impl().types(codim); }
 
-      virtual bool contains (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
+      virtual bool contains0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().contains(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
         );
-      } // TODO: other codims
+      }
+
+      virtual bool contains1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
+      {
+        return impl().contains(
+          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_))
+        );
+      }
+
+      virtual bool containsDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
+      {
+        return impl().contains(
+          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+        );
+      }
+      // TODO: other codims
 
     private:
       const auto &impl () const { return impl_; }
@@ -96,13 +149,19 @@ namespace Dune {
     VirtualizedGridLevelIndexSet& operator=(const VirtualizedGridLevelIndexSet& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
     //! get index of an entity
     template<int codim>
     int index (const typename GridImp::Traits::template Codim<codim>::Entity& e) const
     {
-      return impl_->template index<codim>(e);
+      if constexpr (codim == 0)
+        return impl_->index0(e);
+      if constexpr (codim == 1)
+        return impl_->index1(e);
+      if constexpr (codim == dim)
+        return impl_->indexDim(e);
     }
 
 
@@ -110,7 +169,12 @@ namespace Dune {
     template<int cc>
     int subIndex (const typename GridImp::Traits::template Codim<cc>::Entity& e, int i, int codim) const
     {
-      return impl_->subIndex(e, i, codim);
+      if constexpr (cc == 0)
+        return impl_->subIndex0(e, i, codim);
+      if constexpr (cc == 1)
+        return impl_->subIndex1(e, i, codim);
+      if constexpr (cc == dim)
+        return impl_->subIndexDim(e, i, codim);
     }
 
 
@@ -143,7 +207,13 @@ namespace Dune {
     template<class EntityType>
     bool contains (const EntityType& e) const
     {
-      return impl_->contains(e);
+      static constexpr int cc = EntityType::codimension;
+      if constexpr (cc == 0)
+        return impl_->contains0(e);
+      if constexpr (cc == 1)
+        return impl_->contains1(e);
+      if constexpr (cc == dim)
+        return impl_->containsDim(e);
     }
 
     std::unique_ptr<Interface> impl_;
@@ -152,17 +222,17 @@ namespace Dune {
 
   template<class GridImp>
   class VirtualizedGridLeafIndexSet :
-    public IndexSet<GridImp, VirtualizedGridLeafIndexSet<GridImp>, int, std::vector< GeometryType >>
+    public IndexSet<GridImp, VirtualizedGridLeafIndexSet<GridImp>>
   {
 
   public:
-    typedef std::vector< GeometryType > Types;
+    typedef typename IndexSet<GridImp, VirtualizedGridLeafIndexSet<GridImp>>::Types Types;
 
     /*
      * We use the remove_const to extract the Type from the mutable class,
      * because the const class is not instantiated yet.
      */
-    enum {dim = std::remove_const<GridImp>::type::dimension};
+    enum {dim = GridImp::dimension};
 
   private:
     // VIRTUALIZATION BEGIN
@@ -170,43 +240,94 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual int index (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
-      virtual int subIndex (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const = 0;
+      virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual int index1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const = 0;
+      virtual int indexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const = 0;
+      virtual int subIndex0 (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const = 0;
+      virtual int subIndex1 (const typename GridImp::Traits::template Codim<1>::Entity& e, int i, int codim) const = 0;
+      virtual int subIndexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e, int i, int codim) const = 0;
       virtual std::size_t size (int codim) const = 0;
       virtual std::size_t size (GeometryType type) const = 0;
       virtual Types types (int codim) const = 0;
-      virtual bool contains (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual bool contains0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual bool contains1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const = 0;
+      virtual bool containsDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const = 0;
     };
 
     template< class I >
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename I::template Codim<0>::Entity ImplEntity;
+      typedef typename I::template Codim<0>::Entity ImplEntity0;
+      typedef typename I::template Codim<1>::Entity ImplEntity1;
+      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual int index (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
+
+      virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
         );
-      } // TODO: other codims
+      }
 
-      virtual int subIndex (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
+      virtual int index1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
       {
-        return impl().subIndex(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_)), i, codim
+        return impl().index(
+          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_))
         );
-      }  // TODO: other codims
+      }
+
+      virtual int indexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
+      {
+        return impl().template index(
+          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+        );
+      }
+      // TODO: other codims
+
+      virtual int subIndex0 (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
+      {
+        return impl().template subIndex<0>(
+          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_)), i, codim
+        );
+      }
+
+      virtual int subIndex1 (const typename GridImp::Traits::template Codim<1>::Entity& e, int i, int codim) const override
+      {
+        return impl().template subIndex<1>(
+          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_)), i, codim
+        );
+      }
+
+      virtual int subIndexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e, int i, int codim) const override
+      {
+        return impl().template subIndex<dim>(
+          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_)), i, codim
+        );
+      }
+      // TODO: other codims
 
       virtual std::size_t size (int codim) const override { return impl().size(codim); }
       virtual std::size_t size (GeometryType type) const override { return impl().size(type); }
       virtual Types types (int codim) const override { return impl().types(codim); }
-      virtual bool contains (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
+
+      virtual bool contains0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
-        return impl().contains(*dynamic_cast<ImplEntity*>(&(*e.impl().impl_)));
-      } // TODO: other codims
+        return impl().contains(*dynamic_cast<ImplEntity0*>(&(*e.impl().impl_)));
+      }
+
+      virtual bool contains1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
+      {
+        return impl().contains(*dynamic_cast<ImplEntity1*>(&(*e.impl().impl_)));
+      }
+
+      virtual bool containsDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
+      {
+        return impl().contains(*dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_)));
+      }
+      // TODO: other codims
 
     private:
       const auto &impl () const { return impl_; }
@@ -232,6 +353,7 @@ namespace Dune {
     VirtualizedGridLeafIndexSet& operator=(const VirtualizedGridLeafIndexSet& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
 
@@ -241,9 +363,14 @@ namespace Dune {
         because the const class is not instantiated yet.
      */
     template<int codim>
-    int index (const typename std::remove_const<GridImp>::type::template Codim<codim>::Entity& e) const
+    int index (const typename GridImp::template Codim<codim>::Entity& e) const
     {
-      return impl_->template index<codim>(e);
+      if constexpr (codim == 0)
+        return impl_->index0(e);
+      if constexpr (codim == 1)
+        return impl_->index1(e);
+      if constexpr (codim == dim)
+        return impl_->indexDim(e);
     }
 
 
@@ -253,9 +380,14 @@ namespace Dune {
         because the const class is not instantiated yet.
      */
     template<int cc>
-    int subIndex (const typename std::remove_const<GridImp>::type::Traits::template Codim<cc>::Entity& e, int i, int codim) const
+    int subIndex (const typename GridImp::Traits::template Codim<cc>::Entity& e, int i, int codim) const
     {
-      return impl_->subIndex(e,i, codim);
+      if constexpr (cc == 0)
+        return impl_->subIndex0(e, i, codim);
+      if constexpr (cc == 1)
+        return impl_->subIndex1(e, i, codim);
+      if constexpr (cc == dim)
+        return impl_->subIndexDim(e, i, codim);
     }
 
 
@@ -289,7 +421,13 @@ namespace Dune {
     template<class EntityType>
     bool contains (const EntityType& e) const
     {
-      return impl_->contains(e);
+      static constexpr int cc = EntityType::codimension;
+      if constexpr (cc == 0)
+        return impl_->contains0(e);
+      if constexpr (cc == 1)
+        return impl_->contains1(e);
+      if constexpr (cc == dim)
+        return impl_->containsDim(e);
     }
 
     std::unique_ptr<Interface> impl_;
@@ -362,6 +500,7 @@ namespace Dune {
     VirtualizedGridGlobalIdSet& operator=(const VirtualizedGridGlobalIdSet& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
 
@@ -451,20 +590,21 @@ namespace Dune {
     VirtualizedGridLocalIdSet& operator=(const VirtualizedGridLocalIdSet& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
 
     //! get id of an entity
     template<int cd>
-    IdType id (const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const
+    IdType id (const typename GridImp::Traits::template Codim<cd>::Entity& e) const
     {
       // Return id of the host entity
-      return impl_->id(e.impl().impl_);
+      return impl_->id(e);
     }
 
 
     //! get id of subEntity
-    IdType subId (const typename std::remove_const<GridImp>::type::template Codim<0>::Entity& e, int i, int codim) const
+    IdType subId (const typename GridImp::template Codim<0>::Entity& e, int i, int codim) const
     {
       // Return sub id of the host entity
       return impl_->subId(e.impl().impl_, i, codim);
