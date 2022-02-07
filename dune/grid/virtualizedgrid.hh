@@ -112,6 +112,7 @@ namespace Dune
   private:
     typedef typename Traits::template Codim<0>::EntitySeed EntitySeed0;
     typedef typename Traits::template Codim<1>::EntitySeed EntitySeed1;
+    typedef typename Traits::template Codim<dimension-1>::EntitySeed EntitySeedDimMinus1;
     typedef typename Traits::template Codim<dimension>::EntitySeed EntitySeedDim;
 
     // VIRTUALIZATION BEGIN
@@ -125,6 +126,8 @@ namespace Dune
       virtual typename Traits::template Codim<0>::LevelIterator lend (int level) const = 0;
       virtual typename Traits::template Codim<1>::LevelIterator lbegin1 (int level) const = 0;
       virtual typename Traits::template Codim<1>::LevelIterator lend1 (int level) const = 0;
+      virtual typename Traits::template Codim<dimension-1>::LevelIterator lbeginDimMinus1 (int level) const = 0;
+      virtual typename Traits::template Codim<dimension-1>::LevelIterator lendDimMinus1 (int level) const = 0;
       virtual typename Traits::template Codim<dimension>::LevelIterator lbeginDim (int level) const = 0;
       virtual typename Traits::template Codim<dimension>::LevelIterator lendDim (int level) const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lbeginGhost (int level) const = 0;
@@ -135,6 +138,8 @@ namespace Dune
       virtual typename Traits::template Codim<0>::LeafIterator leafend () const = 0;
       virtual typename Traits::template Codim<1>::LeafIterator leafbegin1 () const = 0;
       virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const = 0;
+      virtual typename Traits::template Codim<dimension-1>::LeafIterator leafbeginDimMinus1 () const = 0;
+      virtual typename Traits::template Codim<dimension-1>::LeafIterator leafendDimMinus1 () const = 0;
       virtual typename Traits::template Codim<dimension>::LeafIterator leafbeginDim () const = 0;
       virtual typename Traits::template Codim<dimension>::LeafIterator leafendDim () const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost() const = 0;
@@ -150,6 +155,7 @@ namespace Dune
       virtual const typename Traits::LeafIndexSet& leafIndexSet() const = 0;
       virtual typename Traits::template Codim<0>::Entity entity0(const EntitySeed0& seed) const = 0;
       virtual typename Traits::template Codim<1>::Entity entity1(const EntitySeed1& seed) const = 0;
+      virtual typename Traits::template Codim<dimension-1>::Entity entityDimMinus1(const EntitySeedDimMinus1& seed) const = 0;
       virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const = 0;
       virtual void globalRefine (int refCount) = 0;
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) = 0;
@@ -171,6 +177,7 @@ namespace Dune
       typedef typename VirtualizedGridEntity<0, dimension, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<0>::Entity> ImplEntity;
       typedef typename VirtualizedGridEntitySeed<0, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<0>::EntitySeed> ImplSeed0;
       typedef typename VirtualizedGridEntitySeed<1, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<1>::EntitySeed> ImplSeed1;
+      typedef typename VirtualizedGridEntitySeed<dimension-1, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<dimension-1>::EntitySeed> ImplSeedDimMinus1;
       typedef typename VirtualizedGridEntitySeed<dimension, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<dimension>::EntitySeed> ImplSeedDim;
 
       Implementation ( I& i )
@@ -217,6 +224,16 @@ namespace Dune
       virtual typename Traits::template Codim<1>::LevelIterator lend1 (int level) const override
       {
         return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( impl().template lend<1>(level) );
+      }
+
+      virtual typename Traits::template Codim<dimension-1>::LevelIterator lbeginDimMinus1 (int level) const override
+      {
+        return VirtualizedGridLevelIterator<dimension-1, All_Partition, const ThisType> ( impl().template lbegin<dimension-1>(level) );
+      }
+
+      virtual typename Traits::template Codim<dimension-1>::LevelIterator lendDimMinus1 (int level) const override
+      {
+        return VirtualizedGridLevelIterator<dimension-1, All_Partition, const ThisType> ( impl().template lend<dimension-1>(level) );
       }
 
       virtual typename Traits::template Codim<dimension>::LevelIterator lbeginDim (int level) const override
@@ -267,6 +284,16 @@ namespace Dune
       virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const override
       {
         return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( impl().template leafend<1>() );
+      }
+
+      virtual typename Traits::template Codim<dimension-1>::LeafIterator leafbeginDimMinus1 () const override
+      {
+        return VirtualizedGridLeafIterator<dimension-1, All_Partition, const ThisType> ( impl().template leafbegin<dimension-1>() );
+      }
+
+      virtual typename Traits::template Codim<dimension-1>::LeafIterator leafendDimMinus1 () const override
+      {
+        return VirtualizedGridLeafIterator<dimension-1, All_Partition, const ThisType> ( impl().template leafend<dimension-1>() );
       }
 
       virtual typename Traits::template Codim<dimension>::LeafIterator leafbeginDim () const override
@@ -326,13 +353,19 @@ namespace Dune
         ) );
       }
 
+      virtual typename Traits::template Codim<dimension-1>::Entity entityDimMinus1(const EntitySeedDimMinus1& seed) const override
+      {
+        return VirtualizedGridEntity<dimension-1, dimension, const ThisType>( impl().entity(
+          dynamic_cast<const ImplSeedDimMinus1*>(seed.impl().impl_.get())->impl()
+        ) );
+      }
+
       virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const override
       {
         return VirtualizedGridEntity<dimension, dimension, const ThisType>( impl().entity(
           dynamic_cast<const ImplSeedDim*>(seed.impl().impl_.get())->impl()
         ) );
       }
-      // TODO: other codims
 
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) override
@@ -438,6 +471,11 @@ namespace Dune
         if constexpr (PiType == All_Partition)
           return impl_->lbegin1(level);
       }
+      if constexpr (codim == dimension-1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lbeginDimMinus1(level);
+      }
       if constexpr (codim == dimension)
       {
         if constexpr (PiType == All_Partition)
@@ -462,6 +500,11 @@ namespace Dune
       {
         if constexpr (PiType == All_Partition)
           return impl_->lend1(level);
+      }
+      if constexpr (codim == dimension-1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lendDimMinus1(level);
       }
       if constexpr (codim == dimension)
       {
@@ -500,6 +543,11 @@ namespace Dune
         if constexpr (PiType == All_Partition)
           return impl_->leafbegin1();
       }
+      if constexpr (codim == dimension-1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafbeginDimMinus1();
+      }
       if constexpr (codim == dimension)
       {
         if constexpr (PiType == All_Partition)
@@ -522,6 +570,11 @@ namespace Dune
       {
         if constexpr (PiType == All_Partition)
           return impl_->leafend1();
+      }
+      if constexpr (codim == dimension-1)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafendDimMinus1();
       }
       if constexpr (codim == dimension)
       {
@@ -597,6 +650,8 @@ namespace Dune
         return impl_->entity0(seed);
       if constexpr (EntitySeed::codimension == 1)
         return impl_->entity1(seed);
+      if constexpr (EntitySeed::codimension == dimension-1)
+        return impl_->entityDimMinus1(seed);
       if constexpr (EntitySeed::codimension == dimension)
         return impl_->entityDim(seed);
     }

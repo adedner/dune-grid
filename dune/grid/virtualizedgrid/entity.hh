@@ -224,6 +224,7 @@ namespace Dune {
       virtual unsigned int subEntities (unsigned int cc) const = 0;
       virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const = 0;
       virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const = 0;
+      virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const = 0;
       virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0;
       virtual LevelIntersectionIterator ilevelbegin () const = 0;
       virtual LevelIntersectionIterator ilevelend () const = 0;
@@ -266,12 +267,15 @@ namespace Dune {
         return VirtualizedGridEntity<1, dim, GridImp>( impl().template subEntity<1>(i) );
       }
 
+      virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const override
+      {
+        return VirtualizedGridEntity<dim-1, dim, GridImp>( impl().template subEntity<dim-1>(i) );
+      }
+
       virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
       {
         return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
       }
-
-      // TODO: other codims
 
       virtual LevelIntersectionIterator ilevelbegin () const override
       {
@@ -390,6 +394,8 @@ namespace Dune {
         return impl_->subEntity0(i);
       if constexpr (cc == 1)
         return impl_->subEntity1(i);
+      if constexpr (cc == dim-1)
+        return impl_->subEntityDimMinus1(i);
       if constexpr (cc == dim)
         return impl_->subEntityDim(i);
     }
