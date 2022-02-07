@@ -139,7 +139,7 @@ namespace Dune {
     //! Create EntitySeed
     EntitySeed seed () const
     {
-      return EntitySeed(impl_->seed());
+      return impl_->seed();
     }
 
     //! level of this element
@@ -350,7 +350,7 @@ namespace Dune {
     //! Create EntitySeed
     EntitySeed seed () const
     {
-      return EntitySeed(impl_->seed());
+      return impl_->seed();
     }
 
     //! Level of this element
@@ -387,11 +387,11 @@ namespace Dune {
     template< int cc >
     typename GridImp::template Codim<cc>::Entity subEntity (int i) const {
       if constexpr (cc == 0)
-        return VirtualizedGridEntity<cc,dim,GridImp>(impl_->subEntity0(i));
+        return impl_->subEntity0(i);
       if constexpr (cc == 1)
-        return VirtualizedGridEntity<cc,dim,GridImp>(impl_->subEntity1(i));
+        return impl_->subEntity1(i);
       if constexpr (cc == dim)
-        return VirtualizedGridEntity<cc,dim,GridImp>(impl_->subEntityDim(i));
+        return impl_->subEntityDim(i);
     }
     // TODO Add further codims
 

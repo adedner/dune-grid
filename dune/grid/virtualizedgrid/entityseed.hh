@@ -25,7 +25,7 @@ namespace Dune {
     // Entity type of the grid
     typedef typename GridImp::Traits::template Codim<codim>::Entity Entity;
 
-  private:
+  public:
     // VIRTUALIZATION BEGIN
     struct Interface
     {
@@ -42,15 +42,13 @@ namespace Dune {
       virtual Implementation *clone() const override { return new Implementation( *this ); }
       virtual bool isValid() const override { return impl().isValid(); }
 
-    private:
       const auto &impl () const { return impl_; }
+    private:
       auto &impl () { return impl_; }
 
       const I impl_;
     };
     // VIRTUALIZATION END
-
-  public:
 
     enum {codimension = codim};
 
@@ -87,7 +85,7 @@ namespace Dune {
      */
     bool isValid() const
     {
-      return impl_->isValid();
+      return impl_ && impl_->isValid();
     }
 
     std::unique_ptr<Interface> impl_;

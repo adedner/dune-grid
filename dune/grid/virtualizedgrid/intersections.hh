@@ -128,14 +128,14 @@ namespace Dune {
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     Entity inside() const {
-      return VirtualizedGridEntity<0,dim,GridImp>(impl_->inside());
+      return impl_->inside();
     }
 
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     Entity outside() const {
-      return VirtualizedGridEntity<0,dim,GridImp>(impl_->outside());
+      return impl_->outside();
     }
 
 
@@ -339,14 +339,14 @@ namespace Dune {
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     Entity inside() const {
-      return VirtualizedGridEntity<0,dim,GridImp>(impl_->inside());
+      return impl_->inside();
     }
 
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     Entity outside() const {
-      return VirtualizedGridEntity<0,dim,GridImp>(impl_->outside());
+      return impl_->outside();
     }
 
 

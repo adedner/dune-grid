@@ -97,10 +97,6 @@ namespace Dune
     template<int codim_, int dim_, class GridImp_>
     friend class VirtualizedGridEntity;
 
-    typedef VirtualizedGridEntitySeed<0, ThisType> EntitySeed0;
-    typedef VirtualizedGridEntitySeed<1, ThisType> EntitySeed1;
-    typedef VirtualizedGridEntitySeed<dimension, ThisType> EntitySeedDim;
-
   public:
     //! type of the used GridFamily for this grid
     typedef VirtualizedGridFamily<dimension, dimensionworld, ct> GridFamily;
@@ -112,6 +108,10 @@ namespace Dune
     typedef ct ctype;
 
   private:
+    typedef typename Traits::template Codim<0>::EntitySeed EntitySeed0;
+    typedef typename Traits::template Codim<1>::EntitySeed EntitySeed1;
+    typedef typename Traits::template Codim<dimension>::EntitySeed EntitySeedDim;
+
     // VIRTUALIZATION BEGIN
     struct Interface
     {
@@ -162,10 +162,10 @@ namespace Dune
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename std::decay<I>::type::template Codim<0>::Entity ImplEntity;
-      typedef typename std::decay<I>::type::template Codim<0>::EntitySeed ImplSeed0;
-      typedef typename std::decay<I>::type::template Codim<1>::EntitySeed ImplSeed1;
-      typedef typename std::decay<I>::type::template Codim<dimension>::EntitySeed ImplSeedDim;
+      typedef typename VirtualizedGridEntity<0, dimension, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<0>::Entity> ImplEntity;
+      typedef typename VirtualizedGridEntitySeed<0, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<0>::EntitySeed> ImplSeed0;
+      typedef typename VirtualizedGridEntitySeed<1, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<1>::EntitySeed> ImplSeed1;
+      typedef typename VirtualizedGridEntitySeed<dimension, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<dimension>::EntitySeed> ImplSeedDim;
 
       Implementation ( I& i )
       : impl_( i ),
@@ -289,21 +289,21 @@ namespace Dune
       virtual typename Traits::template Codim<0>::Entity entity0(const EntitySeed0& seed) const override
       {
         return VirtualizedGridEntity<0, dimension, const ThisType>( impl().entity(
-          *dynamic_cast<ImplSeed0*>(&(*seed.impl_))
+          dynamic_cast<const ImplSeed0*>(seed.impl().impl_.get())->impl()
         ) );
       }
 
       virtual typename Traits::template Codim<1>::Entity entity1(const EntitySeed1& seed) const override
       {
         return VirtualizedGridEntity<1, dimension, const ThisType>( impl().entity(
-          *dynamic_cast<ImplSeed1*>(&(*seed.impl_))
+          dynamic_cast<const ImplSeed1*>(seed.impl().impl_.get())->impl()
         ) );
       }
 
       virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const override
       {
         return VirtualizedGridEntity<dimension, dimension, const ThisType>( impl().entity(
-          *dynamic_cast<ImplSeedDim*>(&(*seed.impl_))
+          dynamic_cast<const ImplSeedDim*>(seed.impl().impl_.get())->impl()
         ) );
       }
       // TODO: other codims
@@ -311,15 +311,17 @@ namespace Dune
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) override
       {
+        return false; // TODO
         return impl().mark(refCount,
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual int getMark(const typename Traits::template Codim<0>::Entity & e) const override
       {
+        return false; // TODO
         return impl().getMark(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity*>(e.impl().impl_.get())->impl()
         );
       }
 
