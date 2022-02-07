@@ -167,7 +167,7 @@ namespace Dune
       virtual unsigned int ghostSize(int codim) const = 0;
       virtual unsigned int overlapSize(int level, int codim) const = 0;
       virtual unsigned int ghostSize(int level, int codim) const = 0;
-      virtual const Communication<MPI_Comm>& comm () const = 0; // TODO other comms
+      virtual const Communication<MPI_Comm>& comm () const = 0;
     };
 
     template< class I >
@@ -205,7 +205,6 @@ namespace Dune
 
       virtual int maxLevel() const override { return impl().maxLevel(); }
 
-      // TODO: other codims and other partitions of Level/LeafIterator
       virtual typename Traits::template Codim<0>::LevelIterator lbegin (int level) const override
       {
         return VirtualizedGridLevelIterator<0, All_Partition, const ThisType> ( impl().template lbegin<0>(level) );
@@ -326,14 +325,17 @@ namespace Dune
       {
         return *dynamic_cast<const typename Traits::GlobalIdSet*>( &globalIdSet_ );
       }
+
       virtual const typename Traits::LocalIdSet& localIdSet() const override
       {
         return *dynamic_cast<const typename Traits::LocalIdSet*>( &localIdSet_ );
       }
+
       virtual const typename Traits::LevelIndexSet& levelIndexSet(int level) const override
       {
         return *dynamic_cast<const typename Traits::LevelIndexSet*>( levelIndexSets_[level] );
       }
+
       virtual const typename Traits::LeafIndexSet& leafIndexSet() const override
       {
         return *dynamic_cast<const typename Traits::LeafIndexSet*>( &leafIndexSet_ );
@@ -370,7 +372,6 @@ namespace Dune
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) override
       {
-        return false; // TODO
         return impl().mark(refCount,
           dynamic_cast<const ImplEntity*>(e.impl().impl_.get())->impl()
         );
@@ -378,7 +379,6 @@ namespace Dune
 
       virtual int getMark(const typename Traits::template Codim<0>::Entity & e) const override
       {
-        return false; // TODO
         return impl().getMark(
           dynamic_cast<const ImplEntity*>(e.impl().impl_.get())->impl()
         );
@@ -784,13 +784,13 @@ namespace Dune
     template<int dimension, int dimensionworld, typename ct, int codim>
     struct hasEntity<VirtualizedGrid<dimension, dimensionworld, ct>, codim>
     {
-      static const bool v = true; // TODO
+      static const bool v = true; // we assume this
     };
 
     template<int dimension, int dimensionworld, typename ct, int codim>
     struct hasEntityIterator<VirtualizedGrid<dimension, dimensionworld, ct>, codim>
     {
-      static const bool v = true; // TODO
+      static const bool v = true; // we assume this
     };
 
     /** \brief VirtualizedGrid can communicate
@@ -799,7 +799,7 @@ namespace Dune
     template<int dimension, int dimensionworld, typename ct, int codim>
     struct canCommunicate<VirtualizedGrid<dimension, dimensionworld, ct>, codim>
     {
-      static const bool v = true; // TODO
+      static const bool v = true; // we assume this
     };
 
     /** \brief has conforming level grids
@@ -808,7 +808,7 @@ namespace Dune
     template<int dimension, int dimensionworld, typename ct>
     struct isLevelwiseConforming<VirtualizedGrid<dimension, dimensionworld, ct>>
     {
-      static const bool v = true;
+      static const bool v = true; // we assume this
     };
 
     /** \brief has conforming leaf grids
@@ -817,7 +817,7 @@ namespace Dune
     template<int dimension, int dimensionworld, typename ct>
     struct isLeafwiseConforming<VirtualizedGrid<dimension, dimensionworld, ct>>
     {
-      static const bool v = true;
+      static const bool v = true; // we assume this
     };
   } // end namespace Capabilities
 

@@ -53,13 +53,18 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
+
       virtual bool equals( const VirtualizedGridLeafIntersectionIterator<GridImp>& i ) const override
       {
         return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
       }
+
       virtual void increment() override { ++impl(); }
-      virtual Intersection dereference() const override {
-        return VirtualizedGridLeafIntersection<GridImp> ( *impl() ); }
+
+      virtual Intersection dereference() const override
+      {
+        return VirtualizedGridLeafIntersection<GridImp> ( *impl() );
+      }
 
     private:
       const auto &impl () const { return impl_; }
@@ -145,13 +150,18 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
+
       virtual bool equals( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) const override
       {
         return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
       }
+
       virtual void increment() override { ++impl(); }
-      virtual Intersection dereference() const override {
-        return VirtualizedGridLevelIntersection<GridImp> ( *impl() ); }
+
+      virtual Intersection dereference() const override
+      {
+        return VirtualizedGridLevelIntersection<GridImp> ( *impl() );
+      }
 
     private:
       const auto &impl () const { return impl_; }

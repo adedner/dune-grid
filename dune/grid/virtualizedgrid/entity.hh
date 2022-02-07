@@ -243,18 +243,25 @@ namespace Dune {
     {
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
+
       virtual bool equals(const VirtualizedGridEntity<0,dim,GridImp>& other) const override {
         return impl() == dynamic_cast<Implementation<I>*>(&(*other.impl_))->impl();
       }
+
       virtual bool hasFather () const override { return impl().hasFather(); }
+
       virtual EntitySeed seed () const override {
         return VirtualizedGridEntitySeed<0, GridImp>( impl().seed() );
       }
+
       virtual int level () const override { return impl().level(); }
+
       virtual PartitionType partitionType () const override { return impl().partitionType(); }
+
       virtual Geometry geometry () const override {
         return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometry() ) );
       }
+
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
 
       virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
@@ -281,31 +288,39 @@ namespace Dune {
       {
         return VirtualizedGridLevelIntersectionIterator<GridImp>( impl().impl().ilevelbegin() );
       }
+
       virtual LevelIntersectionIterator ilevelend () const override
       {
         return VirtualizedGridLevelIntersectionIterator<GridImp>( impl().impl().ilevelend() );
       }
+
       virtual LeafIntersectionIterator ileafbegin () const override
       {
         return VirtualizedGridLeafIntersectionIterator<GridImp>( impl().impl().ileafbegin() );
       }
+
       virtual LeafIntersectionIterator ileafend () const override
       {
         return VirtualizedGridLeafIntersectionIterator<GridImp>( impl().impl().ileafend() );
       }
+
       virtual bool isLeaf() const override { return impl().isLeaf(); }
+
       virtual typename GridImp::template Codim<0>::Entity father () const override
       {
         return VirtualizedGridEntity<0, dim, GridImp>(impl().father());
       }
+
       virtual LocalGeometry geometryInFather () const override
       {
         return LocalGeometry( VirtualizedGridGeometry<dim, dim, GridImp>(impl().geometryInFather()) );
       }
+
       virtual HierarchicIterator hbegin (int maxLevel) const override
       {
         return VirtualizedGridHierarchicIterator<GridImp>(impl().hbegin(maxLevel));
       }
+
       virtual HierarchicIterator hend (int maxLevel) const override
       {
         return VirtualizedGridHierarchicIterator<GridImp>(impl().hend(maxLevel));

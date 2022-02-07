@@ -101,12 +101,10 @@ namespace Dune {
       return impl_->corners();
     }
 
-
     //! access to coordinates of corners. Index is the number of the corner
     const FieldVector<ctype, coorddim> corner (int i) const {
       return impl_->corner(i);
     }
-
 
     /** \brief Maps a local coordinate within reference element to
      * global coordinate in element  */
@@ -127,19 +125,13 @@ namespace Dune {
       return impl_->local(global);
     }
 
-
-    /**
-     */
     ctype integrationElement (const FieldVector<ctype, mydim>& local) const {
       return impl_->integrationElement(local);
     }
-
-
     //! The Jacobian matrix of the mapping from the reference element to this element
     JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const {
       return impl_->jacobianInverseTransposed(local);
     }
-
 
     std::unique_ptr<Interface> impl_;
 

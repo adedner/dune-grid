@@ -44,11 +44,14 @@ namespace Dune {
     {
       Implementation ( I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
+
       virtual void increment() override { ++impl(); }
+
       virtual Entity dereference() const override
       {
         return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp> ( *impl() );
       }
+
       virtual bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
       {
         return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
