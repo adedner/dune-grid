@@ -224,7 +224,7 @@ namespace Dune {
       virtual unsigned int subEntities (unsigned int cc) const = 0;
       virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const = 0;
       virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const = 0;
-      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0; // TODO: other codims
+      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0;
       virtual LevelIntersectionIterator ilevelbegin () const = 0;
       virtual LevelIntersectionIterator ilevelend () const = 0;
       virtual LeafIntersectionIterator ileafbegin () const = 0;
@@ -393,7 +393,6 @@ namespace Dune {
       if constexpr (cc == dim)
         return impl_->subEntityDim(i);
     }
-    // TODO Add further codims
 
     //! First level intersection
     VirtualizedGridLevelIntersectionIterator<GridImp> ilevelbegin () const {

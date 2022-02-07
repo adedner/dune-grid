@@ -9,6 +9,7 @@
 
 #include <string>
 #include <map>
+#include <any>
 
 #include <dune/common/parallel/communication.hh>
 #include <dune/grid/common/capabilities.hh>
@@ -18,6 +19,7 @@
 #include "virtualizedgrid/geometry.hh"
 #include "virtualizedgrid/entity.hh"
 #include "virtualizedgrid/entityseed.hh"
+#include "virtualizedgrid/idtype.hh"
 #include "virtualizedgrid/intersectioniterator.hh"
 #include "virtualizedgrid/leveliterator.hh"
 #include "virtualizedgrid/leafiterator.hh"
@@ -52,9 +54,9 @@ namespace Dune
         VirtualizedGridLevelIndexSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
         VirtualizedGridLeafIndexSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
         VirtualizedGridGlobalIdSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
-        std::size_t, // TODO: IdType
+        VirtualizedGridIdType,
         VirtualizedGridLocalIdSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
-        std::size_t, // TODO: LocalIdType
+        VirtualizedGridIdType,
         Communication<No_Comm>,
         DefaultLevelGridViewTraits,
         DefaultLeafGridViewTraits,
@@ -123,6 +125,8 @@ namespace Dune
       virtual typename Traits::template Codim<0>::LevelIterator lend (int level) const = 0;
       virtual typename Traits::template Codim<1>::LevelIterator lbegin1 (int level) const = 0;
       virtual typename Traits::template Codim<1>::LevelIterator lend1 (int level) const = 0;
+      virtual typename Traits::template Codim<dimension>::LevelIterator lbeginDim (int level) const = 0;
+      virtual typename Traits::template Codim<dimension>::LevelIterator lendDim (int level) const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lbeginGhost (int level) const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lendGhost (int level) const = 0;
       virtual typename Traits::template Codim<0>::template Partition<InteriorBorder_Partition>::LevelIterator lbeginInteriorBorder (int level) const = 0;
@@ -131,6 +135,8 @@ namespace Dune
       virtual typename Traits::template Codim<0>::LeafIterator leafend () const = 0;
       virtual typename Traits::template Codim<1>::LeafIterator leafbegin1 () const = 0;
       virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const = 0;
+      virtual typename Traits::template Codim<dimension>::LeafIterator leafbeginDim () const = 0;
+      virtual typename Traits::template Codim<dimension>::LeafIterator leafendDim () const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost() const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafendGhost() const = 0;
       virtual int size (int level, int codim) const = 0;
@@ -213,6 +219,16 @@ namespace Dune
         return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( impl().template lend<1>(level) );
       }
 
+      virtual typename Traits::template Codim<dimension>::LevelIterator lbeginDim (int level) const override
+      {
+        return VirtualizedGridLevelIterator<dimension, All_Partition, const ThisType> ( impl().template lbegin<dimension>(level) );
+      }
+
+      virtual typename Traits::template Codim<dimension>::LevelIterator lendDim (int level) const override
+      {
+        return VirtualizedGridLevelIterator<dimension, All_Partition, const ThisType> ( impl().template lend<dimension>(level) );
+      }
+
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lbeginGhost (int level) const override
       {
         return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( impl().template lbegin<0, Ghost_Partition>(level) );
@@ -251,6 +267,16 @@ namespace Dune
       virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const override
       {
         return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( impl().template leafend<1>() );
+      }
+
+      virtual typename Traits::template Codim<dimension>::LeafIterator leafbeginDim () const override
+      {
+        return VirtualizedGridLeafIterator<dimension, All_Partition, const ThisType> ( impl().template leafbegin<dimension>() );
+      }
+
+      virtual typename Traits::template Codim<dimension>::LeafIterator leafendDim () const override
+      {
+        return VirtualizedGridLeafIterator<dimension, All_Partition, const ThisType> ( impl().template leafend<dimension>() );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost () const override
@@ -412,6 +438,11 @@ namespace Dune
         if constexpr (PiType == All_Partition)
           return impl_->lbegin1(level);
       }
+      if constexpr (codim == dimension)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lbeginDim(level);
+      }
     }
 
 
@@ -431,6 +462,11 @@ namespace Dune
       {
         if constexpr (PiType == All_Partition)
           return impl_->lend1(level);
+      }
+      if constexpr (codim == dimension)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->lendDim(level);
       }
     }
 
@@ -464,6 +500,11 @@ namespace Dune
         if constexpr (PiType == All_Partition)
           return impl_->leafbegin1();
       }
+      if constexpr (codim == dimension)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafbeginDim();
+      }
     }
 
 
@@ -481,6 +522,11 @@ namespace Dune
       {
         if constexpr (PiType == All_Partition)
           return impl_->leafend1();
+      }
+      if constexpr (codim == dimension)
+      {
+        if constexpr (PiType == All_Partition)
+          return impl_->leafendDim();
       }
     }
 

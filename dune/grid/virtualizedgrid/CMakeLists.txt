@@ -3,6 +3,7 @@ set(HEADERS
   entityseed.hh
   geometry.hh
   hierarchiciterator.hh
+  idtype.hh
   indexsets.hh
   intersectioniterator.hh
   intersections.hh
