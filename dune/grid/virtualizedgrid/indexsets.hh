@@ -48,9 +48,9 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename I::template Codim<0>::Entity ImplEntity0;
-      typedef typename I::template Codim<1>::Entity ImplEntity1;
-      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
+      typedef typename VirtualizedGridEntity<0, dim, GridImp>::template Implementation<typename I::template Codim<0>::Entity> ImplEntity0;
+      typedef typename VirtualizedGridEntity<1, dim, GridImp>::template Implementation<typename I::template Codim<1>::Entity> ImplEntity1;
+      typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<typename I::template Codim<dim>::Entity> ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
@@ -58,21 +58,21 @@ namespace Dune {
       virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual int index1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity1*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual int indexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl()
         );
       }
       // TODO: other codims
@@ -80,21 +80,24 @@ namespace Dune {
       virtual int subIndex0 (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
       {
         return impl().template subIndex<0>(
-          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl(),
+          i, codim
         );
       }
 
       virtual int subIndex1 (const typename GridImp::Traits::template Codim<1>::Entity& e, int i, int codim) const override
       {
         return impl().template subIndex<1>(
-          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntity1*>(e.impl().impl_.get())->impl(),
+          i, codim
         );
       }
 
       virtual int subIndexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e, int i, int codim) const override
       {
         return impl().template subIndex<dim>(
-          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl(),
+          i, codim
         );
       }
       // TODO: other codims
@@ -106,21 +109,21 @@ namespace Dune {
       virtual bool contains0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().contains(
-          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual bool contains1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
       {
         return impl().contains(
-          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity1*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual bool containsDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
       {
         return impl().contains(
-          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl()
         );
       }
       // TODO: other codims
@@ -254,9 +257,9 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename I::template Codim<0>::Entity ImplEntity0;
-      typedef typename I::template Codim<1>::Entity ImplEntity1;
-      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
+      typedef typename VirtualizedGridEntity<0, dim, GridImp>::template Implementation<typename I::template Codim<0>::Entity> ImplEntity0;
+      typedef typename VirtualizedGridEntity<1, dim, GridImp>::template Implementation<typename I::template Codim<1>::Entity> ImplEntity1;
+      typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<typename I::template Codim<dim>::Entity> ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
@@ -264,21 +267,21 @@ namespace Dune {
       virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual int index1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
       {
         return impl().index(
-          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity1*>(e.impl().impl_.get())->impl()
         );
       }
 
       virtual int indexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
       {
         return impl().template index(
-          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl()
         );
       }
       // TODO: other codims
@@ -286,21 +289,24 @@ namespace Dune {
       virtual int subIndex0 (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
       {
         return impl().template subIndex<0>(
-          *dynamic_cast<ImplEntity0*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl(),
+          i, codim
         );
       }
 
       virtual int subIndex1 (const typename GridImp::Traits::template Codim<1>::Entity& e, int i, int codim) const override
       {
         return impl().template subIndex<1>(
-          *dynamic_cast<ImplEntity1*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntity1*>(e.impl().impl_.get())->impl(),
+          i, codim
         );
       }
 
       virtual int subIndexDim (const typename GridImp::Traits::template Codim<dim>::Entity& e, int i, int codim) const override
       {
         return impl().template subIndex<dim>(
-          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl(),
+          i, codim
         );
       }
       // TODO: other codims
@@ -311,17 +317,23 @@ namespace Dune {
 
       virtual bool contains0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
-        return impl().contains(*dynamic_cast<ImplEntity0*>(&(*e.impl().impl_)));
+        return impl().contains(
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl()
+        );
       }
 
       virtual bool contains1 (const typename GridImp::Traits::template Codim<1>::Entity& e) const override
       {
-        return impl().contains(*dynamic_cast<ImplEntity1*>(&(*e.impl().impl_)));
+        return impl().contains(
+          dynamic_cast<const ImplEntity1*>(e.impl().impl_.get())->impl()
+        );
       }
 
       virtual bool containsDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
       {
-        return impl().contains(*dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_)));
+        return impl().contains(
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl()
+        );
       }
       // TODO: other codims
 
@@ -458,22 +470,22 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename I::template Codim<0>::Entity ImplEntity;
-      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
+      typedef typename VirtualizedGridEntity<0, dim, GridImp>::template Implementation<typename I::template Codim<0>::Entity> ImplEntity0;
+      typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<typename I::template Codim<dim>::Entity> ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
       virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().template id<0>(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl()
         ).touint();
       }
 
       virtual IdType idDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
       {
         return impl().template id<dim>(
-          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl()
         ).touint();
       }
       // TODO: other codims
@@ -481,7 +493,8 @@ namespace Dune {
       virtual IdType subId (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
       {
         return impl().subId(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl(),
+          i, codim
         ).touint();
       }
 
@@ -563,22 +576,22 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename I::template Codim<0>::Entity ImplEntity;
-      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
+      typedef typename VirtualizedGridEntity<0, dim, GridImp>::template Implementation<typename I::template Codim<0>::Entity> ImplEntity0;
+      typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<typename I::template Codim<dim>::Entity> ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
       virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
         return impl().template id<0>(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl()
         ).touint();
       }
 
       virtual IdType idDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
       {
         return impl().template id<dim>(
-          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+          dynamic_cast<const ImplEntityDim*>(e.impl().impl_.get())->impl()
         ).touint();
       }
 
@@ -588,7 +601,8 @@ namespace Dune {
       virtual IdType subId (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
       {
         return impl().subId(
-          *dynamic_cast<ImplEntity*>(&(*e.impl().impl_)), i, codim
+          dynamic_cast<const ImplEntity0*>(e.impl().impl_.get())->impl(),
+          i, codim
         ).touint();
       }
 

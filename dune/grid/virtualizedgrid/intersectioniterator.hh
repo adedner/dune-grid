@@ -65,7 +65,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      I& impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -157,7 +157,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      I& impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 

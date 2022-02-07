@@ -95,7 +95,7 @@ namespace Dune {
 
     private:
       const auto &impl () const { return impl_; }
-      const I& impl_;
+      const I impl_;
     };
     // VIRTUALIZATION END
 
@@ -305,7 +305,7 @@ namespace Dune {
 
     private:
       const auto &impl () const { return impl_; }
-      const I& impl_;
+      const I impl_;
     };
     // VIRTUALIZATION END
 

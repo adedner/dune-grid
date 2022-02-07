@@ -99,11 +99,11 @@ namespace Dune {
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
       virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-codim, dim, GridImp>( impl().geometry() ) ); }
 
-    private:
       const auto &impl () const { return impl_; }
+    private:
       auto &impl () { return impl_; }
 
-      const I& impl_;
+      const I impl_;
     };
     // VIRTUALIZATION END
 
@@ -210,6 +210,7 @@ namespace Dune {
     typedef typename GridImp::ctype ctype;
 
     // VIRTUALIZATION BEGIN
+  public:
     struct Interface
     {
       virtual ~Interface () = default;
@@ -305,15 +306,14 @@ namespace Dune {
       {
         return VirtualizedGridHierarchicIterator<GridImp>(impl().hend(maxLevel));
       }
-    private:
+
       const auto &impl () const { return impl_; }
+    private:
       auto &impl () { return impl_; }
 
-      const I& impl_;
+      const I impl_;
     };
     // VIRTUALIZATION END
-
-  public:
 
     VirtualizedGridEntity()
     {}
