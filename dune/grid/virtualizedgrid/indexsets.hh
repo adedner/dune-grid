@@ -228,10 +228,6 @@ namespace Dune {
   public:
     typedef typename IndexSet<GridImp, VirtualizedGridLeafIndexSet<GridImp>>::Types Types;
 
-    /*
-     * We use the remove_const to extract the Type from the mutable class,
-     * because the const class is not instantiated yet.
-     */
     enum {dim = GridImp::dimension};
 
   private:
@@ -445,13 +441,16 @@ namespace Dune {
     //! define the type used for persistent indices
     typedef typename GridImp::Traits::GlobalIdSet::IdType IdType;
 
+    enum {dim = GridImp::dimension};
+
   private:
     // VIRTUALIZATION BEGIN
     struct Interface
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0; // TODO: other codims
+      virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual IdType idDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const = 0;
       virtual IdType subId (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const = 0;
     };
 
@@ -460,6 +459,7 @@ namespace Dune {
       : public Interface
     {
       typedef typename I::template Codim<0>::Entity ImplEntity;
+      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
@@ -467,13 +467,22 @@ namespace Dune {
       {
         return impl().template id<0>(
           *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
-        );
-      } // TODO: other codims
+        ).touint();
+      }
+
+      virtual IdType idDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
+      {
+        return impl().template id<dim>(
+          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+        ).touint();
+      }
+      // TODO: other codims
+
       virtual IdType subId (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
       {
         return impl().subId(
           *dynamic_cast<ImplEntity*>(&(*e.impl().impl_)), i, codim
-        );
+        ).touint();
       }
 
     private:
@@ -508,8 +517,10 @@ namespace Dune {
     template<int cd>
     IdType id (const typename GridImp::Traits::template Codim<cd>::Entity& e) const
     {
-      // Return id of the host entity
-      return impl_->id(e);
+      if constexpr (cd == 0)
+        return impl_->id(e);
+      if constexpr (cd == dim)
+        return impl_->idDim(e);
     }
 
 
@@ -535,13 +546,16 @@ namespace Dune {
     //! define the type used for persistent local ids
     typedef typename GridImp::Traits::LocalIdSet::IdType IdType;
 
+    enum {dim = GridImp::dimension};
+
   private:
     // VIRTUALIZATION BEGIN
     struct Interface
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0; // TODO: other codims
+      virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const = 0;
+      virtual IdType idDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const = 0;
       virtual IdType subId (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const = 0;
     };
 
@@ -550,6 +564,7 @@ namespace Dune {
       : public Interface
     {
       typedef typename I::template Codim<0>::Entity ImplEntity;
+      typedef typename I::template Codim<dim>::Entity ImplEntityDim;
 
       Implementation ( const I& i ) : impl_( i ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
@@ -557,13 +572,24 @@ namespace Dune {
       {
         return impl().template id<0>(
           *dynamic_cast<ImplEntity*>(&(*e.impl().impl_))
-        );
-      } // TODO: other codims
+        ).touint();
+      }
+
+      virtual IdType idDim (const typename GridImp::Traits::template Codim<dim>::Entity& e) const override
+      {
+        return impl().template id<dim>(
+          *dynamic_cast<ImplEntityDim*>(&(*e.impl().impl_))
+        ).touint();
+      }
+
+      // TODO: other codims
+      // TODO: remove the .touint()!
+
       virtual IdType subId (const typename GridImp::Traits::template Codim<0>::Entity& e, int i, int codim) const override
       {
         return impl().subId(
           *dynamic_cast<ImplEntity*>(&(*e.impl().impl_)), i, codim
-        );
+        ).touint();
       }
 
     private:
@@ -598,8 +624,10 @@ namespace Dune {
     template<int cd>
     IdType id (const typename GridImp::Traits::template Codim<cd>::Entity& e) const
     {
-      // Return id of the host entity
-      return impl_->id(e);
+      if constexpr (cd == 0)
+        return impl_->id(e);
+      if constexpr (cd == dim)
+        return impl_->idDim(e);
     }
 
 
@@ -607,7 +635,7 @@ namespace Dune {
     IdType subId (const typename GridImp::template Codim<0>::Entity& e, int i, int codim) const
     {
       // Return sub id of the host entity
-      return impl_->subId(e.impl().impl_, i, codim);
+      return impl_->subId(e, i, codim);
     }
 
 

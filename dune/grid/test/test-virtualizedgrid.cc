@@ -12,11 +12,19 @@ int main(int argc, char** argv)
   Dune::MPIHelper::instance(argc, argv);
 
   {
-    Dune::YaspGrid<2> yaspgrid({1., 1.}, {6, 6});
+    Dune::YaspGrid<1> yaspgrid({1.}, {32});
 
-    Dune::VirtualizedGrid<2, 2> vgrid( yaspgrid );
-    gridcheck(vgrid);
+    Dune::VirtualizedGrid<1, 1> vgrid( yaspgrid );
+    // gridcheck(vgrid);
 
+    auto b = vgrid.template leafbegin<0>();
+    auto e = vgrid.template leafend<0>();
+    std::cout << b->geometry().center() << std::endl;
+    // std::cout << e->geometry().center() << std::endl;
+
+    // for( const auto& v : vertices(vgrid.levelGridView(0)) )
+    //   std::cout << v.geometry().center() << std::endl;
+    //
     // for( const auto& e : elements(vgrid.leafGridView()) )
     //   std::cout << e.geometry().center() << std::endl;
   }
