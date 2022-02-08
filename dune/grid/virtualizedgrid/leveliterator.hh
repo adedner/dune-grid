@@ -12,7 +12,7 @@
 namespace Dune {
 
   /** \brief Iterator over all entities of a given codimension and level of a grid.
-   * \ingroup VirtualizedGrid
+   *  \ingroup VirtualizedGrid
    */
   template<int codim, PartitionIteratorType pitype, class GridImp>
   class VirtualizedGridLevelIterator
@@ -43,7 +43,7 @@ namespace Dune {
 
       virtual Entity dereference() const override
       {
-        return VirtualizedGridEntity<codim, GridImp::dimension, GridImp> ( *impl() );
+        return VirtualizedGridEntity<codim, GridImp::dimension, GridImp> ( std::move( *impl() ) );
       }
 
       virtual bool equals( const VirtualizedGridLevelIterator& i ) const override

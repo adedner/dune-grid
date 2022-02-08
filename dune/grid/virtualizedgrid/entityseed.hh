@@ -43,9 +43,9 @@ namespace Dune {
       virtual bool isValid() const override { return impl().isValid(); }
 
       const auto &impl () const { return impl_; }
-    private:
       auto &impl () { return impl_; }
 
+    private:
       const I impl_;
     };
     // VIRTUALIZATION END

@@ -49,7 +49,7 @@ namespace Dune {
 
       virtual Entity dereference() const override
       {
-        return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp> ( *impl() );
+        return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp> ( std::move(*impl()) );
       }
 
       virtual bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
@@ -91,7 +91,7 @@ namespace Dune {
 
     //! dereferencing
     Entity dereference() const {
-      return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp>( impl_->dereference() );
+      return impl_->dereference();
     }
 
     //! equality

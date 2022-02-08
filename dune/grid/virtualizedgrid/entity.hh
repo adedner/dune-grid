@@ -46,7 +46,7 @@ namespace Dune {
    */
   template<int codim, int dim, class GridImp>
   class VirtualizedGridEntity :
-    public EntityDefaultImplementation <codim,dim,GridImp,VirtualizedGridEntity>
+    public EntityDefaultImplementation <codim, dim, GridImp, VirtualizedGridEntity>
   {
 
     template <class GridImp_>
@@ -87,22 +87,35 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( const I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+
       virtual Implementation *clone() const override { return new Implementation( *this ); }
+
       virtual bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const override
       {
         return impl() == dynamic_cast<Implementation<I>*>(&(*other.impl_))->impl();
       }
-      virtual EntitySeed seed () const override { return VirtualizedGridEntitySeed<codim, GridImp>( impl().seed() ); }
+
+      virtual EntitySeed seed () const override
+      {
+        return VirtualizedGridEntitySeed<codim, GridImp>( std::move( impl().seed() ) );
+      }
+
       virtual int level () const override { return impl().level(); }
+
       virtual PartitionType partitionType () const override { return impl().partitionType(); }
+
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-codim, dim, GridImp>( impl().geometry() ) ); }
+
+      virtual Geometry geometry () const override
+      {
+        return Geometry( VirtualizedGridGeometry<dim-codim, dim, GridImp>( std::move( impl().geometry() ) ) );
+      }
 
       const auto &impl () const { return impl_; }
-    private:
       auto &impl () { return impl_; }
 
+    private:
       const I impl_;
     };
     // VIRTUALIZATION END
@@ -113,8 +126,8 @@ namespace Dune {
     {}
 
     template< class ImplGridEntity >
-    VirtualizedGridEntity(const ImplGridEntity& implEntity)
-    : impl_( new Implementation<ImplGridEntity>(implEntity) )
+    VirtualizedGridEntity(ImplGridEntity&& implEntity)
+    : impl_( new Implementation<const ImplGridEntity>( std::move( implEntity ) ) )
     {}
 
     VirtualizedGridEntity(const VirtualizedGridEntity& other)
@@ -185,8 +198,8 @@ namespace Dune {
    * For example, Entities of codimension 0  allow to visit all neighbors.
    */
   template<int dim, class GridImp>
-  class VirtualizedGridEntity<0,dim,GridImp> :
-    public EntityDefaultImplementation<0,dim,GridImp, VirtualizedGridEntity>
+  class VirtualizedGridEntity<0, dim, GridImp> :
+    public EntityDefaultImplementation<0, dim, GridImp, VirtualizedGridEntity>
   {
   public:
     typedef typename GridImp::template Codim<0>::Geometry Geometry;
@@ -194,13 +207,13 @@ namespace Dune {
     typedef typename GridImp::template Codim<0>::LocalGeometry LocalGeometry;
 
     //! The Iterator over intersections on this level
-    typedef VirtualizedGridLevelIntersectionIterator<GridImp> LevelIntersectionIterator;
+    typedef VirtualizedGridLevelIntersectionIterator<const GridImp> LevelIntersectionIterator;
 
     //! The Iterator over intersections on the leaf level
-    typedef VirtualizedGridLeafIntersectionIterator<GridImp> LeafIntersectionIterator;
+    typedef VirtualizedGridLeafIntersectionIterator<const GridImp> LeafIntersectionIterator;
 
     //! Iterator over descendants of the entity
-    typedef VirtualizedGridHierarchicIterator<GridImp> HierarchicIterator;
+    typedef VirtualizedGridHierarchicIterator<const GridImp> HierarchicIterator;
 
     //! The type of the EntitySeed interface class
     typedef typename GridImp::template Codim<0>::EntitySeed EntitySeed;
@@ -215,7 +228,7 @@ namespace Dune {
     {
       virtual ~Interface () = default;
       virtual Interface *clone () const = 0;
-      virtual bool equals(const VirtualizedGridEntity<0,dim,GridImp>& other) const = 0;
+      virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const = 0;
       virtual bool hasFather () const = 0;
       virtual EntitySeed seed () const = 0;
       virtual int level () const = 0;
@@ -241,67 +254,70 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( const I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual bool equals(const VirtualizedGridEntity<0,dim,GridImp>& other) const override {
+      virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const override {
         return impl() == dynamic_cast<Implementation<I>*>(&(*other.impl_))->impl();
       }
 
       virtual bool hasFather () const override { return impl().hasFather(); }
 
-      virtual EntitySeed seed () const override {
-        return VirtualizedGridEntitySeed<0, GridImp>( impl().seed() );
+      virtual EntitySeed seed () const override
+      {
+        return VirtualizedGridEntitySeed<0, GridImp>( std::move(impl().seed()) );
       }
 
       virtual int level () const override { return impl().level(); }
 
       virtual PartitionType partitionType () const override { return impl().partitionType(); }
 
-      virtual Geometry geometry () const override {
-        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometry() ) );
+      virtual Geometry geometry () const override
+      {
+        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( std::move(impl().geometry() )) );
       }
 
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
 
       virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
       {
-        return VirtualizedGridEntity<0, dim, GridImp>( impl().template subEntity<0>(i) );
+        return VirtualizedGridEntity<0, dim, GridImp>( std::move(impl().template subEntity<0>(i)) );
       }
 
       virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const override
       {
-        return VirtualizedGridEntity<1, dim, GridImp>( impl().template subEntity<1>(i) );
+        return VirtualizedGridEntity<1, dim, GridImp>( std::move(impl().template subEntity<1>(i)) );
       }
 
       virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const override
       {
-        return VirtualizedGridEntity<dim-1, dim, GridImp>( impl().template subEntity<dim-1>(i) );
+        return VirtualizedGridEntity<dim-1, dim, GridImp>( std::move(impl().template subEntity<dim-1>(i)) );
       }
 
       virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
       {
-        return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
+        return VirtualizedGridEntity<dim, dim, GridImp>( std::move(impl().template subEntity<dim>(i)) );
       }
 
       virtual LevelIntersectionIterator ilevelbegin () const override
       {
-        return VirtualizedGridLevelIntersectionIterator<GridImp>( impl().impl().ilevelbegin() );
+        return VirtualizedGridLevelIntersectionIterator<const GridImp>( impl().impl().ilevelbegin() );
       }
 
       virtual LevelIntersectionIterator ilevelend () const override
       {
-        return VirtualizedGridLevelIntersectionIterator<GridImp>( impl().impl().ilevelend() );
+        return VirtualizedGridLevelIntersectionIterator<const GridImp>( impl().impl().ilevelend() );
       }
 
       virtual LeafIntersectionIterator ileafbegin () const override
       {
-        return VirtualizedGridLeafIntersectionIterator<GridImp>( impl().impl().ileafbegin() );
+        return VirtualizedGridLeafIntersectionIterator<const GridImp>( impl().impl().ileafbegin() );
       }
 
       virtual LeafIntersectionIterator ileafend () const override
       {
-        return VirtualizedGridLeafIntersectionIterator<GridImp>( impl().impl().ileafend() );
+        return VirtualizedGridLeafIntersectionIterator<const GridImp>( impl().impl().ileafend() );
       }
 
       virtual bool isLeaf() const override { return impl().isLeaf(); }
@@ -318,18 +334,18 @@ namespace Dune {
 
       virtual HierarchicIterator hbegin (int maxLevel) const override
       {
-        return VirtualizedGridHierarchicIterator<GridImp>(impl().hbegin(maxLevel));
+        return VirtualizedGridHierarchicIterator<const GridImp>(impl().hbegin(maxLevel));
       }
 
       virtual HierarchicIterator hend (int maxLevel) const override
       {
-        return VirtualizedGridHierarchicIterator<GridImp>(impl().hend(maxLevel));
+        return VirtualizedGridHierarchicIterator<const GridImp>(impl().hend(maxLevel));
       }
 
       const auto &impl () const { return impl_; }
-    private:
       auto &impl () { return impl_; }
 
+    private:
       const I impl_;
     };
     // VIRTUALIZATION END
@@ -338,8 +354,8 @@ namespace Dune {
     {}
 
     template< class ImplGridEntity >
-    VirtualizedGridEntity(const ImplGridEntity& implEntity)
-    : impl_( new Implementation<ImplGridEntity>(implEntity) )
+    VirtualizedGridEntity(ImplGridEntity&& implEntity)
+    : impl_( new Implementation<const ImplGridEntity>( std::move( implEntity ) ) )
     {}
 
     VirtualizedGridEntity(const VirtualizedGridEntity& other)
@@ -416,29 +432,29 @@ namespace Dune {
     }
 
     //! First level intersection
-    VirtualizedGridLevelIntersectionIterator<GridImp> ilevelbegin () const {
-      return VirtualizedGridLevelIntersectionIterator<GridImp>(
+    VirtualizedGridLevelIntersectionIterator<const GridImp> ilevelbegin () const {
+      return VirtualizedGridLevelIntersectionIterator<const GridImp>(
         impl_->ilevelbegin());
     }
 
 
     //! Reference to one past the last neighbor
-    VirtualizedGridLevelIntersectionIterator<GridImp> ilevelend () const {
-      return VirtualizedGridLevelIntersectionIterator<GridImp>(
+    VirtualizedGridLevelIntersectionIterator<const GridImp> ilevelend () const {
+      return VirtualizedGridLevelIntersectionIterator<const GridImp>(
         impl_->ilevelend());
     }
 
 
     //! First leaf intersection
-    VirtualizedGridLeafIntersectionIterator<GridImp> ileafbegin () const {
-      return VirtualizedGridLeafIntersectionIterator<GridImp>(
+    VirtualizedGridLeafIntersectionIterator<const GridImp> ileafbegin () const {
+      return VirtualizedGridLeafIntersectionIterator<const GridImp>(
         impl_->ileafbegin());
     }
 
 
     //! Reference to one past the last leaf intersection
-    VirtualizedGridLeafIntersectionIterator<GridImp> ileafend () const {
-      return VirtualizedGridLeafIntersectionIterator<GridImp>(
+    VirtualizedGridLeafIntersectionIterator<const GridImp> ileafend () const {
+      return VirtualizedGridLeafIntersectionIterator<const GridImp>(
         impl_->ileafend());
     }
 
@@ -452,7 +468,7 @@ namespace Dune {
     //! Inter-level access to father element on coarser grid.
     //! Assumes that meshes are nested.
     typename GridImp::template Codim<0>::Entity father () const {
-      return VirtualizedGridEntity<0, GridImp::dimension, GridImp>(impl_->father());
+      return impl_->father();
     }
 
 
@@ -475,14 +491,14 @@ namespace Dune {
      * This is provided for sparsely stored nested unstructured meshes.
      * Returns iterator to first son.
      */
-    VirtualizedGridHierarchicIterator<GridImp> hbegin (int maxLevel) const
+    VirtualizedGridHierarchicIterator<const GridImp> hbegin (int maxLevel) const
     {
       return VirtualizedGridHierarchicIterator<const GridImp>( impl_->hbegin(maxLevel) );
     }
 
 
     //! Returns iterator to one past the last son
-    VirtualizedGridHierarchicIterator<GridImp> hend (int maxLevel) const
+    VirtualizedGridHierarchicIterator<const GridImp> hend (int maxLevel) const
     {
       return VirtualizedGridHierarchicIterator<const GridImp>( impl_->hend(maxLevel) );
     }

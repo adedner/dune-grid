@@ -16,6 +16,7 @@
 #include <dune/grid/common/grid.hh>
 
 // The components of the VirtualizedGrid interface
+#include "virtualizedgrid/cast.hh"
 #include "virtualizedgrid/geometry.hh"
 #include "virtualizedgrid/entity.hh"
 #include "virtualizedgrid/entityseed.hh"
@@ -174,7 +175,7 @@ namespace Dune
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      typedef typename VirtualizedGridEntity<0, dimension, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<0>::Entity> ImplEntity;
+      typedef typename VirtualizedGridEntity<0, dimension, const ThisType>::template Implementation<const typename std::decay_t<I>::template Codim<0>::Entity> ImplEntity;
       typedef typename VirtualizedGridEntitySeed<0, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<0>::EntitySeed> ImplSeed0;
       typedef typename VirtualizedGridEntitySeed<1, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<1>::EntitySeed> ImplSeed1;
       typedef typename VirtualizedGridEntitySeed<dimension-1, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<dimension-1>::EntitySeed> ImplSeedDimMinus1;
@@ -343,29 +344,29 @@ namespace Dune
 
       virtual typename Traits::template Codim<0>::Entity entity0(const EntitySeed0& seed) const override
       {
-        return VirtualizedGridEntity<0, dimension, const ThisType>( impl().entity(
-          dynamic_cast<const ImplSeed0*>(seed.impl().impl_.get())->impl()
-        ) );
+        return VirtualizedGridEntity<0, dimension, const ThisType>( std::move( impl().entity(
+          upcast<ImplSeed0>(seed)
+        ) ) );
       }
 
       virtual typename Traits::template Codim<1>::Entity entity1(const EntitySeed1& seed) const override
       {
         return VirtualizedGridEntity<1, dimension, const ThisType>( impl().entity(
-          dynamic_cast<const ImplSeed1*>(seed.impl().impl_.get())->impl()
+          upcast<ImplSeed1>(seed)
         ) );
       }
 
       virtual typename Traits::template Codim<dimension-1>::Entity entityDimMinus1(const EntitySeedDimMinus1& seed) const override
       {
         return VirtualizedGridEntity<dimension-1, dimension, const ThisType>( impl().entity(
-          dynamic_cast<const ImplSeedDimMinus1*>(seed.impl().impl_.get())->impl()
+          upcast<ImplSeedDimMinus1>(seed)
         ) );
       }
 
       virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const override
       {
         return VirtualizedGridEntity<dimension, dimension, const ThisType>( impl().entity(
-          dynamic_cast<const ImplSeedDim*>(seed.impl().impl_.get())->impl()
+          upcast<ImplSeedDim>(seed)
         ) );
       }
 
@@ -373,14 +374,14 @@ namespace Dune
       virtual bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e) override
       {
         return impl().mark(refCount,
-          dynamic_cast<const ImplEntity*>(e.impl().impl_.get())->impl()
+          upcast<ImplEntity>(e)
         );
       }
 
       virtual int getMark(const typename Traits::template Codim<0>::Entity & e) const override
       {
         return impl().getMark(
-          dynamic_cast<const ImplEntity*>(e.impl().impl_.get())->impl()
+          upcast<ImplEntity>(e)
         );
       }
 
