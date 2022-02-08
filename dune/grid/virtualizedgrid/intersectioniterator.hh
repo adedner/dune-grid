@@ -51,7 +51,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::move(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual bool equals( const VirtualizedGridLeafIntersectionIterator<GridImp>& i ) const override
@@ -81,7 +81,7 @@ namespace Dune {
 
     template< class ImplLeafIntersectionIterator >
     explicit VirtualizedGridLeafIntersectionIterator(ImplLeafIntersectionIterator&& implLeafIntersectionIterator)
-    : impl_( new Implementation<ImplLeafIntersectionIterator>( implLeafIntersectionIterator ) )
+    : impl_( new Implementation<ImplLeafIntersectionIterator>( std::move(implLeafIntersectionIterator) ) )
     {}
 
     VirtualizedGridLeafIntersectionIterator(const VirtualizedGridLeafIntersectionIterator& other)
@@ -148,7 +148,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::move(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual bool equals( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) const override
@@ -177,7 +177,7 @@ namespace Dune {
 
     template< class ImplLevelIntersectionIterator >
     explicit VirtualizedGridLevelIntersectionIterator(ImplLevelIntersectionIterator&& implLevelIntersectionIterator)
-    : impl_( new Implementation<ImplLevelIntersectionIterator>( implLevelIntersectionIterator ) )
+    : impl_( new Implementation<ImplLevelIntersectionIterator>( std::move(implLevelIntersectionIterator) ) )
     {}
 
     VirtualizedGridLevelIntersectionIterator(const VirtualizedGridLevelIntersectionIterator& other)

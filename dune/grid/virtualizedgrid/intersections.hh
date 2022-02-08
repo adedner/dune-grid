@@ -78,17 +78,17 @@ namespace Dune {
         return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
       }
 
-      virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
-      virtual Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
+      virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>( std::move( impl().inside() ) ); }
+      virtual Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>( std::move( impl().outside() )); }
       virtual bool boundary () const override { return impl().boundary(); }
       virtual NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
       virtual bool neighbor () const override { return impl().neighbor(); }
       virtual size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
       virtual bool conforming () const override { return impl().conforming(); }
       virtual GeometryType type () const override { return impl().type(); }
-      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>(impl().geometryInInside()) ); }
-      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>(impl().geometryInOutside()) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>(impl().geometry()) ); }
+      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInInside() ) ) ); }
+      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInOutside() ) ) ); }
+      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometry() ) ) ); }
       virtual int indexInInside () const override { return impl().indexInInside(); }
       virtual int indexInOutside () const override { return impl().indexInOutside(); }
       virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
@@ -298,9 +298,9 @@ namespace Dune {
       virtual size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
       virtual bool conforming () const override { return impl().conforming(); }
       virtual GeometryType type () const override { return impl().type(); }
-      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>(impl().geometryInInside()) ); }
-      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>(impl().geometryInOutside()) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>(impl().geometry()) ); }
+      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInInside() ) ) ); }
+      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInOutside() ) ) ); }
+      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometry() ) ) ); }
       virtual int indexInInside () const override { return impl().indexInInside(); }
       virtual int indexInOutside () const override { return impl().indexInOutside(); }
       virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }

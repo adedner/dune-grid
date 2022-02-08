@@ -208,112 +208,112 @@ namespace Dune
 
       virtual typename Traits::template Codim<0>::LevelIterator lbegin (int level) const override
       {
-        return VirtualizedGridLevelIterator<0, All_Partition, const ThisType> ( impl().template lbegin<0>(level) );
+        return VirtualizedGridLevelIterator<0, All_Partition, const ThisType> ( std::move( impl().template lbegin<0>(level) ) );
       }
 
       virtual typename Traits::template Codim<0>::LevelIterator lend (int level) const override
       {
-        return VirtualizedGridLevelIterator<0, All_Partition, const ThisType> ( impl().template lend<0>(level) );
+        return VirtualizedGridLevelIterator<0, All_Partition, const ThisType> ( std::move( impl().template lend<0>(level) ) );
       }
 
       virtual typename Traits::template Codim<1>::LevelIterator lbegin1 (int level) const override
       {
-        return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( impl().template lbegin<1>(level) );
+        return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( std::move( impl().template lbegin<1>(level) ) );
       }
 
       virtual typename Traits::template Codim<1>::LevelIterator lend1 (int level) const override
       {
-        return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( impl().template lend<1>(level) );
+        return VirtualizedGridLevelIterator<1, All_Partition, const ThisType> ( std::move( impl().template lend<1>(level) ) );
       }
 
       virtual typename Traits::template Codim<dimension-1>::LevelIterator lbeginDimMinus1 (int level) const override
       {
-        return VirtualizedGridLevelIterator<dimension-1, All_Partition, const ThisType> ( impl().template lbegin<dimension-1>(level) );
+        return VirtualizedGridLevelIterator<dimension-1, All_Partition, const ThisType> ( std::move( impl().template lbegin<dimension-1>(level) ) );
       }
 
       virtual typename Traits::template Codim<dimension-1>::LevelIterator lendDimMinus1 (int level) const override
       {
-        return VirtualizedGridLevelIterator<dimension-1, All_Partition, const ThisType> ( impl().template lend<dimension-1>(level) );
+        return VirtualizedGridLevelIterator<dimension-1, All_Partition, const ThisType> ( std::move( impl().template lend<dimension-1>(level) ) );
       }
 
       virtual typename Traits::template Codim<dimension>::LevelIterator lbeginDim (int level) const override
       {
-        return VirtualizedGridLevelIterator<dimension, All_Partition, const ThisType> ( impl().template lbegin<dimension>(level) );
+        return VirtualizedGridLevelIterator<dimension, All_Partition, const ThisType> ( std::move( impl().template lbegin<dimension>(level) ) );
       }
 
       virtual typename Traits::template Codim<dimension>::LevelIterator lendDim (int level) const override
       {
-        return VirtualizedGridLevelIterator<dimension, All_Partition, const ThisType> ( impl().template lend<dimension>(level) );
+        return VirtualizedGridLevelIterator<dimension, All_Partition, const ThisType> ( std::move( impl().template lend<dimension>(level) ) );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lbeginGhost (int level) const override
       {
-        return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( impl().template lbegin<0, Ghost_Partition>(level) );
+        return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( std::move( impl().template lbegin<0, Ghost_Partition>(level) ) );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LevelIterator lendGhost (int level) const override
       {
-        return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( impl().template lend<0, Ghost_Partition>(level) );
+        return VirtualizedGridLevelIterator<0, Ghost_Partition, const ThisType> ( std::move( impl().template lend<0, Ghost_Partition>(level) ) );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<InteriorBorder_Partition>::LevelIterator lbeginInteriorBorder (int level) const override
       {
-        return VirtualizedGridLevelIterator<0, InteriorBorder_Partition, const ThisType> ( impl().template lbegin<0, InteriorBorder_Partition>(level) );
+        return VirtualizedGridLevelIterator<0, InteriorBorder_Partition, const ThisType> ( std::move( impl().template lbegin<0, InteriorBorder_Partition>(level) ) );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<InteriorBorder_Partition>::LevelIterator lendInteriorBorder (int level) const override
       {
-        return VirtualizedGridLevelIterator<0, InteriorBorder_Partition, const ThisType> ( impl().template lend<0, InteriorBorder_Partition>(level) );
+        return VirtualizedGridLevelIterator<0, InteriorBorder_Partition, const ThisType> ( std::move( impl().template lend<0, InteriorBorder_Partition>(level) ) );
       }
 
       virtual typename Traits::template Codim<0>::LeafIterator leafbegin () const override
       {
-        return VirtualizedGridLeafIterator<0, All_Partition, const ThisType> ( impl().template leafbegin<0>() );
+        return VirtualizedGridLeafIterator<0, All_Partition, const ThisType> ( std::move( impl().template leafbegin<0>() ) );
       }
 
       virtual typename Traits::template Codim<0>::LeafIterator leafend () const override
       {
-        return VirtualizedGridLeafIterator<0, All_Partition, const ThisType> ( impl().template leafend<0>() );
+        return VirtualizedGridLeafIterator<0, All_Partition, const ThisType> ( std::move( impl().template leafend<0>() ) );
       }
 
       virtual typename Traits::template Codim<1>::LeafIterator leafbegin1 () const override
       {
-        return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( impl().template leafbegin<1>() );
+        return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( std::move( impl().template leafbegin<1>() ) );
       }
 
       virtual typename Traits::template Codim<1>::LeafIterator leafend1 () const override
       {
-        return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( impl().template leafend<1>() );
+        return VirtualizedGridLeafIterator<1, All_Partition, const ThisType> ( std::move( impl().template leafend<1>() ) );
       }
 
       virtual typename Traits::template Codim<dimension-1>::LeafIterator leafbeginDimMinus1 () const override
       {
-        return VirtualizedGridLeafIterator<dimension-1, All_Partition, const ThisType> ( impl().template leafbegin<dimension-1>() );
+        return VirtualizedGridLeafIterator<dimension-1, All_Partition, const ThisType> ( std::move( impl().template leafbegin<dimension-1>() ) );
       }
 
       virtual typename Traits::template Codim<dimension-1>::LeafIterator leafendDimMinus1 () const override
       {
-        return VirtualizedGridLeafIterator<dimension-1, All_Partition, const ThisType> ( impl().template leafend<dimension-1>() );
+        return VirtualizedGridLeafIterator<dimension-1, All_Partition, const ThisType> ( std::move( impl().template leafend<dimension-1>() ) );
       }
 
       virtual typename Traits::template Codim<dimension>::LeafIterator leafbeginDim () const override
       {
-        return VirtualizedGridLeafIterator<dimension, All_Partition, const ThisType> ( impl().template leafbegin<dimension>() );
+        return VirtualizedGridLeafIterator<dimension, All_Partition, const ThisType> ( std::move( impl().template leafbegin<dimension>() ) );
       }
 
       virtual typename Traits::template Codim<dimension>::LeafIterator leafendDim () const override
       {
-        return VirtualizedGridLeafIterator<dimension, All_Partition, const ThisType> ( impl().template leafend<dimension>() );
+        return VirtualizedGridLeafIterator<dimension, All_Partition, const ThisType> ( std::move( impl().template leafend<dimension>() ) );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost () const override
       {
-        return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( impl().template leafbegin<0, Ghost_Partition>() );
+        return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( std::move( impl().template leafbegin<0, Ghost_Partition>() ) );
       }
 
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafendGhost () const override
       {
-        return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( impl().template leafend<0, Ghost_Partition>() );
+        return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( std::move( impl().template leafend<0, Ghost_Partition>() ) );
       }
 
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
@@ -351,23 +351,23 @@ namespace Dune
 
       virtual typename Traits::template Codim<1>::Entity entity1(const EntitySeed1& seed) const override
       {
-        return VirtualizedGridEntity<1, dimension, const ThisType>( impl().entity(
+        return VirtualizedGridEntity<1, dimension, const ThisType>( std::move( impl().entity(
           upcast<ImplSeed1>(seed)
-        ) );
+        ) ) );
       }
 
       virtual typename Traits::template Codim<dimension-1>::Entity entityDimMinus1(const EntitySeedDimMinus1& seed) const override
       {
-        return VirtualizedGridEntity<dimension-1, dimension, const ThisType>( impl().entity(
+        return VirtualizedGridEntity<dimension-1, dimension, const ThisType>( std::move( impl().entity(
           upcast<ImplSeedDimMinus1>(seed)
-        ) );
+        ) ) );
       }
 
       virtual typename Traits::template Codim<dimension>::Entity entityDim(const EntitySeedDim& seed) const override
       {
-        return VirtualizedGridEntity<dimension, dimension, const ThisType>( impl().entity(
+        return VirtualizedGridEntity<dimension, dimension, const ThisType>( std::move( impl().entity(
           upcast<ImplSeedDim>(seed)
-        ) );
+        ) ) );
       }
 
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }

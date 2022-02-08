@@ -43,7 +43,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( const I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::move(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual GeometryType type () const override { return impl().type(); }
@@ -69,8 +69,8 @@ namespace Dune {
     /** constructor from host geometry
      */
     template< class ImplGridGeometry >
-    VirtualizedGridGeometry(const ImplGridGeometry& implGridGeometry)
-      : impl_( new Implementation<ImplGridGeometry>(implGridGeometry) )
+    VirtualizedGridGeometry(ImplGridGeometry&& implGridGeometry)
+      : impl_( new Implementation<ImplGridGeometry>( std::move(implGridGeometry) ) )
     {}
 
     VirtualizedGridGeometry(const VirtualizedGridGeometry& other)

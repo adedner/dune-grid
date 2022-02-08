@@ -275,7 +275,7 @@ namespace Dune {
 
       virtual Geometry geometry () const override
       {
-        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( std::move(impl().geometry() )) );
+        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( std::move( impl().geometry() ) ) );
       }
 
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
@@ -329,7 +329,7 @@ namespace Dune {
 
       virtual LocalGeometry geometryInFather () const override
       {
-        return LocalGeometry( VirtualizedGridGeometry<dim, dim, GridImp>(impl().geometryInFather()) );
+        return LocalGeometry( VirtualizedGridGeometry<dim, dim, GridImp>( std::move( impl().geometryInFather() ) ) );
       }
 
       virtual HierarchicIterator hbegin (int maxLevel) const override

@@ -42,7 +42,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::move(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual void increment() override { ++impl(); }
@@ -68,7 +68,7 @@ namespace Dune {
   public:
     template< class ImplHierarchicIterator >
     explicit VirtualizedGridHierarchicIterator(ImplHierarchicIterator&& implHierarchicIterator)
-    : impl_( new Implementation<ImplHierarchicIterator>( implHierarchicIterator ) )
+    : impl_( new Implementation<ImplHierarchicIterator>( std::move( implHierarchicIterator ) ) )
     {}
 
     VirtualizedGridHierarchicIterator(const VirtualizedGridHierarchicIterator& other)
