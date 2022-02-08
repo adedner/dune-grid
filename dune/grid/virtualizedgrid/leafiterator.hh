@@ -39,6 +39,7 @@ namespace Dune {
     {
       Implementation ( I&& i ) : impl_( std::move(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
+
       virtual void increment() override { ++impl(); }
 
       virtual Entity dereference() const override
