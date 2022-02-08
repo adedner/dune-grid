@@ -54,7 +54,7 @@ namespace Dune {
 
       virtual bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
       {
-        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
     private:
@@ -83,18 +83,15 @@ namespace Dune {
       return *this;
     }
 
-    //! \todo Please doc me !
     void increment()
     {
       impl_->increment();
     }
 
-    //! dereferencing
     Entity dereference() const {
       return impl_->dereference();
     }
 
-    //! equality
     bool equals(const VirtualizedGridHierarchicIterator& i) const {
       return impl_->equals(i);
     }

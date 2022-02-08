@@ -324,22 +324,22 @@ namespace Dune
 
       virtual const typename Traits::GlobalIdSet& globalIdSet() const override
       {
-        return *dynamic_cast<const typename Traits::GlobalIdSet*>( &globalIdSet_ );
+        return dynamic_cast<const typename Traits::GlobalIdSet&>( globalIdSet_ );
       }
 
       virtual const typename Traits::LocalIdSet& localIdSet() const override
       {
-        return *dynamic_cast<const typename Traits::LocalIdSet*>( &localIdSet_ );
+        return dynamic_cast<const typename Traits::LocalIdSet&>( localIdSet_ );
       }
 
       virtual const typename Traits::LevelIndexSet& levelIndexSet(int level) const override
       {
-        return *dynamic_cast<const typename Traits::LevelIndexSet*>( levelIndexSets_[level] );
+        return dynamic_cast<const typename Traits::LevelIndexSet&>( *levelIndexSets_[level] );
       }
 
       virtual const typename Traits::LeafIndexSet& leafIndexSet() const override
       {
-        return *dynamic_cast<const typename Traits::LeafIndexSet*>( &leafIndexSet_ );
+        return dynamic_cast<const typename Traits::LeafIndexSet&>( leafIndexSet_ );
       }
 
       virtual typename Traits::template Codim<0>::Entity entity0(const EntitySeed0& seed) const override

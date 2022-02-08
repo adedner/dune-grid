@@ -56,7 +56,7 @@ namespace Dune {
 
       virtual bool equals( const VirtualizedGridLeafIntersectionIterator<GridImp>& i ) const override
       {
-        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
       virtual void increment() override { ++impl(); }
@@ -118,7 +118,6 @@ namespace Dune {
 
 
 
-  //! \todo Please doc me !
   template<class GridImp>
   class VirtualizedGridLevelIntersectionIterator
   {
@@ -153,7 +152,7 @@ namespace Dune {
 
       virtual bool equals( const VirtualizedGridLevelIntersectionIterator<GridImp>& i ) const override
       {
-        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
       virtual void increment() override { ++impl(); }

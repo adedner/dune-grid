@@ -75,11 +75,11 @@ namespace Dune {
 
       virtual bool equals(const VirtualizedGridLeafIntersection<GridImp>& i) const override
       {
-        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
-      virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>( std::move( impl().inside() ) ); }
-      virtual Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>( std::move( impl().outside() )); }
+      virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
+      virtual Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
       virtual bool boundary () const override { return impl().boundary(); }
       virtual NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
       virtual bool neighbor () const override { return impl().neighbor(); }
@@ -233,7 +233,6 @@ namespace Dune {
 
 
 
-  //! \todo Please doc me !
   template<class GridImp>
   class VirtualizedGridLevelIntersection
   {
@@ -287,7 +286,7 @@ namespace Dune {
 
       virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
       {
-        return impl() == dynamic_cast<Implementation<I>*>(&(*i.impl_))->impl();
+        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
       virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
