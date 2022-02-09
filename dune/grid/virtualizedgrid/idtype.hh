@@ -29,6 +29,8 @@ namespace Dune {
       virtual bool operator== (const VirtualizedGridIdType& other) const = 0;
       virtual bool operator!= (const VirtualizedGridIdType& other) const = 0;
       virtual bool operator< (const VirtualizedGridIdType& other) const = 0;
+      virtual bool operator<= (const VirtualizedGridIdType& other) const = 0;
+      virtual std::size_t hash () const = 0;
       virtual std::string str() const = 0;
     };
 
@@ -54,11 +56,21 @@ namespace Dune {
         return impl() < dynamic_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
+      virtual bool operator<= (const VirtualizedGridIdType& other) const override
+      {
+        return impl() <= dynamic_cast<const Implementation<I>&>(*other.impl_).impl();
+      }
+
       virtual std::string str() const override
       {
         std::stringstream ss;
         ss << impl() << std::endl;
         return ss.str();
+      }
+
+      virtual std::size_t hash () const override
+      {
+        return std::hash<I>()(impl_);
       }
 
       const auto &impl () const { return impl_; }
@@ -106,9 +118,19 @@ namespace Dune {
       return impl_->operator<(other);
     }
 
+    bool operator<=(const VirtualizedGridIdType& other) const
+    {
+      return impl_->operator<=(other);
+    }
+
     std::string str() const
     {
       return impl_->str();
+    }
+
+    std::size_t hash () const
+    {
+      return impl_->hash();
     }
 
     std::unique_ptr<Interface> impl_;
@@ -120,5 +142,17 @@ namespace Dune {
   }
 
 } // namespace Dune
+
+
+namespace std
+{
+  template <> struct hash<Dune::VirtualizedGridIdType>
+  {
+    size_t operator()(const Dune::VirtualizedGridIdType& x) const
+    {
+      return x.hash();
+    }
+  };
+}
 
 #endif  // #define DUNE_VIRTUALIZED_GRID_IDTYPE_HH

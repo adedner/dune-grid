@@ -14,6 +14,8 @@
 #include <dune/common/parallel/communication.hh>
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/grid.hh>
+// #include <dune/python/grid/gridview.hh>
+// #include <dune/python/grid/hierarchical.hh>
 
 // The components of the VirtualizedGrid interface
 #include "virtualizedgrid/cast.hh"
@@ -26,6 +28,13 @@
 #include "virtualizedgrid/leafiterator.hh"
 #include "virtualizedgrid/hierarchiciterator.hh"
 #include "virtualizedgrid/indexsets.hh"
+
+#if HAVE_MPI
+  #include <dune/common/parallel/mpicommunication.hh>
+  using VirtualizedCollectiveCommunication = Dune::Communication<MPI_Comm>;
+#else
+  using VirtualizedCollectiveCommunication = Dune::Communication<No_Comm>;
+#endif
 
 namespace Dune
 {
@@ -42,7 +51,7 @@ namespace Dune
     typedef GridTraits<
         dimension,
         dimensionworld,
-        Dune::VirtualizedGrid<dimension, dimensionworld, ct>,
+        VirtualizedGrid<dimension, dimensionworld, ct>,
         VirtualizedGridGeometry,
         VirtualizedGridEntity,
         VirtualizedGridLevelIterator,
@@ -58,7 +67,7 @@ namespace Dune
         VirtualizedGridIdType,
         VirtualizedGridLocalIdSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
         VirtualizedGridIdType,
-        Communication<No_Comm>,
+        VirtualizedCollectiveCommunication,
         DefaultLevelGridViewTraits,
         DefaultLeafGridViewTraits,
         VirtualizedGridEntitySeed
@@ -145,6 +154,8 @@ namespace Dune
       virtual typename Traits::template Codim<dimension>::LeafIterator leafendDim () const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafbeginGhost() const = 0;
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafendGhost() const = 0;
+      virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafbegin1Ghost() const = 0;
+      virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafend1Ghost() const = 0;
       virtual int size (int level, int codim) const = 0;
       virtual size_t numBoundarySegments () const = 0;
       virtual int size (int codim) const = 0;
@@ -168,7 +179,8 @@ namespace Dune
       virtual unsigned int ghostSize(int codim) const = 0;
       virtual unsigned int overlapSize(int level, int codim) const = 0;
       virtual unsigned int ghostSize(int level, int codim) const = 0;
-      virtual const Communication<MPI_Comm>& comm () const = 0;
+      virtual const VirtualizedCollectiveCommunication& comm () const = 0;
+
     };
 
     template< class I >
@@ -316,6 +328,16 @@ namespace Dune
         return VirtualizedGridLeafIterator<0, Ghost_Partition, const ThisType> ( std::move( impl().template leafend<0, Ghost_Partition>() ) );
       }
 
+      virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafbegin1Ghost () const override
+      {
+        return VirtualizedGridLeafIterator<1, Ghost_Partition, const ThisType> ( std::move( impl().template leafbegin<1, Ghost_Partition>() ) );
+      }
+
+      virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafend1Ghost () const override
+      {
+        return VirtualizedGridLeafIterator<1, Ghost_Partition, const ThisType> ( std::move( impl().template leafend<1, Ghost_Partition>() ) );
+      }
+
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
       virtual size_t numBoundarySegments () const override { return impl().numBoundarySegments(); }
       virtual int size (int codim) const override { return impl().size(codim); }
@@ -392,7 +414,7 @@ namespace Dune
       virtual unsigned int ghostSize(int codim) const override { return impl().ghostSize(codim); }
       virtual unsigned int overlapSize(int level, int codim) const override { return impl().overlapSize(level, codim); }
       virtual unsigned int ghostSize(int level, int codim) const override { return impl().ghostSize(level, codim); }
-      virtual const Communication<MPI_Comm>& comm () const override { return impl().comm(); }
+      virtual const VirtualizedCollectiveCommunication& comm () const override { return impl().comm(); }
 
     private:
       const auto &impl () const { return impl_; }
@@ -543,6 +565,8 @@ namespace Dune
       {
         if constexpr (PiType == All_Partition)
           return impl_->leafbegin1();
+        if constexpr (PiType == Ghost_Partition)
+          return impl_->leafbegin1Ghost();
       }
       if constexpr (codim == dimension-1)
       {
@@ -571,6 +595,8 @@ namespace Dune
       {
         if constexpr (PiType == All_Partition)
           return impl_->leafend1();
+        if constexpr (PiType == Ghost_Partition)
+          return impl_->leafend1Ghost();
       }
       if constexpr (codim == dimension-1)
       {
@@ -749,10 +775,18 @@ namespace Dune
 #endif
 
 
-    /** \brief dummy collective communication */
-    const Communication<No_Comm>& comm () const
+    //! Returns the collective communication object
+    const VirtualizedCollectiveCommunication& comm () const
     {
       return ccobj;
+    }
+
+    //! The new communication interface
+    template<class DataHandleImp, class DataType>
+    void communicate (CommDataHandleIF<DataHandleImp, DataType>& data, InterfaceType iftype, CommunicationDirection dir) const
+    {
+      // TODO: we have to explicitly specify all CommDataHandleIF in virtual Interface class
+      // impl_->communicate(data, iftype, dir);
     }
 
 
@@ -771,7 +805,7 @@ namespace Dune
     //! The grid this VirtualizedGrid holds
     std::unique_ptr< Interface > impl_;
 
-    Communication<No_Comm> ccobj;
+    VirtualizedCollectiveCommunication ccobj;
   }; // end Class VirtualizedGrid
 
 
@@ -823,5 +857,7 @@ namespace Dune
   } // end namespace Capabilities
 
 } // namespace Dune
+
+#include "io/file/dgfparser/dgfvirtualized.hh"
 
 #endif // DUNE_GRID_VIRTUALIZEDGRID_HH
