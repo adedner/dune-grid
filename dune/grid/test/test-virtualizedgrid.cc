@@ -8,8 +8,66 @@
 
 #include "gridcheck.hh"
 
+class Virtualized
+{
+  struct Interface
+  {
+    virtual ~Interface () = default;
+    virtual int size () const = 0;
+  };
+
+  template< class I >
+  struct Implementation final
+    : public Interface
+  {
+    Implementation (I&& i) : impl_( std::forward<I>(i) ) {}
+    virtual int size () const override { return impl_.size(); }
+
+  private:
+    I impl_;
+  };
+
+public:
+  template< class Impl >
+  Virtualized(Impl&& impl) : impl_( new Implementation<Impl>( std::forward<Impl>(impl) ) ) {}
+  int size () const { return impl_->size(); }
+  std::unique_ptr<Interface> impl_;
+};
+
 int main(int argc, char** argv)
 {
+
+  // ======== SMALL TEST OF VIRTUALIZED CLASS ABOVE ========
+
+  int N = 100000;
+  Dune::Timer timer;
+
+  // Construct
+  timer.reset();
+  for (volatile int i = 0; i < N; ++i)
+    std::vector<double> v (i, 42.);
+  std::cout << "Standard: " << timer.elapsed() << std::endl;
+
+  timer.reset();
+  for (volatile int i = 0; i < N; ++i)
+    Virtualized virt( std::vector<double> (i, 42.) );
+  std::cout << "Virtualized: " << timer.elapsed() << std::endl;
+
+  // Call
+  std::vector<double> v (100, 42.);
+  timer.reset();
+  for (volatile int i = 0; i < N; ++i)
+    v.size();
+  std::cout << "Call Standard: " << timer.elapsed() << std::endl;
+
+  Virtualized virt(v);
+  timer.reset();
+  for (volatile int i = 0; i < N; ++i)
+    virt.size();
+  std::cout << "Call Virtualized: " << timer.elapsed() << std::endl;
+
+  // ===============================================================
+
   Dune::MPIHelper::instance(argc, argv);
 
   {
