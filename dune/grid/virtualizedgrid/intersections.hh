@@ -86,9 +86,9 @@ namespace Dune {
       virtual size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
       virtual bool conforming () const override { return impl().conforming(); }
       virtual GeometryType type () const override { return impl().type(); }
-      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInInside() ) ) ); }
-      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInOutside() ) ) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometry() ) ) ); }
+      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
+      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
+      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometry() ) ); }
       virtual int indexInInside () const override { return impl().indexInInside(); }
       virtual int indexInOutside () const override { return impl().indexInOutside(); }
       virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
@@ -281,7 +281,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( const I& i ) : impl_( i ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
@@ -297,9 +297,9 @@ namespace Dune {
       virtual size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
       virtual bool conforming () const override { return impl().conforming(); }
       virtual GeometryType type () const override { return impl().type(); }
-      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInInside() ) ) ); }
-      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometryInOutside() ) ) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( std::move( impl().geometry() ) ) ); }
+      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
+      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
+      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometry() ) ); }
       virtual int indexInInside () const override { return impl().indexInInside(); }
       virtual int indexInOutside () const override { return impl().indexInOutside(); }
       virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
@@ -308,7 +308,7 @@ namespace Dune {
 
     private:
       const auto &impl () const { return impl_; }
-      const I impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -318,8 +318,8 @@ namespace Dune {
     {}
 
     template< class ImplLevelIntersection >
-    explicit VirtualizedGridLevelIntersection(const ImplLevelIntersection& implLevelIntersection)
-    : impl_( new Implementation<ImplLevelIntersection>( implLevelIntersection ) )
+    explicit VirtualizedGridLevelIntersection(ImplLevelIntersection&& implLevelIntersection)
+    : impl_( new Implementation<ImplLevelIntersection>( std::forward<ImplLevelIntersection>(implLevelIntersection) ) )
     {}
 
     VirtualizedGridLevelIntersection(const VirtualizedGridLevelIntersection& other)

@@ -38,7 +38,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual bool operator== (const VirtualizedGridIdType& other) const override
@@ -77,7 +77,7 @@ namespace Dune {
     private:
       auto &impl () { return impl_; }
 
-      const I impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -86,7 +86,7 @@ namespace Dune {
 
     template< class ImplIdType >
     VirtualizedGridIdType(ImplIdType&& implIdType)
-    : impl_( new Implementation<ImplIdType>( std::move(implIdType) ) )
+    : impl_( new Implementation<ImplIdType>( std::forward<ImplIdType>(implIdType) ) )
     {}
 
     VirtualizedGridIdType(const VirtualizedGridIdType& other)

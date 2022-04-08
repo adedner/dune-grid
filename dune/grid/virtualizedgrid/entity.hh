@@ -87,7 +87,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
 
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
@@ -98,7 +98,7 @@ namespace Dune {
 
       virtual EntitySeed seed () const override
       {
-        return VirtualizedGridEntitySeed<codim, GridImp>( std::move( impl().seed() ) );
+        return VirtualizedGridEntitySeed<codim, GridImp>( impl().seed() );
       }
 
       virtual int level () const override { return impl().level(); }
@@ -109,14 +109,14 @@ namespace Dune {
 
       virtual Geometry geometry () const override
       {
-        return Geometry( VirtualizedGridGeometry<dim-codim, dim, GridImp>( std::move( impl().geometry() ) ) );
+        return Geometry( VirtualizedGridGeometry<dim-codim, dim, GridImp>( impl().geometry() ) );
       }
 
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
     private:
-      const I impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -127,7 +127,7 @@ namespace Dune {
 
     template< class ImplGridEntity >
     VirtualizedGridEntity(ImplGridEntity&& implEntity)
-    : impl_( new Implementation<const ImplGridEntity>( std::move( implEntity ) ) )
+    : impl_( new Implementation<const ImplGridEntity>( std::forward<ImplGridEntity>( implEntity ) ) )
     {}
 
     VirtualizedGridEntity(const VirtualizedGridEntity& other)
@@ -254,7 +254,7 @@ namespace Dune {
     struct DUNE_PRIVATE Implementation final
       : public Interface
     {
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
 
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
@@ -266,7 +266,7 @@ namespace Dune {
 
       virtual EntitySeed seed () const override
       {
-        return VirtualizedGridEntitySeed<0, GridImp>( std::move(impl().seed()) );
+        return VirtualizedGridEntitySeed<0, GridImp>( impl().seed() );
       }
 
       virtual int level () const override { return impl().level(); }
@@ -275,29 +275,29 @@ namespace Dune {
 
       virtual Geometry geometry () const override
       {
-        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( std::move( impl().geometry() ) ) );
+        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometry() ) );
       }
 
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
 
       virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
       {
-        return VirtualizedGridEntity<0, dim, GridImp>( std::move(impl().template subEntity<0>(i)) );
+        return VirtualizedGridEntity<0, dim, GridImp>( impl().template subEntity<0>(i) );
       }
 
       virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const override
       {
-        return VirtualizedGridEntity<1, dim, GridImp>( std::move(impl().template subEntity<1>(i)) );
+        return VirtualizedGridEntity<1, dim, GridImp>( impl().template subEntity<1>(i) );
       }
 
       virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const override
       {
-        return VirtualizedGridEntity<dim-1, dim, GridImp>( std::move(impl().template subEntity<dim-1>(i)) );
+        return VirtualizedGridEntity<dim-1, dim, GridImp>( impl().template subEntity<dim-1>(i) );
       }
 
       virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
       {
-        return VirtualizedGridEntity<dim, dim, GridImp>( std::move(impl().template subEntity<dim>(i)) );
+        return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
       }
 
       virtual LevelIntersectionIterator ilevelbegin () const override
@@ -329,7 +329,7 @@ namespace Dune {
 
       virtual LocalGeometry geometryInFather () const override
       {
-        return LocalGeometry( VirtualizedGridGeometry<dim, dim, GridImp>( std::move( impl().geometryInFather() ) ) );
+        return LocalGeometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometryInFather() ) );
       }
 
       virtual HierarchicIterator hbegin (int maxLevel) const override
@@ -346,7 +346,7 @@ namespace Dune {
       auto &impl () { return impl_; }
 
     private:
-      const I impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -355,7 +355,7 @@ namespace Dune {
 
     template< class ImplGridEntity >
     VirtualizedGridEntity(ImplGridEntity&& implEntity)
-    : impl_( new Implementation<const ImplGridEntity>( std::move( implEntity ) ) )
+    : impl_( new Implementation<const ImplGridEntity>( std::forward<ImplGridEntity>( implEntity ) ) )
     {}
 
     VirtualizedGridEntity(const VirtualizedGridEntity& other)

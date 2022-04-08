@@ -14,8 +14,6 @@
 #include <dune/common/parallel/communication.hh>
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/grid.hh>
-// #include <dune/python/grid/gridview.hh>
-// #include <dune/python/grid/hierarchical.hh>
 
 // The components of the VirtualizedGrid interface
 #include "virtualizedgrid/cast.hh"

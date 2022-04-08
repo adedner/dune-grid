@@ -56,7 +56,7 @@ namespace Dune {
       typedef typename VirtualizedGridEntity<dim-1, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim-1>::Entity> ImplEntityDimMinus1;
       typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim>::Entity> ImplEntityDim;
 
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
@@ -155,7 +155,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      const I impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -163,7 +163,7 @@ namespace Dune {
   public:
     template< class ImplLevelIndexSet >
     explicit VirtualizedGridLevelIndexSet(ImplLevelIndexSet&& implLevelIndexSet)
-    : impl_( new Implementation<ImplLevelIndexSet>( std::move( implLevelIndexSet ) ) )
+    : impl_( new Implementation<ImplLevelIndexSet>( std::forward<ImplLevelIndexSet>( implLevelIndexSet ) ) )
     {}
 
     VirtualizedGridLevelIndexSet(const VirtualizedGridLevelIndexSet& other)
@@ -294,7 +294,7 @@ namespace Dune {
       typedef typename VirtualizedGridEntity<dim-1, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim-1>::Entity> ImplEntityDimMinus1;
       typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim>::Entity> ImplEntityDim;
 
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual int index0 (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
@@ -393,7 +393,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      const I& impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -401,7 +401,7 @@ namespace Dune {
   public:
     template< class ImplLeafIndexSet >
     explicit VirtualizedGridLeafIndexSet(ImplLeafIndexSet&& implLeafIndexSet)
-    : impl_( new Implementation<ImplLeafIndexSet>( std::move(implLeafIndexSet) ) )
+    : impl_( new Implementation<ImplLeafIndexSet>( std::forward<ImplLeafIndexSet>(implLeafIndexSet) ) )
     {}
 
     VirtualizedGridLeafIndexSet(const VirtualizedGridLeafIndexSet& other)
@@ -535,7 +535,7 @@ namespace Dune {
       typedef typename VirtualizedGridEntity<dim-1, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim-1>::Entity> ImplEntityDimMinus1;
       typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim>::Entity> ImplEntityDim;
 
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
       virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
       {
@@ -577,7 +577,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      const I& impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -585,7 +585,7 @@ namespace Dune {
   public:
     template< class ImplGlobalIdSet >
     explicit VirtualizedGridGlobalIdSet(ImplGlobalIdSet&& implGlobalIdSet)
-    : impl_( new Implementation<ImplGlobalIdSet>( std::move( implGlobalIdSet ) ) )
+    : impl_( new Implementation<ImplGlobalIdSet>( std::forward<ImplGlobalIdSet>( implGlobalIdSet ) ) )
     {}
 
     VirtualizedGridGlobalIdSet(const VirtualizedGridGlobalIdSet& other)
@@ -662,7 +662,7 @@ namespace Dune {
       typedef typename VirtualizedGridEntity<dim-1, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim-1>::Entity> ImplEntityDimMinus1;
       typedef typename VirtualizedGridEntity<dim, dim, GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<dim>::Entity> ImplEntityDim;
 
-      Implementation ( I&& i ) : impl_( std::move(i) ) {}
+      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual IdType id (const typename GridImp::Traits::template Codim<0>::Entity& e) const override
@@ -705,7 +705,7 @@ namespace Dune {
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      const I impl_;
+      I impl_;
     };
     // VIRTUALIZATION END
 
@@ -713,7 +713,7 @@ namespace Dune {
   public:
     template< class ImplLocalIdSet >
     explicit VirtualizedGridLocalIdSet(ImplLocalIdSet&& implLocalIdSet)
-    : impl_( new Implementation<ImplLocalIdSet>( std::move(implLocalIdSet) ) )
+    : impl_( new Implementation<ImplLocalIdSet>( std::forward<ImplLocalIdSet>(implLocalIdSet) ) )
     {}
 
     VirtualizedGridLocalIdSet(const VirtualizedGridLocalIdSet& other)
@@ -727,7 +727,6 @@ namespace Dune {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
       return *this;
     }
-
 
     //! get id of an entity
     template<int cd>
@@ -743,14 +742,12 @@ namespace Dune {
         return impl_->idDim(e);
     }
 
-
     //! get id of subEntity
     IdType subId (const typename GridImp::template Codim<0>::Entity& e, int i, int codim) const
     {
       // Return sub id of the host entity
       return impl_->subId(e, i, codim);
     }
-
 
     std::unique_ptr<Interface> impl_;
   };
