@@ -191,8 +191,8 @@ namespace Dune
       typedef typename VirtualizedGridEntitySeed<dimension-1, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<dimension-1>::EntitySeed> ImplSeedDimMinus1;
       typedef typename VirtualizedGridEntitySeed<dimension, const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<dimension>::EntitySeed> ImplSeedDim;
 
-      Implementation ( I& i )
-      : impl_( i ),
+      Implementation ( I&& i )
+      : impl_( std::forward<I>(i) ),
         globalIdSet_( impl().globalIdSet() ),
         localIdSet_( impl().localIdSet() ),
         leafIndexSet_( impl().leafIndexSet() )
@@ -418,7 +418,7 @@ namespace Dune
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
-      I& impl_;
+      I impl_;
       VirtualizedGridGlobalIdSet<const ThisType> globalIdSet_;
       VirtualizedGridLocalIdSet<const ThisType> localIdSet_;
       std::vector<VirtualizedGridLevelIndexSet<const ThisType>*> levelIndexSets_;
@@ -438,7 +438,7 @@ namespace Dune
      */
     template<class Impl>
     VirtualizedGrid(Impl&& grid)
-    : impl_( new Implementation< Impl >( grid ) )
+    : impl_( new Implementation< Impl >( std::forward<Impl>(grid) ) )
     {}
 
     VirtualizedGrid(const VirtualizedGrid& other)

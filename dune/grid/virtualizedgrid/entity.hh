@@ -93,7 +93,7 @@ namespace Dune {
 
       virtual bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const override
       {
-        return impl() == dynamic_cast<Implementation<I>&>(*other.impl_).impl();
+        return impl() == static_cast<Implementation<I>&>(*other.impl_).impl();
       }
 
       virtual EntitySeed seed () const override
@@ -259,7 +259,7 @@ namespace Dune {
       virtual Implementation *clone() const override { return new Implementation( *this ); }
 
       virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const override {
-        return impl() == dynamic_cast<Implementation<I>&>(*other.impl_).impl();
+        return impl() == static_cast<Implementation<I>&>(*other.impl_).impl();
       }
 
       virtual bool hasFather () const override { return impl().hasFather(); }

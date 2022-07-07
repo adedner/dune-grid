@@ -49,7 +49,7 @@ namespace Dune {
 
       virtual bool equals( const VirtualizedGridLeafIterator& i ) const override
       {
-        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
+        return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
     private:

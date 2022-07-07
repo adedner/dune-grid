@@ -40,33 +40,38 @@ int main(int argc, char** argv)
 
   // ======== SMALL TEST OF VIRTUALIZED CLASS ABOVE ========
 
-  volatile int N = 1000000;
+  volatile int N = 1000;
   Dune::Timer timer;
+
+  using T = std::vector<double>;
 
   // Construct
   timer.reset();
+  std::vector<T> standard;
   for (int i = 0; i < N; ++i)
-    std::vector<double> v (10, i);
+    standard.emplace_back( i, 42. );
   std::cout << "Standard: " << timer.elapsed() << std::endl;
 
   timer.reset();
+  std::vector<Virtualized> virtualized;
   for (int i = 0; i < N; ++i)
-    Virtualized virt( std::vector<double> (10, i) );
+    virtualized.emplace_back( T(i, 42.) );
   std::cout << "Virtual:  " << timer.elapsed() << std::endl;
 
   // Call
-  std::vector<double> v (100, 42.);
+  timer.reset();
   int c = 0;
-  timer.reset();
-  for (int i = 0; i < N; ++i)
-    c += v.size();
-  std::cout << "Call Standard: " << timer.elapsed() << std::endl;
+  for (int i = 0; i < 10000; ++i)
+    for (int i = 0; i < N; ++i)
+      c += standard[i].size();
+  std::cout << "Call Standard (c = " << c << "): " << timer.elapsed() << std::endl;
 
-  Virtualized virt(v);
   timer.reset();
-  for (int i = 0; i < N; ++i)
-    c += virt.size();
-  std::cout << "Call Virtual:  " << timer.elapsed() << std::endl;
+  c = 0;
+  for (int i = 0; i < 10000; ++i)
+    for (int i = 0; i < N; ++i)
+      c += virtualized[i].size();
+  std::cout << "Call Virtual  (c = " << c << "): " << timer.elapsed() << std::endl;
 
   // ======== SMALL TEST COMPUTING CUMULATED VOLUME ========
 
@@ -76,16 +81,16 @@ int main(int argc, char** argv)
   // Compute volume
   std::cout << "Volume calculation" << std::endl;
   timer.reset();
-  double vol = 0.0;
+  volatile double vol = 0.0;
   for (const auto& e : elements( yaspgrid2.leafGridView() ))
     vol += e.geometry().volume();
-  std::cout << " Standard: " << timer.elapsed() << std::endl;
+  std::cout << " Standard (vol = " << vol << "): " << timer.elapsed() << std::endl;
 
   timer.reset();
   vol = 0.0;
   for (const auto& e : elements( vgrid2.leafGridView() ))
     vol += e.geometry().volume();
-  std::cout << " Virtual:  " << timer.elapsed() << std::endl;
+  std::cout << " Virtual  (vol = " << vol << "): " << timer.elapsed() << std::endl;
 
   // ======== GRID CHECK ========
 

@@ -75,7 +75,7 @@ namespace Dune {
 
       virtual bool equals(const VirtualizedGridLeafIntersection<GridImp>& i) const override
       {
-        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
+        return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
       virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
@@ -286,7 +286,7 @@ namespace Dune {
 
       virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
       {
-        return impl() == dynamic_cast<Implementation<I>&>(*i.impl_).impl();
+        return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
       virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }

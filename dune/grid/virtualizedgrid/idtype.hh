@@ -43,7 +43,7 @@ namespace Dune {
 
       virtual bool operator== (const VirtualizedGridIdType& other) const override
       {
-        return impl() == dynamic_cast<const Implementation<I>&>(*other.impl_).impl();
+        return impl() == static_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
       virtual bool operator!= (const VirtualizedGridIdType& other) const override
@@ -53,12 +53,12 @@ namespace Dune {
 
       virtual bool operator< (const VirtualizedGridIdType& other) const override
       {
-        return impl() < dynamic_cast<const Implementation<I>&>(*other.impl_).impl();
+        return impl() < static_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
       virtual bool operator<= (const VirtualizedGridIdType& other) const override
       {
-        return impl() <= dynamic_cast<const Implementation<I>&>(*other.impl_).impl();
+        return impl() <= static_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
       virtual std::string str() const override

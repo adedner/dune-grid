@@ -33,7 +33,7 @@ namespace Dune {
   {
     try
     {
-      return dynamic_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
+      return static_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
     }
     catch(const std::bad_cast& e)
     {
