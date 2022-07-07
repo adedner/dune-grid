@@ -36,39 +36,58 @@ public:
 
 int main(int argc, char** argv)
 {
+  Dune::MPIHelper::instance( argc, argv );
 
   // ======== SMALL TEST OF VIRTUALIZED CLASS ABOVE ========
 
-  int N = 100000;
+  volatile int N = 1000000;
   Dune::Timer timer;
 
   // Construct
   timer.reset();
-  for (volatile int i = 0; i < N; ++i)
-    std::vector<double> v (i, 42.);
+  for (int i = 0; i < N; ++i)
+    std::vector<double> v (10, i);
   std::cout << "Standard: " << timer.elapsed() << std::endl;
 
   timer.reset();
-  for (volatile int i = 0; i < N; ++i)
-    Virtualized virt( std::vector<double> (i, 42.) );
-  std::cout << "Virtualized: " << timer.elapsed() << std::endl;
+  for (int i = 0; i < N; ++i)
+    Virtualized virt( std::vector<double> (10, i) );
+  std::cout << "Virtual:  " << timer.elapsed() << std::endl;
 
   // Call
   std::vector<double> v (100, 42.);
+  int c = 0;
   timer.reset();
-  for (volatile int i = 0; i < N; ++i)
-    v.size();
+  for (int i = 0; i < N; ++i)
+    c += v.size();
   std::cout << "Call Standard: " << timer.elapsed() << std::endl;
 
   Virtualized virt(v);
   timer.reset();
-  for (volatile int i = 0; i < N; ++i)
-    virt.size();
-  std::cout << "Call Virtualized: " << timer.elapsed() << std::endl;
+  for (int i = 0; i < N; ++i)
+    c += virt.size();
+  std::cout << "Call Virtual:  " << timer.elapsed() << std::endl;
 
-  // ===============================================================
+  // ======== SMALL TEST COMPUTING CUMULATED VOLUME ========
 
-  Dune::MPIHelper::instance(argc, argv);
+  Dune::YaspGrid<2> yaspgrid2({1., 1.}, {1000, 1000});
+  Dune::VirtualizedGrid<2, 2> vgrid2( yaspgrid2 );
+
+  // Compute volume
+  std::cout << "Volume calculation" << std::endl;
+  timer.reset();
+  double vol = 0.0;
+  for (const auto& e : elements( yaspgrid2.leafGridView() ))
+    vol += e.geometry().volume();
+  std::cout << " Standard: " << timer.elapsed() << std::endl;
+
+  timer.reset();
+  vol = 0.0;
+  for (const auto& e : elements( vgrid2.leafGridView() ))
+    vol += e.geometry().volume();
+  std::cout << " Virtual:  " << timer.elapsed() << std::endl;
+
+  // ======== GRID CHECK ========
 
   {
     // 1D
