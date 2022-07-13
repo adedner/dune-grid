@@ -33,13 +33,18 @@ namespace Dune {
   {
     try
     {
+#ifdef NDEBUG
       return static_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
+#else
+      return dynamic_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
+#endif
+
     }
     catch(const std::bad_cast& e)
     {
       std::cout << e.what() << std::endl;
-      std::cout << _Utility::type_name<decltype(*interface.impl().impl_.get())>() << std::endl;
-      std::cout << _Utility::type_name<const Implementation&>() << std::endl;
+      std::cout << "Cast from:  " << _Utility::type_name<decltype(*interface.impl().impl_.get())>() << std::endl;
+      std::cout << "       to:  " << _Utility::type_name<const Implementation&>() << std::endl;
       DUNE_THROW(InvalidStateException, "Dynamic cast failed!");
     }
   }
