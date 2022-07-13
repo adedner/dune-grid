@@ -109,7 +109,7 @@ namespace Dune {
 
       virtual Geometry geometry () const override
       {
-        return Geometry( VirtualizedGridGeometry<dim-codim, dim, GridImp>( impl().geometry() ) );
+        return Geometry( VirtualizedGridGeometry<dim-codim, Geometry::coorddimension, GridImp>( impl().geometry() ) );
       }
 
       const auto &impl () const { return impl_; }
@@ -272,7 +272,7 @@ namespace Dune {
 
       virtual Geometry geometry () const override
       {
-        return Geometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometry() ) );
+        return Geometry( VirtualizedGridGeometry<dim, Geometry::coorddimension, GridImp>( impl().geometry() ) );
       }
 
       virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }

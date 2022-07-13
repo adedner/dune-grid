@@ -88,7 +88,7 @@ namespace Dune {
       virtual GeometryType type () const override { return impl().type(); }
       virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
       virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometry() ) ); }
+      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
       virtual int indexInInside () const override { return impl().indexInInside(); }
       virtual int indexInOutside () const override { return impl().indexInOutside(); }
       virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
@@ -299,7 +299,7 @@ namespace Dune {
       virtual GeometryType type () const override { return impl().type(); }
       virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
       virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometry() ) ); }
+      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
       virtual int indexInInside () const override { return impl().indexInInside(); }
       virtual int indexInOutside () const override { return impl().indexInOutside(); }
       virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
