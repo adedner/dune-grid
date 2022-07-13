@@ -43,34 +43,81 @@ namespace Dune
   template<int dimension, int dimensionworld, typename ct>
   struct VirtualizedGridFamily
   {
+    struct Traits
+    {
+      /** \brief The type that implements the grid. */
+      typedef VirtualizedGrid< dimension, dimensionworld, ct > Grid;
 
-  public:
+      /** \brief The type of the intersection at the leafs of the grid. */
+      typedef Dune::Intersection< const Grid, VirtualizedGridLeafIntersection< const Grid > > LeafIntersection;
+      /** \brief The type of the intersection at the levels of the grid. */
+      typedef Dune::Intersection< const Grid, VirtualizedGridLevelIntersection< const Grid > > LevelIntersection;
+      /** \brief The type of the intersection iterator at the leafs of the grid. */
+      typedef Dune::IntersectionIterator< const Grid, VirtualizedGridLeafIntersectionIterator< const Grid >, VirtualizedGridLeafIntersection< const Grid > > LeafIntersectionIterator;
+      /** \brief The type of the intersection iterator at the levels of the grid. */
+      typedef Dune::IntersectionIterator< const Grid, VirtualizedGridLevelIntersectionIterator< const Grid >, VirtualizedGridLevelIntersection< const Grid > > LevelIntersectionIterator;
 
-    typedef GridTraits<
-        dimension,
-        dimensionworld,
-        VirtualizedGrid<dimension, dimensionworld, ct>,
-        VirtualizedGridGeometry,
-        VirtualizedGridEntity,
-        VirtualizedGridLevelIterator,
-        VirtualizedGridLeafIntersection,
-        VirtualizedGridLevelIntersection,
-        VirtualizedGridLeafIntersectionIterator,
-        VirtualizedGridLevelIntersectionIterator,
-        VirtualizedGridHierarchicIterator,
-        VirtualizedGridLeafIterator,
-        VirtualizedGridLevelIndexSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
-        VirtualizedGridLeafIndexSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
-        VirtualizedGridGlobalIdSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
-        VirtualizedGridIdType,
-        VirtualizedGridLocalIdSet<const VirtualizedGrid<dimension, dimensionworld, ct>>,
-        VirtualizedGridIdType,
-        VirtualizedCollectiveCommunication,
-        DefaultLevelGridViewTraits,
-        DefaultLeafGridViewTraits,
-        VirtualizedGridEntitySeed
-        > Traits;
+      /** \brief The type of the  hierarchic iterator. */
+      typedef Dune::EntityIterator< 0, const Grid, VirtualizedGridHierarchicIterator< const Grid > > HierarchicIterator;
 
+      /**
+       * \brief Traits associated with a specific codim.
+       * \tparam cd The codimension.
+       */
+      template <int cd>
+      struct Codim
+      {
+      public:
+        /** \brief The type of the geometry associated with the entity.*/
+        typedef Dune::Geometry< dimension-cd, dimensionworld, const Grid, VirtualizedGridGeometry > Geometry;
+        /** \brief The type of the local geometry associated with the entity.*/
+        typedef Dune::Geometry< dimension-cd, dimension, const Grid, VirtualizedGridGeometry > LocalGeometry;
+        /** \brief The type of the entity. */
+        typedef Dune::Entity< cd, dimension, const Grid, VirtualizedGridEntity > Entity;
+
+        /** \brief The type of the entity seed of this codim.*/
+        typedef Dune::EntitySeed< const Grid, VirtualizedGridEntitySeed<cd, const Grid> > EntitySeed;
+
+        /**
+         * \brief Traits associated with a specific grid partition type.
+         * \tparam pitype The type of the grid partition.
+         */
+        template <PartitionIteratorType pitype>
+        struct Partition
+        {
+          /** \brief The type of the iterator over the level entities of this codim on this partition. */
+          typedef Dune::EntityIterator< cd, const Grid, VirtualizedGridLevelIterator< cd, pitype, const Grid > > LevelIterator;
+          /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
+          typedef Dune::EntityIterator< cd, const Grid, VirtualizedGridLeafIterator< cd, pitype, const Grid > > LeafIterator;
+        };
+
+        /** \brief The type of the iterator over all leaf entities of this codim. */
+        typedef typename Partition< All_Partition >::LeafIterator LeafIterator;
+
+        /** \brief The type of the entity pointer for entities of this codim.*/
+        typedef typename Partition< All_Partition >::LevelIterator LevelIterator;
+
+      private:
+        friend class Dune::Entity< cd, dimension, const Grid, VirtualizedGridEntity >;
+      };
+
+      /** \brief type of view for leaf grid */
+      typedef Dune::GridView< DefaultLeafGridViewTraits< const Grid > > LeafGridView;
+      /** \brief type of view for level grid */
+      typedef Dune::GridView< DefaultLevelGridViewTraits< const Grid > > LevelGridView;
+
+      /** \brief The type of the level index set. */
+      typedef IndexSet< const Grid, VirtualizedGridLevelIndexSet< const Grid > > LevelIndexSet;
+      /** \brief The type of the leaf index set. */
+      typedef IndexSet< const Grid, VirtualizedGridLeafIndexSet< const Grid > > LeafIndexSet;
+      /** \brief The type of the global id set. */
+      typedef IdSet< const Grid, VirtualizedGridGlobalIdSet< const Grid >, VirtualizedGridIdType> GlobalIdSet;
+      /** \brief The type of the local id set. */
+      typedef IdSet< const Grid, VirtualizedGridLocalIdSet< const Grid >, VirtualizedGridIdType> LocalIdSet;
+
+      /** \brief The type of the collective communication. */
+      typedef VirtualizedCollectiveCommunication CollectiveCommunication;
+    };
   };
 
   //**********************************************************************
