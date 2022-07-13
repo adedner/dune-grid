@@ -26,6 +26,7 @@
 #include "virtualizedgrid/leafiterator.hh"
 #include "virtualizedgrid/hierarchiciterator.hh"
 #include "virtualizedgrid/indexsets.hh"
+#include "virtualizedgrid/gridview.hh"
 
 #if HAVE_MPI
   #include <dune/common/parallel/mpicommunication.hh>
@@ -101,10 +102,10 @@ namespace Dune
         friend class Dune::Entity< cd, dimension, const Grid, VirtualizedGridEntity >;
       };
 
-      /** \brief type of view for leaf grid */
-      typedef Dune::GridView< DefaultLeafGridViewTraits< const Grid > > LeafGridView;
-      /** \brief type of view for level grid */
-      typedef Dune::GridView< DefaultLevelGridViewTraits< const Grid > > LevelGridView;
+      /** \brief The type of the leaf grid view. */
+      typedef Dune::GridView< VirtualizedGridLeafViewTraits< const Grid > > LeafGridView;
+      /** \brief The type of the level grid view. */
+      typedef Dune::GridView< VirtualizedGridLevelViewTraits< const Grid > > LevelGridView;
 
       /** \brief The type of the level index set. */
       typedef IndexSet< const Grid, VirtualizedGridLevelIndexSet< const Grid > > LevelIndexSet;
@@ -201,6 +202,10 @@ namespace Dune
       virtual typename Traits::template Codim<0>::template Partition<Ghost_Partition>::LeafIterator leafendGhost() const = 0;
       virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafbegin1Ghost() const = 0;
       virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafend1Ghost() const = 0;
+      virtual typename Traits::LevelIntersectionIterator ilevelbegin (const typename Traits::template Codim< 0 >::Entity& entity) const = 0;
+      virtual typename Traits::LevelIntersectionIterator ilevelend (const typename Traits::template Codim< 0 >::Entity& entity) const = 0;
+      virtual typename Traits::LeafIntersectionIterator ileafbegin (const typename Traits::template Codim< 0 >::Entity& entity) const = 0;
+      virtual typename Traits::LeafIntersectionIterator ileafend (const typename Traits::template Codim< 0 >::Entity& entity) const = 0;
       virtual int size (int level, int codim) const = 0;
       virtual size_t numBoundarySegments () const = 0;
       virtual int size (int codim) const = 0;
@@ -381,6 +386,26 @@ namespace Dune
       virtual typename Traits::template Codim<1>::template Partition<Ghost_Partition>::LeafIterator leafend1Ghost () const override
       {
         return VirtualizedGridLeafIterator<1, Ghost_Partition, const ThisType> ( std::move( impl().template leafend<1, Ghost_Partition>() ) );
+      }
+
+      virtual typename Traits::LevelIntersectionIterator ilevelbegin ( const typename Traits::template Codim< 0 >::Entity& entity ) const override
+      {
+        return VirtualizedGridLevelIntersectionIterator<const ThisType>( std::move( impl().ilevelbegin( upcast<ImplEntity>(entity) ) ) );
+      }
+
+      virtual typename Traits::LevelIntersectionIterator ilevelend ( const typename Traits::template Codim< 0 >::Entity& entity ) const override
+      {
+        return VirtualizedGridLevelIntersectionIterator<const ThisType>( std::move( impl().ilevelend( upcast<ImplEntity>(entity) ) ) );
+      }
+
+      virtual typename Traits::LeafIntersectionIterator ileafbegin ( const typename Traits::template Codim< 0 >::Entity& entity ) const override
+      {
+        return VirtualizedGridLeafIntersectionIterator<const ThisType>( std::move( impl().ileafbegin( upcast<ImplEntity>(entity) ) ) );
+      }
+
+      virtual typename Traits::LeafIntersectionIterator ileafend ( const typename Traits::template Codim< 0 >::Entity& entity ) const override
+      {
+        return VirtualizedGridLeafIntersectionIterator<const ThisType>( std::move( impl().ileafend( upcast<ImplEntity>(entity) ) ) );
       }
 
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
@@ -655,6 +680,25 @@ namespace Dune
       }
     }
 
+    virtual typename Traits::LevelIntersectionIterator ilevelbegin ( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return impl_->ilevelbegin( entity );
+    }
+
+    virtual typename Traits::LevelIntersectionIterator ilevelend ( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return impl_->ilevelend( entity );
+    }
+
+    virtual typename Traits::LeafIntersectionIterator ileafbegin ( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return impl_->ileafbegin( entity );
+    }
+
+    virtual typename Traits::LeafIntersectionIterator ileafend ( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return impl_->ileafend( entity );
+    }
 
     /** \brief Number of grid entities per level and codim
      */

@@ -1390,6 +1390,27 @@ namespace Dune {
       return levelend<cd,All_Partition>(maxLevel());
     }
 
+    typename Traits::LevelIntersectionIterator ilevelbegin( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return entity.impl().ilevelbegin();
+    }
+
+    typename Traits::LevelIntersectionIterator ilevelend( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return entity.impl().ilevelend();
+    }
+
+    typename Traits::LeafIntersectionIterator ileafbegin( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return entity.impl().ileafbegin();
+    }
+
+    typename Traits::LeafIntersectionIterator ileafend( const typename Traits::template Codim< 0 >::Entity& entity ) const
+    {
+      return entity.impl().ileafend();
+    }
+
+
     // \brief obtain Entity from EntitySeed. */
     template <typename Seed>
     typename Traits::template Codim<Seed::codimension>::Entity

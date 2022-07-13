@@ -239,11 +239,8 @@ namespace Dune {
       virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const = 0;
       virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const = 0;
       virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0;
-      virtual LevelIntersectionIterator ilevelbegin () const = 0;
-      virtual LevelIntersectionIterator ilevelend () const = 0;
-      virtual LeafIntersectionIterator ileafbegin () const = 0;
-      virtual LeafIntersectionIterator ileafend () const = 0;
       virtual bool isLeaf() const = 0;
+      virtual bool hasBoundaryIntersections () const = 0;
       virtual typename GridImp::template Codim<0>::Entity father () const = 0;
       virtual LocalGeometry geometryInFather () const = 0;
       virtual HierarchicIterator hbegin (int maxLevel) const = 0;
@@ -300,27 +297,9 @@ namespace Dune {
         return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
       }
 
-      virtual LevelIntersectionIterator ilevelbegin () const override
-      {
-        return VirtualizedGridLevelIntersectionIterator<const GridImp>( impl().impl().ilevelbegin() );
-      }
+      virtual bool isLeaf () const override { return impl().isLeaf(); }
 
-      virtual LevelIntersectionIterator ilevelend () const override
-      {
-        return VirtualizedGridLevelIntersectionIterator<const GridImp>( impl().impl().ilevelend() );
-      }
-
-      virtual LeafIntersectionIterator ileafbegin () const override
-      {
-        return VirtualizedGridLeafIntersectionIterator<const GridImp>( impl().impl().ileafbegin() );
-      }
-
-      virtual LeafIntersectionIterator ileafend () const override
-      {
-        return VirtualizedGridLeafIntersectionIterator<const GridImp>( impl().impl().ileafend() );
-      }
-
-      virtual bool isLeaf() const override { return impl().isLeaf(); }
+      virtual bool hasBoundaryIntersections () const override { return impl().hasBoundaryIntersections(); }
 
       virtual typename GridImp::template Codim<0>::Entity father () const override
       {
@@ -431,37 +410,15 @@ namespace Dune {
         return impl_->subEntityDim(i);
     }
 
-    //! First level intersection
-    VirtualizedGridLevelIntersectionIterator<const GridImp> ilevelbegin () const {
-      return VirtualizedGridLevelIntersectionIterator<const GridImp>(
-        impl_->ilevelbegin());
-    }
-
-
-    //! Reference to one past the last neighbor
-    VirtualizedGridLevelIntersectionIterator<const GridImp> ilevelend () const {
-      return VirtualizedGridLevelIntersectionIterator<const GridImp>(
-        impl_->ilevelend());
-    }
-
-
-    //! First leaf intersection
-    VirtualizedGridLeafIntersectionIterator<const GridImp> ileafbegin () const {
-      return VirtualizedGridLeafIntersectionIterator<const GridImp>(
-        impl_->ileafbegin());
-    }
-
-
-    //! Reference to one past the last leaf intersection
-    VirtualizedGridLeafIntersectionIterator<const GridImp> ileafend () const {
-      return VirtualizedGridLeafIntersectionIterator<const GridImp>(
-        impl_->ileafend());
-    }
-
 
     //! returns true if Entity has NO children
     bool isLeaf() const {
       return impl_->isLeaf();
+    }
+
+    // returns true if entity has boundary intersections
+    bool hasBoundaryIntersections () const {
+      return impl_->hasBoundaryIntersections();
     }
 
 
