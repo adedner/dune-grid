@@ -41,7 +41,7 @@ namespace Dune
     typedef typename Grid::Traits::LevelIntersectionIterator IntersectionIterator;
 
     /** \brief type of the collective communication */
-    typedef typename Grid::Traits::CollectiveCommunication CollectiveCommunication;
+    typedef typename Grid::Traits::Communication Communication;
 
     template< int cd >
     struct Codim
@@ -84,7 +84,7 @@ namespace Dune
 
     typedef typename Traits::IntersectionIterator IntersectionIterator;
 
-    typedef typename Traits::CollectiveCommunication CollectiveCommunication;
+    typedef typename Traits::Communication Communication;
 
     template< int codim >
     struct Codim : public Traits::template Codim< codim > {};
@@ -152,7 +152,7 @@ namespace Dune
       return grid().ilevelend( entity );
     }
 
-    const CollectiveCommunication &comm () const
+    const Communication &comm () const
     {
       return grid().comm();
     }
@@ -202,7 +202,7 @@ namespace Dune
     typedef typename Grid::Traits::LeafIntersectionIterator IntersectionIterator;
 
     /** \brief type of the collective communication */
-    typedef typename Grid::Traits::CollectiveCommunication CollectiveCommunication;
+    typedef typename Grid::Traits::Communication Communication;
 
     template< int cd >
     struct Codim
@@ -246,7 +246,7 @@ namespace Dune
 
     typedef typename Traits::IntersectionIterator IntersectionIterator;
 
-    typedef typename Traits::CollectiveCommunication CollectiveCommunication;
+    typedef typename Traits::Communication Communication;
 
     template< int codim >
     struct Codim : public Traits::template Codim< codim > {};
@@ -314,7 +314,7 @@ namespace Dune
       return grid().ileafend( entity );
     }
 
-    const CollectiveCommunication &comm () const
+    const Communication &comm () const
     {
       return grid().comm();
     }

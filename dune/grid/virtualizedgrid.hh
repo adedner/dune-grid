@@ -31,9 +31,9 @@
 
 #if HAVE_MPI
   #include <dune/common/parallel/mpicommunication.hh>
-  using VirtualizedCollectiveCommunication = Dune::Communication<MPI_Comm>;
+  using VirtualizedCommunication = Dune::Communication<MPI_Comm>;
 #else
-  using VirtualizedCollectiveCommunication = Dune::Communication<No_Comm>;
+  using VirtualizedCommunication = Dune::Communication<No_Comm>;
 #endif
 
 namespace Dune
@@ -123,7 +123,7 @@ namespace Dune
       typedef IdSet< const Grid, VirtualizedGridLocalIdSet< const Grid >, VirtualizedGridIdType> LocalIdSet;
 
       /** \brief The type of the collective communication. */
-      typedef VirtualizedCollectiveCommunication CollectiveCommunication;
+      typedef VirtualizedCommunication Communication;
     };
   };
 
@@ -243,7 +243,7 @@ namespace Dune
       virtual unsigned int ghostSize(int codim) const = 0;
       virtual unsigned int overlapSize(int level, int codim) const = 0;
       virtual unsigned int ghostSize(int level, int codim) const = 0;
-      virtual const VirtualizedCollectiveCommunication& comm () const = 0;
+      virtual const VirtualizedCommunication& comm () const = 0;
 
       virtual typename Traits::LevelIntersectionIterator ilevelbegin (const Entity0& entity) const = 0;
       virtual typename Traits::LevelIntersectionIterator ilevelend (const Entity0& entity) const = 0;
@@ -410,7 +410,7 @@ namespace Dune
       virtual unsigned int ghostSize (int codim) const override { return impl().ghostSize(codim); }
       virtual unsigned int overlapSize (int level, int codim) const override { return impl().overlapSize(level, codim); }
       virtual unsigned int ghostSize (int level, int codim) const override { return impl().ghostSize(level, codim); }
-      virtual const VirtualizedCollectiveCommunication& comm () const override { return impl().comm(); }
+      virtual const VirtualizedCommunication& comm () const override { return impl().comm(); }
 
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
@@ -686,7 +686,7 @@ namespace Dune
 
 
     //! Returns the collective communication object
-    const VirtualizedCollectiveCommunication& comm () const {
+    const VirtualizedCommunication& comm () const {
       return ccobj;
     }
 
@@ -718,7 +718,7 @@ namespace Dune
     //! The grid this VirtualizedGrid holds
     std::unique_ptr< Interface > impl_;
 
-    VirtualizedCollectiveCommunication ccobj;
+    VirtualizedCommunication ccobj;
   }; // end Class VirtualizedGrid
 
 
