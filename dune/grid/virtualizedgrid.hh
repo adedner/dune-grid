@@ -274,16 +274,16 @@ namespace Dune
       using VirtLeafIterator = VirtualizedGridLeafIterator<codim,pitype,const ThisType>;
 
       virtual LevelIterator lbegin (Codim<codim>, Partition<pitype>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().template lbegin<codim,pitype>(level)) );
+        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template begin<codim,pitype>()) );
       }
       virtual LevelIterator lend (Codim<codim>, Partition<pitype>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().template lend<codim,pitype>(level)) );
+        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template end<codim,pitype>()) );
       }
       virtual LeafIterator leafbegin (Codim<codim>, Partition<pitype>) const final {
-        return VirtLeafIterator( std::move(derived().impl().template leafbegin<codim,pitype>()) );
+        return VirtLeafIterator( std::move(derived().impl().leafGridView().template begin<codim,pitype>()) );
       }
       virtual LeafIterator leafend (Codim<codim>, Partition<pitype>) const final {
-        return VirtLeafIterator( std::move(derived().impl().template leafend<codim,pitype>()) );
+        return VirtLeafIterator( std::move(derived().impl().leafGridView().template end<codim,pitype>()) );
       }
 
     private:
@@ -305,16 +305,16 @@ namespace Dune
       using EntitySeedImpl = typename VirtualizedGridEntitySeed<codim,const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<codim>::EntitySeed>;
 
       virtual LevelIterator lbegin (Codim<codim>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().template lbegin<codim>(level)) );
+        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template begin<codim>()) );
       }
       virtual LevelIterator lend (Codim<codim>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().template lend<codim>(level)) );
+        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template end<codim>()) );
       }
       virtual LeafIterator leafbegin (Codim<codim>) const final {
-        return VirtLeafIterator( std::move(derived().impl().template leafbegin<codim>()) );
+        return VirtLeafIterator( std::move(derived().impl().leafGridView().template begin<codim>()) );
       }
       virtual LeafIterator leafend (Codim<codim>) const final {
-        return VirtLeafIterator( std::move(derived().impl().template leafend<codim>()) );
+        return VirtLeafIterator( std::move(derived().impl().leafGridView().template end<codim>()) );
       }
       virtual Entity entity (Codim<codim>, const EntitySeed& seed) const final {
         return VirtEntity( std::move(derived().impl().entity(upcast<EntitySeedImpl>(seed))) );
@@ -364,16 +364,16 @@ namespace Dune
       virtual int maxLevel () const override { return impl().maxLevel(); }
 
       virtual typename Traits::LevelIntersectionIterator ilevelbegin (const Entity0& entity) const override {
-        return VirtLevelIntersectionIterator( std::move(impl().ilevelbegin(upcast<Entity0Impl>(entity))) );
+        return VirtLevelIntersectionIterator( std::move(impl().levelGridView(entity.level()).ibegin(upcast<Entity0Impl>(entity))) );
       }
       virtual typename Traits::LevelIntersectionIterator ilevelend (const Entity0& entity) const override {
-        return VirtLevelIntersectionIterator( std::move(impl().ilevelend(upcast<Entity0Impl>(entity))) );
+        return VirtLevelIntersectionIterator( std::move(impl().levelGridView(entity.level()).iend(upcast<Entity0Impl>(entity))) );
       }
       virtual typename Traits::LeafIntersectionIterator ileafbegin (const Entity0& entity) const override {
-        return VirtLeafIntersectionIterator( std::move(impl().ileafbegin(upcast<Entity0Impl>(entity))) );
+        return VirtLeafIntersectionIterator( std::move(impl().leafGridView().ibegin(upcast<Entity0Impl>(entity))) );
       }
       virtual typename Traits::LeafIntersectionIterator ileafend (const Entity0& entity) const override {
-        return VirtLeafIntersectionIterator( std::move(impl().ileafend(upcast<Entity0Impl>(entity))) );
+        return VirtLeafIntersectionIterator( std::move(impl().leafGridView().iend(upcast<Entity0Impl>(entity))) );
       }
 
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
