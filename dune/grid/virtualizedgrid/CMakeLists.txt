@@ -3,6 +3,7 @@
 
 set(HEADERS
   cast.hh
+  datahandle.hh
   entity.hh
   entityseed.hh
   geometry.hh
