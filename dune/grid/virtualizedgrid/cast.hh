@@ -31,14 +31,12 @@ namespace Dune {
   template<class Implementation, class Interface>
   auto&& upcast(Interface&& interface)
   {
+#ifdef NDEBUG
+    return static_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
+#else
     try
     {
-#ifdef NDEBUG
-      return static_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
-#else
       return dynamic_cast<const Implementation&>(*interface.impl().impl_.get()).impl();
-#endif
-
     }
     catch(const std::bad_cast& e)
     {
@@ -47,6 +45,7 @@ namespace Dune {
       std::cout << "       to:  " << _Utility::type_name<const Implementation&>() << std::endl;
       DUNE_THROW(InvalidStateException, "Dynamic cast failed!");
     }
+#endif
   }
 
 }  // namespace Dune
