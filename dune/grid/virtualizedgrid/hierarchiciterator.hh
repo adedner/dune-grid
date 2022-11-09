@@ -43,16 +43,16 @@ namespace Dune {
       : public Interface
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual void increment() override { ++impl(); }
+      void increment() override { ++impl(); }
 
-      virtual Entity dereference() const override
+      Entity dereference() const override
       {
         return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp> ( *impl() );
       }
 
-      virtual bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
+      bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
       {
         return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
       }

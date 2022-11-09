@@ -66,13 +66,13 @@ namespace Dune {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
       using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
 
-      virtual int index (Codim<codim>, const Entity& e) const final {
+      int index (Codim<codim>, const Entity& e) const final {
         return derived().impl().index(upcast<EntityImpl>(e));
       }
-      virtual int subIndex (Codim<codim>, const Entity& e, int i, int cd) const final {
+      int subIndex (Codim<codim>, const Entity& e, int i, int cd) const final {
         return derived().impl().template subIndex<codim>(upcast<EntityImpl>(e), i, cd);
       }
-      virtual bool contains (Codim<codim>, const Entity& e) const final {
+      bool contains (Codim<codim>, const Entity& e) const final {
         return derived().impl().contains(upcast<EntityImpl>(e));
       }
 
@@ -86,11 +86,11 @@ namespace Dune {
       , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims>...
     {
       ImplementationImpl ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
+      ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
 
-      virtual std::size_t size (int codim) const override { return impl().size(codim); }
-      virtual std::size_t size (GeometryType type) const override { return impl().size(type); }
-      virtual Types types (int codim) const override { return impl().types(codim); }
+      std::size_t size (int codim) const override { return impl().size(codim); }
+      std::size_t size (GeometryType type) const override { return impl().size(type); }
+      Types types (int codim) const override { return impl().types(codim); }
 
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
@@ -217,13 +217,13 @@ namespace Dune {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
       using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
 
-      virtual int index (Codim<codim>, const Entity& e) const final {
+      int index (Codim<codim>, const Entity& e) const final {
         return derived().impl().index(upcast<EntityImpl>(e));
       }
-      virtual int subIndex (Codim<codim>, const Entity& e, int i, int cd) const final {
+      int subIndex (Codim<codim>, const Entity& e, int i, int cd) const final {
         return derived().impl().template subIndex<codim>(upcast<EntityImpl>(e), i, cd);
       }
-      virtual bool contains (Codim<codim>, const Entity& e) const final {
+      bool contains (Codim<codim>, const Entity& e) const final {
         return derived().impl().contains(upcast<EntityImpl>(e));
       }
 
@@ -237,11 +237,11 @@ namespace Dune {
       , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims>...
     {
       ImplementationImpl ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
+      ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
 
-      virtual std::size_t size (int codim) const override { return impl().size(codim); }
-      virtual std::size_t size (GeometryType type) const override { return impl().size(type); }
-      virtual Types types (int codim) const override { return impl().types(codim); }
+      std::size_t size (int codim) const override { return impl().size(codim); }
+      std::size_t size (GeometryType type) const override { return impl().size(type); }
+      Types types (int codim) const override { return impl().types(codim); }
 
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
@@ -380,7 +380,7 @@ namespace Dune {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
       using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
 
-      virtual IdType id (Codim<codim>, const Entity& e) const final {
+      IdType id (Codim<codim>, const Entity& e) const final {
         return derived().impl().template id<codim>(upcast<EntityImpl>(e));
       }
 
@@ -397,9 +397,9 @@ namespace Dune {
       using EntityImpl = typename VirtualizedGridEntity<0,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<0>::Entity>;
 
       ImplementationImpl ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
+      ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
 
-      virtual IdType subId (const Entity& e, int i, int codim) const override {
+      IdType subId (const Entity& e, int i, int codim) const override {
         return impl().subId(upcast<EntityImpl>(e), i, codim);
       }
 
@@ -504,7 +504,7 @@ namespace Dune {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
       using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
 
-      virtual IdType id (Codim<codim>, const Entity& e) const final {
+      IdType id (Codim<codim>, const Entity& e) const final {
         return derived().impl().template id<codim>(upcast<EntityImpl>(e));
       }
 
@@ -521,9 +521,9 @@ namespace Dune {
       using EntityImpl = typename VirtualizedGridEntity<0,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<0>::Entity>;
 
       ImplementationImpl ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
+      ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
 
-      virtual IdType subId (const Entity& e, int i, int codim) const override {
+      IdType subId (const Entity& e, int i, int codim) const override {
         return impl().subId(upcast<EntityImpl>(e), i, codim);
       }
 

@@ -39,36 +39,36 @@ namespace Dune {
       : public Interface
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual bool operator== (const VirtualizedGridIdType& other) const override
+      bool operator== (const VirtualizedGridIdType& other) const override
       {
         return impl() == static_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
-      virtual bool operator!= (const VirtualizedGridIdType& other) const override
+      bool operator!= (const VirtualizedGridIdType& other) const override
       {
         return !operator==(other);
       }
 
-      virtual bool operator< (const VirtualizedGridIdType& other) const override
+      bool operator< (const VirtualizedGridIdType& other) const override
       {
         return impl() < static_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
-      virtual bool operator<= (const VirtualizedGridIdType& other) const override
+      bool operator<= (const VirtualizedGridIdType& other) const override
       {
         return impl() <= static_cast<const Implementation<I>&>(*other.impl_).impl();
       }
 
-      virtual std::string str() const override
+      std::string str() const override
       {
         std::stringstream ss;
         ss << impl() << std::endl;
         return ss.str();
       }
 
-      virtual std::size_t hash () const override
+      std::size_t hash () const override
       {
         return std::hash<I>()(impl_);
       }

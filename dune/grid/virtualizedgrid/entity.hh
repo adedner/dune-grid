@@ -89,25 +89,25 @@ namespace Dune {
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
 
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const override
+      bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const override
       {
         return impl() == static_cast<Implementation<I>&>(*other.impl_).impl();
       }
 
-      virtual EntitySeed seed () const override
+      EntitySeed seed () const override
       {
         return VirtualizedGridEntitySeed<codim, GridImp>( impl().seed() );
       }
 
-      virtual int level () const override { return impl().level(); }
+      int level () const override { return impl().level(); }
 
-      virtual PartitionType partitionType () const override { return impl().partitionType(); }
+      PartitionType partitionType () const override { return impl().partitionType(); }
 
-      virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
+      unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
 
-      virtual Geometry geometry () const override
+      Geometry geometry () const override
       {
         return Geometry( VirtualizedGridGeometry<dim-codim, Geometry::coorddimension, GridImp>( impl().geometry() ) );
       }
@@ -253,70 +253,70 @@ namespace Dune {
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
 
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const override {
+      bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const override {
         return impl() == static_cast<Implementation<I>&>(*other.impl_).impl();
       }
 
-      virtual bool hasFather () const override { return impl().hasFather(); }
+      bool hasFather () const override { return impl().hasFather(); }
 
-      virtual EntitySeed seed () const override
+      EntitySeed seed () const override
       {
         return VirtualizedGridEntitySeed<0, GridImp>( impl().seed() );
       }
 
-      virtual int level () const override { return impl().level(); }
+      int level () const override { return impl().level(); }
 
-      virtual PartitionType partitionType () const override { return impl().partitionType(); }
+      PartitionType partitionType () const override { return impl().partitionType(); }
 
-      virtual Geometry geometry () const override
+      Geometry geometry () const override
       {
         return Geometry( VirtualizedGridGeometry<dim, Geometry::coorddimension, GridImp>( impl().geometry() ) );
       }
 
-      virtual unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
+      unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
 
-      virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
+      typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
       {
         return VirtualizedGridEntity<0, dim, GridImp>( impl().template subEntity<0>(i) );
       }
 
-      virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const override
+      typename GridImp::template Codim<1>::Entity subEntity1 (int i) const override
       {
         return VirtualizedGridEntity<1, dim, GridImp>( impl().template subEntity<1>(i) );
       }
 
-      virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const override
+      typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const override
       {
         return VirtualizedGridEntity<dim-1, dim, GridImp>( impl().template subEntity<dim-1>(i) );
       }
 
-      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
+      typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
       {
         return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
       }
 
-      virtual bool isLeaf () const override { return impl().isLeaf(); }
+      bool isLeaf () const override { return impl().isLeaf(); }
 
-      virtual bool hasBoundaryIntersections () const override { return impl().hasBoundaryIntersections(); }
+      bool hasBoundaryIntersections () const override { return impl().hasBoundaryIntersections(); }
 
-      virtual typename GridImp::template Codim<0>::Entity father () const override
+      typename GridImp::template Codim<0>::Entity father () const override
       {
         return VirtualizedGridEntity<0, dim, GridImp>(impl().father());
       }
 
-      virtual LocalGeometry geometryInFather () const override
+      LocalGeometry geometryInFather () const override
       {
         return LocalGeometry( VirtualizedGridGeometry<dim, dim, GridImp>( impl().geometryInFather() ) );
       }
 
-      virtual HierarchicIterator hbegin (int maxLevel) const override
+      HierarchicIterator hbegin (int maxLevel) const override
       {
         return VirtualizedGridHierarchicIterator<const GridImp>(impl().hbegin(maxLevel));
       }
 
-      virtual HierarchicIterator hend (int maxLevel) const override
+      HierarchicIterator hend (int maxLevel) const override
       {
         return VirtualizedGridHierarchicIterator<const GridImp>(impl().hend(maxLevel));
       }

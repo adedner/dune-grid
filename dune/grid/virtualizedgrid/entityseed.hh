@@ -39,8 +39,8 @@ namespace Dune {
       : public Interface
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
-      virtual bool isValid() const override { return impl().isValid(); }
+      Implementation *clone() const override { return new Implementation( *this ); }
+      bool isValid() const override { return impl().isValid(); }
 
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }

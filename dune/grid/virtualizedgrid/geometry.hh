@@ -44,17 +44,17 @@ namespace Dune {
       : public Interface
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual GeometryType type () const override { return impl().type(); }
-      virtual bool affine() const override { return impl().affine(); }
-      virtual int corners () const override { return impl().corners(); }
-      virtual const FieldVector<ctype, coorddim> corner (int i) const override { return impl().corner(i); }
-      virtual FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const override { return impl().global(local); }
-      virtual JacobianTransposed jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const override { return impl().jacobianTransposed(local); }
-      virtual FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const override { return impl().local(global); }
-      virtual ctype integrationElement (const FieldVector<ctype, mydim>& local) const override { return impl().integrationElement(local); }
-      virtual JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const override { return impl().jacobianInverseTransposed(local); }
+      GeometryType type () const override { return impl().type(); }
+      bool affine() const override { return impl().affine(); }
+      int corners () const override { return impl().corners(); }
+      const FieldVector<ctype, coorddim> corner (int i) const override { return impl().corner(i); }
+      FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const override { return impl().global(local); }
+      JacobianTransposed jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const override { return impl().jacobianTransposed(local); }
+      FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const override { return impl().local(global); }
+      ctype integrationElement (const FieldVector<ctype, mydim>& local) const override { return impl().integrationElement(local); }
+      JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const override { return impl().jacobianInverseTransposed(local); }
 
     private:
       const auto &impl () const { return impl_; }

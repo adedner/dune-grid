@@ -71,29 +71,29 @@ namespace Dune {
       : public Interface
     {
       Implementation ( const I& i ) : impl_( i ) {}
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual bool equals(const VirtualizedGridLeafIntersection<GridImp>& i) const override
+      bool equals(const VirtualizedGridLeafIntersection<GridImp>& i) const override
       {
         return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
-      virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
-      virtual Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
-      virtual bool boundary () const override { return impl().boundary(); }
-      virtual NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
-      virtual bool neighbor () const override { return impl().neighbor(); }
-      virtual size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
-      virtual bool conforming () const override { return impl().conforming(); }
-      virtual GeometryType type () const override { return impl().type(); }
-      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
-      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
-      virtual int indexInInside () const override { return impl().indexInInside(); }
-      virtual int indexInOutside () const override { return impl().indexInOutside(); }
-      virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
-      virtual FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().integrationOuterNormal(local); }
-      virtual FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().unitOuterNormal(local); }
+      Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
+      Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
+      bool boundary () const override { return impl().boundary(); }
+      NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
+      bool neighbor () const override { return impl().neighbor(); }
+      size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
+      bool conforming () const override { return impl().conforming(); }
+      GeometryType type () const override { return impl().type(); }
+      LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
+      LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
+      Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
+      int indexInInside () const override { return impl().indexInInside(); }
+      int indexInOutside () const override { return impl().indexInOutside(); }
+      FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
+      FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().integrationOuterNormal(local); }
+      FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().unitOuterNormal(local); }
 
     private:
       const auto &impl () const { return impl_; }
@@ -282,29 +282,29 @@ namespace Dune {
       : public Interface
     {
       Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      virtual Implementation *clone() const override { return new Implementation( *this ); }
+      Implementation *clone() const override { return new Implementation( *this ); }
 
-      virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
+      bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
       {
         return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
       }
 
-      virtual Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
-      virtual Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
-      virtual bool boundary () const override { return impl().boundary(); }
-      virtual NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
-      virtual bool neighbor () const override { return impl().neighbor(); }
-      virtual size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
-      virtual bool conforming () const override { return impl().conforming(); }
-      virtual GeometryType type () const override { return impl().type(); }
-      virtual LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
-      virtual LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
-      virtual Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
-      virtual int indexInInside () const override { return impl().indexInInside(); }
-      virtual int indexInOutside () const override { return impl().indexInOutside(); }
-      virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
-      virtual FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().integrationOuterNormal(local); }
-      virtual FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().unitOuterNormal(local); }
+      Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
+      Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
+      bool boundary () const override { return impl().boundary(); }
+      NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
+      bool neighbor () const override { return impl().neighbor(); }
+      size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
+      bool conforming () const override { return impl().conforming(); }
+      GeometryType type () const override { return impl().type(); }
+      LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
+      LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
+      Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
+      int indexInInside () const override { return impl().indexInInside(); }
+      int indexInOutside () const override { return impl().indexInOutside(); }
+      FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
+      FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().integrationOuterNormal(local); }
+      FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().unitOuterNormal(local); }
 
     private:
       const auto &impl () const { return impl_; }
