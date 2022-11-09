@@ -42,9 +42,10 @@
 namespace Dune
 {
   template <PartitionIteratorType p>
-  struct Partition
-      : std::integral_constant<PartitionIteratorType,p>
-  {};
+  struct Partition {};
+
+  template <PartitionIteratorType... pp>
+  struct Partitions {};
 
   // Forward declaration
   template<int dimension, int dimensionworld, typename ct = double>
@@ -176,6 +177,25 @@ namespace Dune
 
   private:
     // VIRTUALIZATION BEGIN
+    template<class DataType>
+    struct InterfaceDataType
+    {
+      virtual ~InterfaceDataType () = default;
+      virtual void communicate (VirtualizedDataHandle<DataType>&, InterfaceType iftype, CommunicationDirection dir)const = 0;
+      virtual void communicate (VirtualizedDataHandle<DataType>&, InterfaceType iftype, CommunicationDirection dir, itn level) const = 0;
+    };
+
+    template<class DataTypes>
+    struct InterfaceDataTypes;
+
+    template<class... DataTypes>
+    struct InterfaceDataTypes<Types<DataTypes...>>
+        : virtual InterfaceDataType<DataTypes>...
+    {
+      virtual ~InterfaceDataTypes () = default;
+      using InterfaceDataType<DataTypes>::communicate...;
+    };
+
     template<int codim, PartitionIteratorType pitype>
     struct InterfaceCodimPartition
     {
@@ -190,11 +210,14 @@ namespace Dune
       virtual LeafIterator leafend (Codim<codim>, Partition<pitype>) const = 0;
     };
 
+    template<int codim, class Partitions>
+    struct InterfaceCodim;
+
     template<int codim, PartitionIteratorType... pitypes>
-    struct InterfaceCodimImpl
+    struct InterfaceCodim<codim, Partitions<pitypes...>>
         : virtual InterfaceCodimPartition<codim,pitypes>...
     {
-      virtual ~InterfaceCodimImpl () = default;
+      virtual ~InterfaceCodim () = default;
 
       using LevelIterator = typename Traits::template Codim<codim>::LevelIterator;
       using LeafIterator = typename Traits::template Codim<codim>::LeafIterator;
@@ -213,14 +236,14 @@ namespace Dune
       using InterfaceCodimPartition<codim,pitypes>::leafend...;
     };
 
-    template<int codim>
-    using InterfaceCodim = InterfaceCodimImpl<codim,
-      Interior_Partition, InteriorBorder_Partition, Overlap_Partition, OverlapFront_Partition,
-      All_Partition, Ghost_Partition>;
+    using AllPartitions = Types<Interior_Partition, InteriorBorder_Partition, Overlap_Partition, OverlapFront_Partition, All_Partition, Ghost_Partition>;
+
+    using AllDataTypes = Types<std::byte,char,unsigned char,signed char,short,unsigned short,int,unsigned int,long,unsigned long,long long,unsigned long long,float,double,long double>;
 
     template<int... codims>
     struct InterfaceImpl
-        : virtual InterfaceCodim<codims>...
+        : virtual InterfaceCodim<codims,AllPartitions>...
+        , virtual InterfaceDataTypes<AllDataTypes>
     {
       using Entity0 = typename Traits::template Codim<0>::Entity;
 
@@ -258,14 +281,32 @@ namespace Dune
       using InterfaceCodim<codims>::leafbegin...;
       using InterfaceCodim<codims>::leafend...;
       using InterfaceCodim<codims>::entity...;
+      using InterfaceDataTypes<AllDataTypes>::communicate;
     };
 
-    template<class Seq>
-    struct Interface_t;
-    template<int... codims>
-    struct Interface_t<std::integer_sequence<int,codims...>> { using type = InterfaceImpl<codims...>; };
+    template<class Derived, class I, class DataType>
+    struct ImplementationDataType
+        : virtual InterfaceDataType<DataType>
+    {
+      void communicate (VirtualizedDataHandle<DataType>& dh, InterfaceType iftype, CommunicationDirection dir) const final {
+        derived().impl().leafGridView().communicate(dh,iftype,dir);
+      }
 
-    using Interface = typename Interface_t<std::make_integer_sequence<int,dimension+1>>::type;
+      void communicate (VirtualizedDataHandle<DataType>& dh, InterfaceType iftype, CommunicationDirection dir, int level) const final {
+        derived().impl().levelGridView(level).communicate(dh,iftype,dir);
+      }
+
+    private:
+      const Derived& derived () const { return static_cast<const Derived&>(*this); }
+    };
+
+    template<class Derived, class I, class DataTypes>
+    struct ImplementationDataTypes;
+
+    template<class Derived, class I, class... DataTypes>
+    struct DUNE_PRIVATE ImplementationDataTypes<Derived,I,Types<DataTypes...>>
+        : public ImplementationDataType<Derived,I,DataTypes>...
+    {};
 
     template<class Derived, class I, int codim, PartitionIteratorType pitype>
     struct DUNE_PRIVATE ImplementationCodimPartition
@@ -314,8 +355,11 @@ namespace Dune
       const Derived& derived () const { return static_cast<const Derived&>(*this); }
     };
 
+    template<class Derived, class I, int codim, class Partitions>
+    struct ImplementationCodim;
+
     template<class Derived, class I, int codim, PartitionIteratorType... pitypes>
-    struct DUNE_PRIVATE ImplementationCodimImpl
+    struct DUNE_PRIVATE ImplementationCodim<Derived,I,codim,Partitions<pitypes...>>
         : virtual InterfaceCodimImpl<codim,pitypes...>
         , public ImplementationCodimPartition<Derived,I,codim,pitypes>...
     {
@@ -371,15 +415,11 @@ namespace Dune
       const Derived& derived () const { return static_cast<const Derived&>(*this); }
     };
 
-    template<class Derived, class I, int codim>
-    using ImplementationCodim = ImplementationCodimImpl<Derived,I,codim,
-      Interior_Partition, InteriorBorder_Partition, Overlap_Partition, OverlapFront_Partition,
-      All_Partition, Ghost_Partition>;
-
     template<class I, int... codims>
     struct DUNE_PRIVATE ImplementationImpl final
       : virtual InterfaceImpl<codims...>
-      , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims>...
+      , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims, AllPartitions>...
+      , public ImplementationDataTypes<ImplementationImpl<I,codims...>, I, AllDataTypes>
     {
       using HG = std::decay_t<I>;
       using Entity0 = typename Traits::template Codim<0>::Entity;
@@ -477,16 +517,23 @@ namespace Dune
       VirtualizedGridLeafIndexSet<const ThisType> leafIndexSet_;
       VirtualizedCommunication comm_{};
     };
+    // VIRTUALIZATION END
 
-    template<class I, class Seq>
-    struct Implementation_t;
+
+    template<class Seq> struct Interface_t;
+    template<int... codims>
+    struct Interface_t<std::integer_sequence<int,codims...>> {
+      using type = InterfaceImpl<codims...>; };
+    using Interface = typename Interface_t<std::make_integer_sequence<int,dimension+1>>::type;
+
+    template<class I, class Seq> struct Implementation_t;
     template<class I, int... codims>
-    struct Implementation_t<I,std::integer_sequence<int,codims...>> { using type = ImplementationImpl<I,codims...>; };
-
+    struct Implementation_t<I,std::integer_sequence<int,codims...>> {
+      using type = ImplementationImpl<I,codims...>;
+    };
     template<class I>
     using Implementation = typename Implementation_t<I,std::make_integer_sequence<int,dimension+1>>::type;
 
-    // VIRTUALIZATION END
 
   public:
 
@@ -747,16 +794,20 @@ namespace Dune
 
     //! The new communication interface
     template<class DataHandleImp, class DataType>
-    void communicate (CommDataHandleIF<DataHandleImp, DataType>& data, InterfaceType iftype, CommunicationDirection dir, int level) const {
-      // TODO: we have to explicitly specify all CommDataHandleIF in virtual Interface class
-      // impl_->communicate(data, iftype, dir);
+    void communicate (CommDataHandleIF<DataHandleImp, DataType>& data,
+                      InterfaceType iftype,
+                      CommunicationDirection dir, int level) const {
+      VirtualizedDataHandle<DataType> dh{data};
+      impl_->communicate(dh, iftype, dir, level);
     }
 
     //! The new communication interface
     template<class DataHandleImp, class DataType>
-    void communicate (CommDataHandleIF<DataHandleImp, DataType>& data, InterfaceType iftype, CommunicationDirection dir) const {
-      // TODO: we have to explicitly specify all CommDataHandleIF in virtual Interface class
-      // impl_->communicate(data, iftype, dir);
+    void communicate (CommDataHandleIF<DataHandleImp, DataType>& data,
+                      InterfaceType iftype,
+                      CommunicationDirection dir) const {
+      VirtualizedDataHandle<DataType> dh{data};
+      impl_->communicate(dh, iftype, dir);
     }
 
 
