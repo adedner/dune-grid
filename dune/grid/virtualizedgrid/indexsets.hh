@@ -149,12 +149,6 @@ namespace Dune {
       return impl_->size(type);
     }
 
-
-    /** \brief Deliver all geometry types used in this grid */
-    const Types& geomTypes (int codim) const {
-      return impl_->geomTypes(codim);
-    }
-
     /** \brief Deliver all geometry types used in this grid */
     Types types (int codim) const {
       return impl_->types(codim);
@@ -315,12 +309,6 @@ namespace Dune {
     //! get number of entities of given codim
     std::size_t size (int codim) const {
       return impl_->size(codim);
-    }
-
-
-    /** \brief Deliver all geometry types used in this grid */
-    const Types& geomTypes (int codim) const {
-      return impl_->geomTypes(codim);
     }
 
     /** \brief Deliver all geometry types used in this grid */
