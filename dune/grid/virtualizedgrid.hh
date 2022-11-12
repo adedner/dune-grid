@@ -404,6 +404,8 @@ namespace Dune
             = new VirtualizedGridLevelIndexSet<const ThisType>( impl().levelIndexSet(i) );
           levelIndexSets_.push_back(p);
         }
+        if constexpr(std::is_same_v<typename HG::Communication, VirtualizedCommunication>)
+          comm_ = impl().comm();
       }
 
       ~ImplementationImpl ()
@@ -459,11 +461,11 @@ namespace Dune
       virtual bool preAdapt () override { return impl().preAdapt(); }
       virtual bool adapt () override { return impl().adapt(); }
       virtual void postAdapt () override { return impl().postAdapt(); }
-      virtual unsigned int overlapSize (int codim) const override { return impl().overlapSize(codim); }
-      virtual unsigned int ghostSize (int codim) const override { return impl().ghostSize(codim); }
-      virtual unsigned int overlapSize (int level, int codim) const override { return impl().overlapSize(level, codim); }
-      virtual unsigned int ghostSize (int level, int codim) const override { return impl().ghostSize(level, codim); }
-      virtual const VirtualizedCommunication& comm () const override { return impl().comm(); }
+      virtual unsigned int overlapSize (int codim) const override { return impl().leafGridView().overlapSize(codim); }
+      virtual unsigned int ghostSize (int codim) const override { return impl().leafGridView().ghostSize(codim); }
+      virtual unsigned int overlapSize (int level, int codim) const override { return impl().levelGridView(level).overlapSize(codim); }
+      virtual unsigned int ghostSize (int level, int codim) const override { return impl().levelGridView(level).ghostSize(codim); }
+      virtual const VirtualizedCommunication& comm () const override { return comm_; }
 
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
@@ -474,6 +476,7 @@ namespace Dune
       VirtualizedGridLocalIdSet<const ThisType> localIdSet_;
       std::vector<VirtualizedGridLevelIndexSet<const ThisType>*> levelIndexSets_;
       VirtualizedGridLeafIndexSet<const ThisType> leafIndexSet_;
+      VirtualizedCommunication comm_{};
     };
 
     template<class I, class Seq>
