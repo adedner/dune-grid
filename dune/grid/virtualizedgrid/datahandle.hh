@@ -9,36 +9,31 @@
 
 #include <dune/common/visibility.hh>
 #include <dune/geometry/dimension.hh>
+#include <dune/grid/common/datahandleif.hh>
 #include <dune/grid/virtualizedgrid/entity.hh>
 
 namespace Dune
 {
+  template<class Data>
   struct VirtualizedMessageBuffer
   {
-    std::function<void(const std::byte*)> writeImpl;
-    std::function<void(std::byte*)> readImpl;
+    std::function<void(const Data&)> write;
+    std::function<void(Data&)> read;
 
-    template<class T>
-    void write (const T& data)
-    {
-      const std::byte* byte_data = reinterpret_cast<const std::byte*>(&data);
-      writeImpl(byte_data);
-    }
-
-    template<class T>
-    void read (T& data)
-    {
-      std::byte* byte_data = reinterpret_cast<std::byte*>(&data);
-      readImpl(byte_data);
-    }
+    template <class MB>
+    VirtualizedMessageBuffer (MB& buff)
+      : write([&buff](const Data& data) { buff.write(data); })
+      , read([&buff](Data& data) { buff.read(data); })
+    {}
   };
 
   template <class Data, class GridImp>
   class VirtualizedCommDataHandle
+      : public CommDataHandleIF<VirtualizedCommDataHandle<Data,GridImp>, Data>
   {
   public:
     using DataType = Data;
-    using MessageBuffer = VirtualizedMessageBuffer;
+    using MessageBuffer = VirtualizedMessageBuffer<DataType>;
 
   private:
     // VIRTUALIZATION BEGIN
@@ -58,18 +53,19 @@ namespace Dune
         : virtual InterfaceCodim<codim>
     {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<codim,GridImp::dimension,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
+      // using EntityImpl = typename VirtualizedGridEntity<codim,GridImp::dimension,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
 
       std::size_t size (Codim<codim>, const Entity& e) const final {
-        return derived().impl().size(upcast<EntityImpl>(e));
+        // return derived().impl().size(upcast<EntityImpl>(e));
+        return 0;
       }
 
       void gather (Codim<codim>, MessageBuffer& buff, const Entity& e) const final {
-        derived().impl().gather(buff, upcast<EntityImpl>(e));
+        // derived().impl().gather(buff, upcast<EntityImpl>(e));
       }
 
       void scatter (Codim<codim>, MessageBuffer& buff, const Entity& e, std::size_t n) final {
-        derived().impl().scatter(buff, upcast<EntityImpl>(e), n);
+        // derived().impl().scatter(buff, upcast<EntityImpl>(e), n);
       }
 
     private:
@@ -132,20 +128,17 @@ namespace Dune
     using Implementation = typename Implementation_t<I,std::make_integer_sequence<int,GridImp::dimension+1>>::type;
 
   public:
-    template<class Impl, class MessageBufferCreator>
-    explicit VirtualizedCommDataHandle(Impl&& impl, const MessageBufferCreator& creator)
+    template<class Impl>
+    explicit VirtualizedCommDataHandle(Impl&& impl)
     : impl_(new Implementation<Impl>(std::forward<Impl>(impl)))
-    , messageBufferCreator_(creator)
     {}
 
     VirtualizedCommDataHandle (const VirtualizedCommDataHandle& other)
     : impl_(other.impl_ ? other.impl_->clone() : nullptr)
-    , messageBufferCreator_(other.messageBufferCreator_)
     {}
 
     VirtualizedCommDataHandle& operator= (const VirtualizedCommDataHandle& other) {
       impl_.reset(other.impl_ ? other.impl_->clone() : nullptr);
-      messageBufferCreator_ = other.messageBufferCreator_;
       return *this;
     }
 
@@ -154,34 +147,34 @@ namespace Dune
 
 
     bool contains (int dim, int codim) const {
-      return impl_.contains(dim, codim);
+      return impl_->contains(dim, codim);
     }
 
     bool fixedSize (int dim, int codim) const {
-      return impl_.fixedSize(dim, codim);
+      return impl_->fixedSize(dim, codim);
     }
 
     template<class Entity>
     std::size_t size (const Entity& e) const {
-      return impl_.size(Codim<Entity::codimension>{}, e);
+      using E = typename GridImp::Traits::template Codim<Entity::codimension>::Entity;
+      using VE = typename E::Implementation;
+      return impl_->size(Codim<Entity::codimension>{}, VE(e));
     }
 
-    template<class MessageBuffer, class Entity>
-    void gather (MessageBuffer& buff, const Entity& e) const {
-      VirtualizedMessageBuffer mb{
-        [&buff](const std::byte* data) { buff.write(*reinterpret_cast<const Data*>(data)); },
-        [&buff](std::byte* data) { buff.read(*reinterpret_cast<Data*>(data)); }
-      };
-      impl_.gather(Codim<Entity::codimension>{}, mb, e);
+    template<class MB, class Entity>
+    void gather (MB& buff, const Entity& e) const {
+      using E = typename GridImp::Traits::template Codim<Entity::codimension>::Entity;
+      using VE = typename E::Implementation;
+      MessageBuffer mb(buff);
+      impl_->gather(Codim<Entity::codimension>{}, mb, VE(e));
     }
 
-    template<class MessageBuffer, class Entity>
-    void scatter (MessageBuffer& buff, const Entity& e, std::size_t n) {
-      VirtualizedMessageBuffer mb{
-        [&buff](const std::byte* data) { buff.write(*reinterpret_cast<const Data*>(data)); },
-        [&buff](std::byte* data) { buff.read(*reinterpret_cast<Data*>(data)); }
-      };
-      impl_.scatter(Codim<Entity::codimension>{}, mb, e, n);
+    template<class MB, class Entity>
+    void scatter (MB& buff, const Entity& e, std::size_t n) {
+      using E = typename GridImp::Traits::template Codim<Entity::codimension>::Entity;
+      using VE = typename E::Implementation;
+      MessageBuffer mb(buff);
+      impl_->scatter(Codim<Entity::codimension>{}, mb, VE(e), n);
     }
 
   private:
