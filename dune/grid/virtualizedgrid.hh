@@ -345,7 +345,8 @@ namespace Dune
       : impl_( std::forward<I>(i) ),
         globalIdSet_( impl().globalIdSet() ),
         localIdSet_( impl().localIdSet() ),
-        leafIndexSet_( impl().leafIndexSet() )
+        leafIndexSet_( impl().leafIndexSet() ),
+        comm_( impl().comm() )
       {
         for (int i = 0; i <= maxLevel(); i++)
         {
@@ -353,8 +354,6 @@ namespace Dune
             = new VirtualizedGridLevelIndexSet<const ThisType>( impl().levelIndexSet(i) );
           levelIndexSets_.push_back(p);
         }
-        if constexpr(std::is_same_v<typename HG::Communication, VirtualizedCommunication>)
-          comm_ = impl().comm();
       }
 
       ~ImplementationImpl ()
