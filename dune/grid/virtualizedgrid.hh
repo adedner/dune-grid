@@ -293,11 +293,11 @@ namespace Dune
         : virtual InterfaceDataType<DataType>
     {
       void communicate (VirtualizedCommDataHandle<DataType,ThisType>& dh, InterfaceType iftype, CommunicationDirection dir) const final {
-        derived().impl().leafGridView().communicate(dataHandle,iftype,dir);
+        derived().impl().leafGridView().communicate(dh,iftype,dir);
       }
 
       void communicate (VirtualizedCommDataHandle<DataType,ThisType>& dh, InterfaceType iftype, CommunicationDirection dir, int level) const final {
-        derived().impl().levelGridView(level).communicate(dataHandle,iftype,dir);
+        derived().impl().levelGridView(level).communicate(dh,iftype,dir);
       }
 
     private:

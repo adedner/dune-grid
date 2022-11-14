@@ -53,22 +53,21 @@ namespace Dune
         : virtual InterfaceCodim<codim>
     {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
-      // using EntityImpl = typename VirtualizedGridEntity<codim,GridImp::dimension,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
 
       std::size_t size (Codim<codim>, const Entity& e) const final {
-        // return derived().impl().size(upcast<EntityImpl>(e));
-        return 0;
+        return derived().impl().size(e);
       }
 
       void gather (Codim<codim>, MessageBuffer& buff, const Entity& e) const final {
-        // derived().impl().gather(buff, upcast<EntityImpl>(e));
+        derived().impl().gather(buff, e);
       }
 
       void scatter (Codim<codim>, MessageBuffer& buff, const Entity& e, std::size_t n) final {
-        // derived().impl().scatter(buff, upcast<EntityImpl>(e), n);
+        derived().impl().scatter(buff, e, n);
       }
 
     private:
+      Derived& derived () { return static_cast<Derived&>(*this); }
       const Derived& derived () const { return static_cast<const Derived&>(*this); }
     };
 
