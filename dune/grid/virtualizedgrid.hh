@@ -13,6 +13,7 @@
 #include <map>
 #include <any>
 
+#include <dune/common/exceptions.hh>
 #include <dune/common/parallel/communication.hh>
 #include <dune/geometry/dimension.hh>
 #include <dune/grid/common/capabilities.hh>
@@ -270,22 +271,43 @@ namespace Dune
     struct DUNE_PRIVATE ImplementationCodimPartition
         : virtual InterfaceCodimPartition<codim,pitype>
     {
+      using HG = std::decay_t<I>;
       using LevelIterator = typename Traits::template Codim<codim>::template Partition<pitype>::LevelIterator;
-      using VirtLevelIterator = VirtualizedGridLevelIterator<codim,pitype,const ThisType>;
+      using LevelIteratorImpl = typename LevelIterator::Implementation;
       using LeafIterator = typename Traits::template Codim<codim>::template Partition<pitype>::LeafIterator;
-      using VirtLeafIterator = VirtualizedGridLeafIterator<codim,pitype,const ThisType>;
+      using LeafIteratorImpl = typename LeafIterator::Implementation;
 
       virtual LevelIterator lbegin (Codim<codim>, Partition<pitype>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template begin<codim,pitype>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LevelIteratorImpl{derived().impl().levelGridView(level).template begin<codim,pitype>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LevelIterator{};
+        }
       }
       virtual LevelIterator lend (Codim<codim>, Partition<pitype>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template end<codim,pitype>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LevelIteratorImpl{derived().impl().levelGridView(level).template end<codim,pitype>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LevelIterator{};
+        }
       }
       virtual LeafIterator leafbegin (Codim<codim>, Partition<pitype>) const final {
-        return VirtLeafIterator( std::move(derived().impl().leafGridView().template begin<codim,pitype>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LeafIteratorImpl{derived().impl().leafGridView().template begin<codim,pitype>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LeafIterator{};
+        }
       }
       virtual LeafIterator leafend (Codim<codim>, Partition<pitype>) const final {
-        return VirtLeafIterator( std::move(derived().impl().leafGridView().template end<codim,pitype>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LeafIteratorImpl{derived().impl().leafGridView().template end<codim,pitype>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LeafIterator{};
+        }
       }
 
     private:
@@ -297,29 +319,52 @@ namespace Dune
         : virtual InterfaceCodimImpl<codim,pitypes...>
         , public ImplementationCodimPartition<Derived,I,codim,pitypes>...
     {
+      using HG = std::decay_t<I>;
       using LevelIterator = typename Traits::template Codim<codim>::LevelIterator;
-      using VirtLevelIterator = VirtualizedGridLevelIterator<codim,All_Partition,const ThisType>;
+      using LevelIteratorImpl = typename LevelIterator::Implementation;
       using LeafIterator = typename Traits::template Codim<codim>::LeafIterator;
-      using VirtLeafIterator = VirtualizedGridLeafIterator<codim,All_Partition,const ThisType>;
+      using LeafIteratorImpl = typename LeafIterator::Implementation;
       using Entity = typename Traits::template Codim<codim>::Entity;
-      using VirtEntity = VirtualizedGridEntity<codim,dimension,const ThisType>;
+      using EntityImpl = typename Entity::Implementation;
       using EntitySeed = typename Traits::template Codim<codim>::EntitySeed;
-      using EntitySeedImpl = typename VirtualizedGridEntitySeed<codim,const ThisType>::template Implementation<typename std::decay_t<I>::template Codim<codim>::EntitySeed>;
+      using EntitySeedImpl = typename EntitySeed::Implementation;
+      using HostEntitySeed = typename HG::template Codim<codim>::EntitySeed;
+      using EntitySeedTypeErasure = typename EntitySeedImpl::template Implementation<HostEntitySeed>;
 
       virtual LevelIterator lbegin (Codim<codim>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template begin<codim>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LevelIteratorImpl{derived().impl().levelGridView(level).template begin<codim>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LevelIterator{};
+        }
       }
       virtual LevelIterator lend (Codim<codim>, int level) const final {
-        return VirtLevelIterator( std::move(derived().impl().levelGridView(level).template end<codim>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LevelIteratorImpl{derived().impl().levelGridView(level).template end<codim>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LevelIterator{};
+        }
       }
       virtual LeafIterator leafbegin (Codim<codim>) const final {
-        return VirtLeafIterator( std::move(derived().impl().leafGridView().template begin<codim>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LeafIteratorImpl{derived().impl().leafGridView().template begin<codim>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LeafIterator{};
+        }
       }
       virtual LeafIterator leafend (Codim<codim>) const final {
-        return VirtLeafIterator( std::move(derived().impl().leafGridView().template end<codim>()) );
+        if constexpr(Dune::Capabilities::hasEntityIterator<HG,codim>::v)
+          return LeafIteratorImpl{derived().impl().leafGridView().template end<codim>()};
+        else {
+          DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
+          return LeafIterator{};
+        }
       }
       virtual Entity entity (Codim<codim>, const EntitySeed& seed) const final {
-        return VirtEntity( std::move(derived().impl().entity(upcast<EntitySeedImpl>(seed))) );
+        return EntityImpl{derived().impl().entity(upcast<EntitySeedTypeErasure>(seed))};
       }
 
     private:
@@ -336,10 +381,16 @@ namespace Dune
       : virtual InterfaceImpl<codims...>
       , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims>...
     {
+      using HG = std::decay_t<I>;
       using Entity0 = typename Traits::template Codim<0>::Entity;
-      using Entity0Impl = typename VirtualizedGridEntity<0,dimension,const ThisType>::template Implementation<const typename std::decay_t<I>::template Codim<0>::Entity>;
-      using VirtLevelIntersectionIterator = VirtualizedGridLevelIntersectionIterator<const ThisType>;
-      using VirtLeafIntersectionIterator = VirtualizedGridLeafIntersectionIterator<const ThisType>;
+      using Entity0Impl = typename Entity0::Implementation;
+      using HostEntity0 = typename HG::template Codim<0>::Entity;
+      using Entity0TypeErasure = typename Entity0Impl::template Implementation<const HostEntity0>;
+
+      using LevelIntersectionIterator = typename Traits::LevelIntersectionIterator;
+      using LevelIntersectionIteratorImpl = typename LevelIntersectionIterator::Implementation;
+      using LeafIntersectionIterator = typename Traits::LeafIntersectionIterator;
+      using LeafIntersectionIteratorImpl = typename LeafIntersectionIterator::Implementation;
 
       ImplementationImpl ( I&& i )
       : impl_( std::forward<I>(i) ),
@@ -365,17 +416,17 @@ namespace Dune
       virtual ImplementationImpl *clone () const override { return new ImplementationImpl( *this ); }
       virtual int maxLevel () const override { return impl().maxLevel(); }
 
-      virtual typename Traits::LevelIntersectionIterator ilevelbegin (const Entity0& entity) const override {
-        return VirtLevelIntersectionIterator( std::move(impl().levelGridView(entity.level()).ibegin(upcast<Entity0Impl>(entity))) );
+      virtual LevelIntersectionIterator ilevelbegin (const Entity0& entity) const override {
+        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).ibegin(upcast<Entity0TypeErasure>(entity))};
       }
-      virtual typename Traits::LevelIntersectionIterator ilevelend (const Entity0& entity) const override {
-        return VirtLevelIntersectionIterator( std::move(impl().levelGridView(entity.level()).iend(upcast<Entity0Impl>(entity))) );
+      virtual LevelIntersectionIterator ilevelend (const Entity0& entity) const override {
+        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).iend(upcast<Entity0TypeErasure>(entity))};
       }
-      virtual typename Traits::LeafIntersectionIterator ileafbegin (const Entity0& entity) const override {
-        return VirtLeafIntersectionIterator( std::move(impl().leafGridView().ibegin(upcast<Entity0Impl>(entity))) );
+      virtual LeafIntersectionIterator ileafbegin (const Entity0& entity) const override {
+        return LeafIntersectionIteratorImpl{impl().leafGridView().ibegin(upcast<Entity0TypeErasure>(entity))};
       }
-      virtual typename Traits::LeafIntersectionIterator ileafend (const Entity0& entity) const override {
-        return VirtLeafIntersectionIterator( std::move(impl().leafGridView().iend(upcast<Entity0Impl>(entity))) );
+      virtual LeafIntersectionIterator ileafend (const Entity0& entity) const override {
+        return LeafIntersectionIteratorImpl{impl().leafGridView().iend(upcast<Entity0TypeErasure>(entity))};
       }
 
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
@@ -399,10 +450,10 @@ namespace Dune
 
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark (int refCount, const Entity0& e) override {
-        return impl().mark(refCount, upcast<Entity0Impl>(e));
+        return impl().mark(refCount, upcast<Entity0TypeErasure>(e));
       }
       virtual int getMark (const Entity0 & e) const override {
-        return impl().getMark(upcast<Entity0Impl>(e));
+        return impl().getMark(upcast<Entity0TypeErasure>(e));
       }
 
       virtual bool preAdapt () override { return impl().preAdapt(); }
