@@ -92,8 +92,10 @@ namespace Dune {
 
       std::size_t size (int codim) const override { return impl().size(codim); }
       std::size_t size (GeometryType type) const override { return impl().size(type); }
-      Types types (int codim) const override { return impl().types(codim); }
-
+      Types types (int codim) const override {
+        auto t = impl().types(codim);
+        return Types(std::begin(t), std::end(t));
+      }
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
@@ -243,8 +245,10 @@ namespace Dune {
 
       std::size_t size (int codim) const override { return impl().size(codim); }
       std::size_t size (GeometryType type) const override { return impl().size(type); }
-      Types types (int codim) const override { return impl().types(codim); }
-
+      Types types (int codim) const override {
+        auto t = impl().types(codim);
+        return Types(std::begin(t), std::end(t));
+      }
       const auto &impl () const { return impl_; }
       auto &impl () { return impl_; }
 
