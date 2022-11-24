@@ -544,6 +544,52 @@ namespace Dune
     using Implementation = typename Implementation_t<I,std::make_integer_sequence<int,dimension+1>>::type;
 
 
+    struct Cache
+    {
+      template<class Grid>
+      void update (const Grid& grid)
+      {
+        maxLevel_ = grid.maxLevel();
+
+        levelSizes_.resize(maxLevel_+1);
+        for (int level = 0; level <= maxLevel_; ++level)
+          for (int codim = 0; codim <= dimension; ++codim)
+            levelSizes_[level][codim] = grid.size(level, codim);
+
+        for (int codim = 0; codim <= dimension; ++codim)
+          sizes_[codim] = grid.size(codim);
+
+        numBoundarySegments_ = grid.numBoundarySegments();
+      }
+
+      //! maximum level defined in this grid
+      int maxLevel () const {
+        return maxLevel_;
+      }
+
+      //! number of grid entities per level and codim
+      int size (int level, int codim) const {
+        return levelSizes_[level][codim];
+      }
+
+      //! number of leaf entities per codim in this process
+      int size (int codim) const {
+        return sizes_[codim];
+      }
+
+      //! number of boundary segments within the macro grid
+      std::size_t numBoundarySegments () const {
+        return numBoundarySegments_;
+      }
+
+    private:
+      int maxLevel_{};
+      std::vector<std::array<std::size_t,dimension+1>> levelSizes_{};
+      std::array<std::size_t,dimension+1> sizes_{};
+      std::size_t numBoundarySegments_{};
+    };
+
+
   public:
 
     //**********************************************************
@@ -557,10 +603,13 @@ namespace Dune
     template<class Impl>
     VirtualizedGrid (Impl&& grid)
     : impl_( new Implementation< Impl >( std::forward<Impl>(grid) ) )
-    {}
+    {
+      update(grid);
+    }
 
     VirtualizedGrid (const VirtualizedGrid& other)
     : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    , cache_( other.cache_ )
     {}
 
     VirtualizedGrid ( VirtualizedGrid && ) = default;
@@ -568,15 +617,16 @@ namespace Dune
     VirtualizedGrid& operator= (const VirtualizedGrid& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      cache_ = other.cache_;
+      return *this;
     }
-
 
     /** \brief Return maximum level defined in this grid.
      *
      * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
      */
-    int maxLevel() const {
-      return impl_->maxLevel();
+    int maxLevel () const {
+      return cache().maxLevel();
     }
 
     //! Iterator to first entity of given codim on level
@@ -651,18 +701,18 @@ namespace Dune
     /** \brief Number of grid entities per level and codim
      */
     int size (int level, int codim) const {
-      return impl_->size(level,codim);
+      return cache().size(level, codim);
     }
 
     /** \brief returns the number of boundary segments within the macro grid
      */
-    size_t numBoundarySegments () const {
-      return impl_->numBoundarySegments();
+    std::size_t numBoundarySegments () const {
+      return cache().numBoundarySegments();
     }
 
     //! number of leaf entities per codim in this process
     int size (int codim) const {
-      return impl_->size(codim);
+      return cache().size(codim);
     }
 
 
@@ -718,6 +768,7 @@ namespace Dune
      */
     void globalRefine (int refCount) {
       impl_->globalRefine(refCount);
+      update(*impl_);
     }
 
     /** \brief Mark entity for refinement
@@ -750,7 +801,9 @@ namespace Dune
 
     //! Triggers the grid refinement process
     bool adapt() {
-      return impl_->adapt();
+      bool result = impl_->adapt();
+      update(*impl_);
+      return result;
     }
 
     /** \brief Clean up refinement markers */
@@ -792,6 +845,7 @@ namespace Dune
      */
     void loadBalance(int strategy, int minlevel, int depth, int maxlevel, int minelement) {
       DUNE_THROW(NotImplemented, "VirtualizedGrid::loadBalance()");
+      update(*impl_);
     }
 #endif
 
@@ -829,9 +883,27 @@ namespace Dune
       return *impl_;
     }
 
+    const auto& cache() const {
+#ifndef DUNE_VIRTUALIZEDGRID_NO_CACHE
+      return cache_;
+#else
+      return *impl_;
+#endif
+    }
+
+    template<class Grid>
+    void update (const Grid& grid) {
+#ifndef DUNE_VIRTUALIZEDGRID_NO_CACHE
+      cache_.update(grid);
+#endif
+    }
+
   private:
     //! The grid this VirtualizedGrid holds
     std::unique_ptr< Interface > impl_;
+
+    // some cached information
+    Cache cache_;
 
     VirtualizedCommunication ccobj;
   }; // end Class VirtualizedGrid

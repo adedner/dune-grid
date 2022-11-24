@@ -112,20 +112,59 @@ namespace Dune {
     using Implementation = typename Implementation_t<I,std::make_integer_sequence<int,dim+1>>::type;
     // VIRTUALIZATION END
 
+    struct Cache
+    {
+      template<class IndexSet>
+      void update (const IndexSet& indexSet)
+      {
+        for (int codim = 0; codim <= dim; ++codim) {
+          sizes_[codim] = indexSet.size(codim);
+          types_[codim] = indexSet.types(codim);
+          for (auto const& t : types_[codim])
+            sizes2_[t] = indexSet.size(t);
+        }
+      }
+
+      //! get number of entities of given codim, type and on this level
+      std::size_t size (int codim) const {
+        return sizes_[codim];
+      }
+
+
+      //! get number of entities of given codim, type and on this level
+      std::size_t size (GeometryType type) const {
+        return sizes2_.at(type);
+      }
+
+      /** \brief Deliver all geometry types used in this grid */
+      Types types (int codim) const {
+        return types_[codim];
+      }
+
+    private:
+      std::array<std::size_t,dim+1> sizes_{};
+      std::map<GeometryType,std::size_t> sizes2_{};
+      std::array<Types,dim+1> types_{};
+    };
+
   public:
     template< class ImplLevelIndexSet >
     explicit VirtualizedGridLevelIndexSet(ImplLevelIndexSet&& implLevelIndexSet)
     : impl_( new Implementation<ImplLevelIndexSet>( std::forward<ImplLevelIndexSet>( implLevelIndexSet ) ) )
-    {}
+    {
+      update(implLevelIndexSet);
+    }
 
     VirtualizedGridLevelIndexSet(const VirtualizedGridLevelIndexSet& other)
     : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    , cache_( other.cache_ )
     {}
 
     VirtualizedGridLevelIndexSet ( VirtualizedGridLevelIndexSet && ) = default;
 
     VirtualizedGridLevelIndexSet& operator=(const VirtualizedGridLevelIndexSet& other) {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      cache_ = other.cache_;
       return *this;
     }
 
@@ -144,18 +183,18 @@ namespace Dune {
 
     //! get number of entities of given codim, type and on this level
     std::size_t size (int codim) const {
-      return impl_->size(codim);
+      return cache().size(codim);
     }
 
 
     //! get number of entities of given codim, type and on this level
     std::size_t size (GeometryType type) const {
-      return impl_->size(type);
+      return cache().size(type);
     }
 
     /** \brief Deliver all geometry types used in this grid */
     Types types (int codim) const {
-      return impl_->types(codim);
+      return cache().types(codim);
     }
 
     /** \brief Return true if the given entity is contained in the index set */
@@ -165,7 +204,23 @@ namespace Dune {
       return impl_->contains(Codim<codim>{}, e);
     }
 
+    const auto& cache() const {
+#ifndef DUNE_VIRTUALIZEDGRID_NO_CACHE
+      return cache_;
+#else
+      return *impl_;
+#endif
+    }
+
+    template<class Grid>
+    void update (const Grid& grid) {
+#ifndef DUNE_VIRTUALIZEDGRID_NO_CACHE
+      cache_.update(grid);
+#endif
+    }
+
     std::unique_ptr<Interface> impl_;
+    Cache cache_;
   };
 
 
@@ -265,21 +320,59 @@ namespace Dune {
     using Implementation = typename Implementation_t<I,std::make_integer_sequence<int,dim+1>>::type;
     // VIRTUALIZATION END
 
+    struct Cache
+    {
+      template<class IndexSet>
+      void update (const IndexSet& indexSet)
+      {
+        for (int codim = 0; codim <= dim; ++codim) {
+          sizes_[codim] = indexSet.size(codim);
+          types_[codim] = indexSet.types(codim);
+          for (auto const& t : types_[codim])
+            sizes2_[t] = indexSet.size(t);
+        }
+      }
+
+      //! get number of entities of given codim, type and on this level
+      std::size_t size (int codim) const {
+        return sizes_[codim];
+      }
+
+
+      //! get number of entities of given codim, type and on this level
+      std::size_t size (GeometryType type) const {
+        return sizes2_.at(type);
+      }
+
+      /** \brief Deliver all geometry types used in this grid */
+      Types types (int codim) const {
+        return types_[codim];
+      }
+
+    private:
+      std::array<std::size_t,dim+1> sizes_{};
+      std::map<GeometryType,std::size_t> sizes2_{};
+      std::array<Types,dim+1> types_{};
+    };
 
   public:
     template< class ImplLeafIndexSet >
     explicit VirtualizedGridLeafIndexSet(ImplLeafIndexSet&& implLeafIndexSet)
     : impl_( new Implementation<ImplLeafIndexSet>( std::forward<ImplLeafIndexSet>(implLeafIndexSet) ) )
-    {}
+    {
+      update(implLeafIndexSet);
+    }
 
     VirtualizedGridLeafIndexSet(const VirtualizedGridLeafIndexSet& other)
     : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    , cache_( other.cache_ )
     {}
 
     VirtualizedGridLeafIndexSet ( VirtualizedGridLeafIndexSet && ) = default;
 
     VirtualizedGridLeafIndexSet& operator=(const VirtualizedGridLeafIndexSet& other) {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      cache_ = other.cache_;
       return *this;
     }
 
@@ -308,18 +401,18 @@ namespace Dune {
 
     //! get number of entities of given type
     std::size_t size (GeometryType type) const {
-      return impl_->size(type);
+      return cache().size(type);
     }
 
 
     //! get number of entities of given codim
     std::size_t size (int codim) const {
-      return impl_->size(codim);
+      return cache().size(codim);
     }
 
     /** \brief Deliver all geometry types used in this grid */
     Types types (int codim) const {
-      return impl_->types(codim);
+      return cache().types(codim);
     }
 
     /** \brief Return true if the given entity is contained in the index set */
@@ -330,7 +423,23 @@ namespace Dune {
       return impl_->contains(Codim<codim>{}, e);
     }
 
+    const auto& cache() const {
+#ifndef DUNE_VIRTUALIZEDGRID_NO_CACHE
+      return cache_;
+#else
+      return *impl_;
+#endif
+    }
+
+    template<class Grid>
+    void update (const Grid& grid) {
+#ifndef DUNE_VIRTUALIZEDGRID_NO_CACHE
+      cache_.update(grid);
+#endif
+    }
+
     std::unique_ptr<Interface> impl_;
+    Cache cache_;
   };
 
 
