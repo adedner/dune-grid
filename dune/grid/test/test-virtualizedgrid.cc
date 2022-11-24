@@ -8,6 +8,8 @@
 #include <dune/common/parallel/mpihelper.hh>
 
 #include <dune/common/timer.hh>
+#include <dune/grid/albertagrid.hh>
+#include <dune/grid/onedgrid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/virtualizedgrid.hh>
 
@@ -103,6 +105,28 @@ int main(int argc, char** argv)
     // 1D
     std::cout << "============= 1D =============" << std::endl;
 
+    Dune::OneDGrid grid1(32, 0.0, 1.0);
+    Dune::VirtualizedGrid<1, 1> vgrid1( grid1 );
+
+    Dune::Timer timer;
+    gridcheck(grid1);
+    std::cout << "------------------------------" << std::endl;
+    std::cout << "OneDGrid: " << timer.elapsed()  << std::endl;
+    std::cout << "------------------------------" << std::endl;
+
+    timer.reset();
+    gridcheck(vgrid1);
+    std::cout << "------------------------------" << std::endl;
+    std::cout << "Virtualized<1>: " << timer.elapsed() << std::endl;
+    std::cout << "=============================" << std::endl;
+    std::cout << std::endl;
+  }
+
+
+  {
+    // 1D
+    std::cout << "============= 1D =============" << std::endl;
+
     Dune::YaspGrid<1> yaspgrid1({1.}, {32});
     Dune::VirtualizedGrid<1, 1> vgrid1( yaspgrid1 );
 
@@ -158,6 +182,72 @@ int main(int argc, char** argv)
     std::cout << "Virtualized<3>: " << timer.elapsed() << std::endl;
     std::cout << "=============================" << std::endl;
   }
+
+#if HAVE_ALBERTA
+  {
+    // 1D
+    // std::cout << "============= 1D/3D =============" << std::endl;
+    // {
+    //   using Grid1 = Dune::AlbertaGrid<1,3>;
+    //   auto grid1ptr = Dune::StructuredGridFactory<Grid1>::createSimplexGrid({0.0,0.0,0.0}, {1.0,0.0,0.0}, {32u});
+    //   Dune::VirtualizedGrid<1,3> vgrid1( *grid1ptr );
+
+    //   Dune::Timer timer;
+    //   gridcheck(*grid1ptr);
+    //   std::cout << "------------------------------" << std::endl;
+    //   std::cout << "AlbertaGrid<1,3>: " << timer.elapsed() << std::endl;
+    //   std::cout << "------------------------------" << std::endl;
+
+    //   timer.reset();
+    //   gridcheck(vgrid1);
+    //   std::cout << "------------------------------" << std::endl;
+    //   std::cout << "Virtualized<1,3>: " << timer.elapsed() << std::endl;
+    //   std::cout << "=============================" << std::endl;
+    //   std::cout << std::endl;
+    // }
+
+    // 2D
+    std::cout << "============= 2D/3D =============" << std::endl;
+    {
+      using Grid3 = Dune::AlbertaGrid<2,3>;
+      auto grid3ptr = Dune::StructuredGridFactory<Grid3>::createSimplexGrid({0.0,0.0,0.0}, {1.0,1.0,0.0}, {32u,32u});
+      Dune::VirtualizedGrid<2,3> vgrid3( *grid3ptr );
+
+      timer.reset();
+      gridcheck(*grid3ptr);
+      std::cout << "------------------------------" << std::endl;
+      std::cout << "AlbertaGrid<2,3>: " << timer.elapsed() << std::endl;
+      std::cout << "------------------------------" << std::endl;
+
+      timer.reset();
+      gridcheck(vgrid3);
+      std::cout << "------------------------------" << std::endl;
+      std::cout << "Virtualized<2,3>: " << timer.elapsed() << std::endl;
+      std::cout << "=============================" << std::endl;
+      std::cout << std::endl;
+    }
+
+    // 3D
+    std::cout << "============= 3D/3D =============" << std::endl;
+    {
+      using Grid3 = Dune::AlbertaGrid<3,3>;
+      auto grid3ptr = Dune::StructuredGridFactory<Grid3>::createSimplexGrid({0.0,0.0,0.0}, {1.0,1.0,1.0}, {32u,32u,32u});
+      Dune::VirtualizedGrid<3,3> vgrid3( *grid3ptr );
+
+      timer.reset();
+      gridcheck(*grid3ptr);
+      std::cout << "------------------------------" << std::endl;
+      std::cout << "AlbertaGrid<3,3>: " << timer.elapsed() << std::endl;
+      std::cout << "------------------------------" << std::endl;
+
+      timer.reset();
+      gridcheck(vgrid3);
+      std::cout << "------------------------------" << std::endl;
+      std::cout << "Virtualized<3,3>: " << timer.elapsed() << std::endl;
+      std::cout << "=============================" << std::endl;
+    }
+  }
+#endif // HAVE_ALBERTA
 
   return 0;
 }
