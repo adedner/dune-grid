@@ -128,7 +128,7 @@ namespace Dune
 
   public:
     template<class Impl>
-    explicit VirtualizedCommDataHandle(Impl&& impl)
+    explicit VirtualizedCommDataHandle (Impl&& impl)
     : impl_(new Implementation<Impl>(std::forward<Impl>(impl)))
     {}
 
@@ -156,24 +156,21 @@ namespace Dune
     template<class Entity>
     std::size_t size (const Entity& e) const {
       using E = typename GridImp::Traits::template Codim<Entity::codimension>::Entity;
-      using VE = typename E::Implementation;
-      return impl_->size(Codim<Entity::codimension>{}, VE(e));
+      return impl_->size(Codim<Entity::codimension>{}, E(e));
     }
 
     template<class MB, class Entity>
     void gather (MB& buff, const Entity& e) const {
       using E = typename GridImp::Traits::template Codim<Entity::codimension>::Entity;
-      using VE = typename E::Implementation;
       MessageBuffer mb(buff);
-      impl_->gather(Codim<Entity::codimension>{}, mb, VE(e));
+      impl_->gather(Codim<Entity::codimension>{}, mb, E(e));
     }
 
     template<class MB, class Entity>
     void scatter (MB& buff, const Entity& e, std::size_t n) {
       using E = typename GridImp::Traits::template Codim<Entity::codimension>::Entity;
-      using VE = typename E::Implementation;
       MessageBuffer mb(buff);
-      impl_->scatter(Codim<Entity::codimension>{}, mb, VE(e), n);
+      impl_->scatter(Codim<Entity::codimension>{}, mb, E(e), n);
     }
 
   private:
