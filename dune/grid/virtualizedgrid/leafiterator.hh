@@ -64,6 +64,8 @@ namespace Dune {
 
 
   public:
+    VirtualizedGridLeafIterator () = default;
+
     template< class ImplLeafIterator >
     explicit VirtualizedGridLeafIterator(ImplLeafIterator&& implLeafIterator)
     : impl_( new Implementation<ImplLeafIterator>( std::forward<ImplLeafIterator>(implLeafIterator) ) )

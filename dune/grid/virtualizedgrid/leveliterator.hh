@@ -64,6 +64,8 @@ namespace Dune {
 
 
   public:
+    VirtualizedGridLevelIterator () = default;
+
     template< class ImplLevelIterator >
     explicit VirtualizedGridLevelIterator(ImplLevelIterator&& implLevelIterator)
     : impl_( new Implementation<ImplLevelIterator>( std::forward<ImplLevelIterator>(implLevelIterator) ) )
