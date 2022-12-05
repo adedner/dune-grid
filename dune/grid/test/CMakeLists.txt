@@ -47,10 +47,12 @@ dune_add_test(SOURCES test-parallel-ug.cc
               CMAKE_GUARD dune-uggrid_FOUND
               MPI_RANKS 1 2 3 4 8
               TIMEOUT 300)
+add_dune_mpi_flags(test-parallel-ug)
 
 dune_add_test(SOURCES test-loadbalancing.cc
               LINK_LIBRARIES dunegrid
               CMAKE_GUARD dune-uggrid_FOUND)
+add_dune_parmetis_flags(test-loadbalancing)
 
 dune_add_test(SOURCES issue-53-uggrid-intersections.cc
               LINK_LIBRARIES dunegrid
