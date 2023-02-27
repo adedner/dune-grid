@@ -29,16 +29,16 @@ def runOnGrid(grid):
             l2norm2 += f(e,x)**2*w*geo.integrationElement(x)
     print("integral of grid function=",math.sqrt(l2norm2))
 
-# # construct ugGrid and yaspGrid via file reader
-# from dune.grid import ugGrid, reader
-# print ("construct an unstructured Grid (ugGrid) via file reader")
-# mshfile = os.path.join(griddir, "circle1storder.msh")
-# unstructuredGrid = ugGrid( (reader.gmsh, mshfile), dimgrid=2 )
-# if not unstructuredGrid:
-#     print ("WARNING: skipped ugGrid example, as dune-uggrid is not installed")
-# else:
-#     unstructuredGrid.plot()
-#     runOnGrid(unstructuredGrid)
+# construct ugGrid and yaspGrid via file reader
+from dune.grid import ugGrid, reader
+print ("construct an unstructured Grid (ugGrid) via file reader")
+mshfile = os.path.join(griddir, "circle1storder.msh")
+unstructuredGrid = ugGrid( (reader.gmsh, mshfile), dimgrid=2 )
+if not unstructuredGrid:
+    print ("WARNING: skipped ugGrid example, as dune-uggrid is not installed")
+else:
+    unstructuredGrid.plot()
+    runOnGrid(unstructuredGrid)
 
 print ("construct a Grid via file reader")
 from dune.grid import yaspGrid, reader
