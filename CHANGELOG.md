@@ -7,6 +7,12 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 ## Changelog
 
+- The `Dune::VTK::FieldInfo` got a new `Type` value: `none`. This reflects that the data is neither
+  a scalar, vector nor tensor, and should be written to the file with the number of components as
+  specified in the `FieldInfo`. All other types are automatically adjusted to size `1`, `3`, or `9`
+  for scalar, vector, or tensor, respectively. This is a hard requirement for the visualization in
+  Paraview.
+
 - Removed the deprecated method `geomTypes()` from all the grid (indexset) implementations since
   they have not been used nor supported by the grid interface for ages. Use `types()` instead. Note
   that `types()` returns an object of type `IndexSet::Types`, which might not be `std::vector<GeometryType>`.

@@ -331,8 +331,10 @@ namespace Dune
 
       //! VTK data type
       enum class Type {
-        //! scalar field (may also be multi-component, but is treated as a simply
-        //! array by ParaView
+        //! write as many components as specified in the constructor. No registration as a special
+        //! attribute in the vtu file.
+        none,
+        //! scalar field (always 1 components)
         scalar,
         //! vector-valued field (always 3D, will be padded if necessary)
         vector,
@@ -340,11 +342,20 @@ namespace Dune
         tensor
       };
 
+      //! adjust the size value depending on the requirements for the type. Use `Type::none` for
+      //! no automatic adjustment.
+      static std::size_t adjustSize(Type type, std::size_t size)
+      {
+        return type == Type::scalar ? 1 :
+               type == Type::vector ? 3 :
+               type == Type::tensor ? 9 : size;
+      }
+
       //! Create a FieldInfo instance with the given name, type and size.
       FieldInfo(std::string name, Type type, std::size_t size, Precision prec = Precision::float32)
         : _name(name)
         , _type(type)
-        , _size(size)
+        , _size(adjustSize(type,size))
         , _prec(prec)
       {}
 
