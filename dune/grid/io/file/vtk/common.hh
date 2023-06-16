@@ -375,6 +375,7 @@ namespace Dune
         if (_type == Type::tensor) {
           std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to Type::none." << std::endl;
           _type = Type::none;
+          _size = size;
         }
       }
 
