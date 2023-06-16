@@ -362,7 +362,7 @@ namespace Dune
       }
 
       //! Create a FieldInfo instance with the given name, type and size.
-      FieldInfo(std::string name, Type type, std::size_t size, Precision prec = Precision::float32)
+      FieldInfo(std::string name, Type type, std::size_t size = 0, Precision prec = Precision::float32)
         : _name(name)
         , _type(type)
         , _size(adjustSize(type,size))
@@ -376,6 +376,10 @@ namespace Dune
           std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to Type::none." << std::endl;
           _type = Type::none;
           _size = size;
+        }
+
+        if (_size == 0) {
+          DUNE_THROW(IOError, "Cannot write VTK data with 0 components. Either adapt the type or the size.");
         }
       }
 
