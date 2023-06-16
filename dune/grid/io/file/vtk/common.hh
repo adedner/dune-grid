@@ -351,13 +351,28 @@ namespace Dune
                type == Type::tensor ? 9 : size;
       }
 
+      //! adjust the type based on the given size. For `size == 1` return a `Type::scalar` for
+      //! `1 < size <= 3` return `Type::vector`, for `3 < size <= 9` return `Type::tensor` otherwise
+      //! fallback to the given `type`.
+      static Type adjustType(std::size_t size, Type type = Type::none)
+      {
+        return size == 1 ? Type::scalar :
+               size <= 3 ? Type::vector :
+               size <= 9 ? Type::tensor : type;
+      }
+
       //! Create a FieldInfo instance with the given name, type and size.
       FieldInfo(std::string name, Type type, std::size_t size, Precision prec = Precision::float32)
         : _name(name)
         , _type(type)
         , _size(adjustSize(type,size))
         , _prec(prec)
-      {}
+      {
+        if (_type == Type::tensor) {
+          std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to Type::none." << std::endl;
+          _type = Type::none;
+        }
+      }
 
       //! The name of the data field
       std::string name() const

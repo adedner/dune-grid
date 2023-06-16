@@ -129,20 +129,6 @@ namespace Dune
         const auto& f = *it;
         VTK::FieldInfo fieldInfo = f.fieldInfo();
         std::size_t writecomps = fieldInfo.size();
-        switch (fieldInfo.type())
-          {
-          case VTK::FieldInfo::Type::scalar:
-            break;
-          case VTK::FieldInfo::Type::vector:
-            // vtk file format: a vector data always should have 3 comps (with
-            // 3rd comp = 0 in 2D case)
-            if (writecomps > 3)
-              DUNE_THROW(IOError,"Cannot write VTK vectors with more than 3 components (components was " << writecomps << ")");
-            writecomps = 3;
-            break;
-          case VTK::FieldInfo::Type::tensor:
-            DUNE_THROW(NotImplemented,"VTK output for tensors not implemented yet");
-          }
         std::shared_ptr<VTK::DataArrayWriter> p
           (writer.makeArrayWriter(f.name(), writecomps, nentries, fieldInfo.precision()));
         if(!p->writeIsNoop())
