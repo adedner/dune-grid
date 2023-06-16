@@ -356,9 +356,9 @@ namespace Dune
       //! fallback to the given `type`.
       static Type adjustType(std::size_t size, Type type = Type::none)
       {
-        return size == 1 ? Type::scalar :
-               size <= 3 ? Type::vector :
-               size <= 9 ? Type::tensor : type;
+        return size == 1             ? Type::scalar :
+               1 < size && size <= 3 ? Type::vector :
+               3 < size && size <= 9 ? Type::tensor : type;
       }
 
       //! Create a FieldInfo instance with the given name, type and size.
@@ -369,17 +369,21 @@ namespace Dune
         , _prec(prec)
       {
         if (_size < size) {
-          DUNE_THROW(IOError, "Cannot write VTK data with more than " << _size << " components for the specified `FieldInfo::Type` (components was " << size << "). Either adapt the type or the size.");
+          DUNE_THROW(IOError, "Cannot write VTK data with more than " << _size << " components "
+            "for the specified `FieldInfo::Type` (components was " << size << "). Either adapt "
+            "the type or the size.");
         }
 
         if (_type == Type::tensor) {
-          std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to Type::none." << std::endl;
+          std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to "
+            "Type::none." << std::endl;
           _type = Type::none;
           _size = size;
         }
 
         if (_size == 0) {
-          DUNE_THROW(IOError, "Cannot write VTK data with 0 components. Either adapt the type or the size.");
+          DUNE_THROW(IOError, "Cannot write VTK data with 0 components. Either adapt the type "
+            "or the size.");
         }
       }
 
