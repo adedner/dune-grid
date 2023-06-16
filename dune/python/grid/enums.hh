@@ -12,7 +12,7 @@ namespace Dune
   {
 
     enum class Reader { dgf, dgfString, gmsh, structured };
-    enum class VTKDataType { CellData, PointData, CellVector, PointVector };
+    enum class VTKDataType { CellData, PointData, CellScalar, PointScalar, CellVector, PointVector, CellTensor, PointTensor };
     enum class Marker { Coarsen = -1, Keep = 0, Refine = 1 };
 
   } // namespace Python

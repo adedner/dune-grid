@@ -41,38 +41,32 @@ namespace Dune
     {
       typedef typename GridFunctionTraits< GridFunction >::Range Range;
 
-      switch( dataType )
-      {
-      case VTKDataType::CellData:
-      {
-        VTK::FieldInfo info( std::move( name ), VTK::FieldInfo::Type::scalar, GetDimension<Range>::value );
-        vtkWriter.addCellData( gf, info );
-        break;
+      VTK::FieldInfo::Type type = VTK::FieldInfo::Type::none;
+      switch( dataType ) {
+        case VTKDataType::CellScalar:
+        case VTKDataType::PointScalar:
+          type = VTK::FieldInfo::Type::scalar; break;
+        case VTKDataType::CellVector:
+        case VTKDataType::PointVector:
+          type = VTK::FieldInfo::Type::vector; break;
+        case VTKDataType::CellTensor:
+        case VTKDataType::PointTensor:
+          type = VTK::FieldInfo::Type::tensor; break;
+        default:
+          type = VTK::FieldInfo::Type::none;
       }
 
-      case VTKDataType::PointData:
-      {
-        VTK::FieldInfo info( std::move( name ), VTK::FieldInfo::Type::scalar, GetDimension<Range>::value );
-        vtkWriter.addVertexData( gf, info );
-        break;
-      }
+      VTK::FieldInfo info( std::move( name ), type, GetDimension<Range>::value );
 
-      case VTKDataType::CellVector:
-      {
-        VTK::FieldInfo info( std::move( name ), VTK::FieldInfo::Type::vector, GetDimension<Range>::value );
-        vtkWriter.addCellData( gf, info );
-        break;
-      }
-
-      case VTKDataType::PointVector:
-      {
-        VTK::FieldInfo info( std::move( name ), VTK::FieldInfo::Type::vector, GetDimension<Range>::value );
-        vtkWriter.addVertexData( gf, info );
-        break;
-      }
-
-      default:
-        DUNE_THROW( InvalidStateException, "Invalid vtk data type" );
+      switch( dataType ) {
+        case VTKDataType::CellData:
+        case VTKDataType::CellScalar:
+        case VTKDataType::CellVector:
+        case VTKDataType::CellTensor:
+          vtkWriter.addCellData( gf, info );
+          break;
+        default:
+          vtkWriter.addVertexData( gf, info );
       }
     }
 

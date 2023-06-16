@@ -59,7 +59,9 @@ def _writeVTK(vtk,grid,f,name,dataTag):
 
 def writeVTK(grid, name,
              celldata=None, pointdata=None,
+             cellscalar=None, pointscalar=None,
              cellvector=None, pointvector=None,
+             celltensor=None, pointtensor=None,
              number=None, subsampling=None,outputType=OutputType.appendedraw,
              write=True, nonconforming=False):
     vtk = grid.vtkWriter(nonconforming) if subsampling is None else grid.vtkWriter(subsampling)
@@ -88,8 +90,12 @@ Try using a dictionary with name:function instead.""")
 
     addDataToVTKWriter(celldata, 'celldata', DataType.CellData)
     addDataToVTKWriter(pointdata, 'pointdata', DataType.PointData)
+    addDataToVTKWriter(cellscalar, 'cellscalar', DataType.CellScalar)
+    addDataToVTKWriter(pointscalar, 'pointscalar', DataType.PointScalar)
     addDataToVTKWriter(cellvector, 'cellvector', DataType.CellVector)
     addDataToVTKWriter(pointvector, 'pointvector', DataType.PointVector)
+    addDataToVTKWriter(celltensor, 'celltensor', DataType.CellTensor)
+    addDataToVTKWriter(pointtensor, 'pointtensor', DataType.PointTensor)
 
     assert isinstance(outputType,OutputType)
     if write:
@@ -102,21 +108,25 @@ Try using a dictionary with name:function instead.""")
 
 class SequencedVTK:
     def __init__(self, grid, name, number,
-                 celldata, pointdata, cellvector, pointvector,
+                 celldata, pointdata, cellscalar, pointscalar,
+                 cellvector, pointvector, celltensor, pointtensor,
                  subsampling, outputType=OutputType.appendedraw):
         self.number = number
         self.name = name
-        self.vtk = grid.writeVTK(name,celldata=celldata,pointdata=pointdata,cellvector=cellvector,pointvector=pointvector,subsampling=subsampling,write=False)
+        self.vtk = grid.writeVTK(name,celldata=celldata,pointdata=pointdata,cellscalar=cellscalar,pointscalar=pointscalar,cellvector=cellvector,pointvector=pointvector,celltensor=celltensor,pointtensor=pointtensor,subsampling=subsampling,write=False)
         self.outputType = outputType
     def __call__(self):
         self.vtk.write(self.name, self.number, self.outputType)
         self.number += 1
 
-def sequencedVTK(grid, name, celldata=None, pointdata=None, cellvector=None, pointvector=None,
+def sequencedVTK(grid, name, celldata=None, pointdata=None, cellscalar=None, pointscalar=None,
+                 cellvector=None, pointvector=None, celltensor=None, pointtensor=None,
                  number=0, subsampling=None, outputType=OutputType.appendedraw):
     return SequencedVTK(grid,name,number,
                         celldata=celldata,pointdata=pointdata,
+                        cellscalar=cellscalar,pointscalar=pointscalar,
                         cellvector=cellvector,pointvector=pointvector,
+                        celltensor=celltensor,pointtensor=pointtensor,
                         subsampling=subsampling,outputType=outputType)
 
 def plot(self, function=None, *args, **kwargs):
