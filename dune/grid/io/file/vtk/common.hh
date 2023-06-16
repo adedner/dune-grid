@@ -368,6 +368,10 @@ namespace Dune
         , _size(adjustSize(type,size))
         , _prec(prec)
       {
+        if (_size < size) {
+          DUNE_THROW(IOError, "Cannot write VTK data with more than " << _size << " components for the specified `FieldInfo::Type` (components was " << size << "). Either adapt the type or the size.");
+        }
+
         if (_type == Type::tensor) {
           std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to Type::none." << std::endl;
           _type = Type::none;
