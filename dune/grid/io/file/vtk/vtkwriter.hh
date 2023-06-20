@@ -215,8 +215,11 @@ namespace Dune
         template<typename R>
         void do_write(Writer& w, const R& r, std::size_t count, std::true_type) const
         {
-          for (std::size_t i = 0; i < count; ++i)
+          std::size_t size = std::min(count,std::size_t(r.size()));
+          for (std::size_t i = 0; i < size; ++i)
             w.write(r[i]);
+          for (std::size_t i = size; i < count; ++i)
+            w.write(0.0);
         }
 
         template<typename R>
@@ -257,8 +260,11 @@ namespace Dune
           auto globalPos = element_->geometry().global(pos);
           auto r = _f(globalPos);
           if constexpr (IsIndexable<decltype(r)>()) {
-            for (std::size_t i = 0; i < count; ++i)
+            std::size_t size = std::min(count,std::size_t(r.size()));
+            for (std::size_t i = 0; i < size; ++i)
                 w.write(r[i]);
+            for (std::size_t i = size; i < count; ++i)
+                w.write(0.0);
           }
           else {
             assert(count == 1);
@@ -1126,8 +1132,7 @@ namespace Dune
            it != end;
            ++it)
       {
-        unsigned writecomps = it->fieldInfo().size();
-        writer.addArray(it->name(), writecomps, it->fieldInfo().precision());
+        writer.addArray(it->name(), it->fieldInfo().size(), it->fieldInfo().precision());
       }
       writer.endPointData();
 
@@ -1142,8 +1147,7 @@ namespace Dune
            it != end;
            ++it)
       {
-        unsigned writecomps = it->fieldInfo().size();
-        writer.addArray(it->name(), writecomps, it->fieldInfo().precision());
+        writer.addArray(it->name(), it->fieldInfo().size(), it->fieldInfo().precision());
       }
       writer.endCellData();
 
@@ -1295,9 +1299,8 @@ namespace Dune
       {
         const auto& f = *it;
         VTK::FieldInfo fieldInfo = f.fieldInfo();
-        std::size_t writecomps = fieldInfo.size();
         std::shared_ptr<VTK::DataArrayWriter> p
-          (writer.makeArrayWriter(f.name(), writecomps, nentries, fieldInfo.precision()));
+          (writer.makeArrayWriter(f.name(), fieldInfo.size(), nentries, fieldInfo.precision()));
         if(!p->writeIsNoop())
           for (Iterator eit = begin; eit!=end; ++eit)
           {
@@ -1305,10 +1308,6 @@ namespace Dune
             f.bind(e);
             f.write(eit.position(),*p);
             f.unbind();
-            // vtk file format: a vector data always should have 3 comps
-            // (with 3rd comp = 0 in 2D case)
-            for (std::size_t j=fieldInfo.size(); j < writecomps; ++j)
-              p->write(0.0);
           }
       }
     }

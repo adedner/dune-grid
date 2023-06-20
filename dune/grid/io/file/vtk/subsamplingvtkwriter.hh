@@ -128,9 +128,8 @@ namespace Dune
       {
         const auto& f = *it;
         VTK::FieldInfo fieldInfo = f.fieldInfo();
-        std::size_t writecomps = fieldInfo.size();
         std::shared_ptr<VTK::DataArrayWriter> p
-          (writer.makeArrayWriter(f.name(), writecomps, nentries, fieldInfo.precision()));
+          (writer.makeArrayWriter(f.name(), fieldInfo.size(), nentries, fieldInfo.precision()));
         if(!p->writeIsNoop())
           for (Iterator eit = begin; eit!=end; ++eit)
           {
@@ -145,9 +144,6 @@ namespace Dune
                 ++sit)
               {
                 f.write(sit.coords(),*p);
-                // expand 2D-Vectors to 3D for VTK format
-                for(unsigned j = f.fieldInfo().size(); j < writecomps; j++)
-                  p->write(0.0);
               }
             f.unbind();
           }

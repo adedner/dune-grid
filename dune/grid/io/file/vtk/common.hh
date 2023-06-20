@@ -6,6 +6,7 @@
 #ifndef DUNE_GRID_IO_FILE_VTK_COMMON_HH
 #define DUNE_GRID_IO_FILE_VTK_COMMON_HH
 
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <string>
