@@ -53,8 +53,12 @@ PYBIND11_MODULE( _grid, module )
   pybind11::enum_< Dune::Python::VTKDataType > vtkDataType( module, "DataType" );
   vtkDataType.value( "CellData", Dune::Python::VTKDataType::CellData );
   vtkDataType.value( "PointData", Dune::Python::VTKDataType::PointData );
+  vtkDataType.value( "CellScalar", Dune::Python::VTKDataType::CellScalar );
+  vtkDataType.value( "PointScalar", Dune::Python::VTKDataType::PointScalar );
   vtkDataType.value( "CellVector", Dune::Python::VTKDataType::CellVector );
   vtkDataType.value( "PointVector", Dune::Python::VTKDataType::PointVector );
+  vtkDataType.value( "CellTensor", Dune::Python::VTKDataType::CellTensor );
+  vtkDataType.value( "PointTensor", Dune::Python::VTKDataType::PointTensor );
 
   pybind11::enum_< Dune::Python::Reader > reader( module, "reader" );
   reader.value( "dgf", Dune::Python::Reader::dgf );

@@ -6,6 +6,7 @@
 #ifndef DUNE_GRID_IO_FILE_VTK_COMMON_HH
 #define DUNE_GRID_IO_FILE_VTK_COMMON_HH
 
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -331,8 +332,10 @@ namespace Dune
 
       //! VTK data type
       enum class Type {
-        //! scalar field (may also be multi-component, but is treated as a simply
-        //! array by ParaView
+        //! write as many components as specified in the constructor. No registration as a special
+        //! attribute in the vtu file.
+        none,
+        //! scalar field (always 1 components)
         scalar,
         //! vector-valued field (always 3D, will be padded if necessary)
         vector,
@@ -340,13 +343,50 @@ namespace Dune
         tensor
       };
 
+      //! adjust the size value depending on the requirements for the type. Use `Type::none` for
+      //! no automatic adjustment.
+      static std::size_t adjustSize(Type type, std::size_t size)
+      {
+        return type == Type::scalar ? 1 :
+               type == Type::vector ? 3 :
+               type == Type::tensor ? 9 : size;
+      }
+
+      //! adjust the type based on the given size. For `size == 1` return a `Type::scalar` for
+      //! `1 < size <= 3` return `Type::vector`, for `3 < size <= 9` return `Type::tensor` otherwise
+      //! fallback to the given `type`.
+      static Type adjustType(std::size_t size, Type type = Type::none)
+      {
+        return size == 1             ? Type::scalar :
+               1 < size && size <= 3 ? Type::vector :
+               3 < size && size <= 9 ? Type::tensor : type;
+      }
+
       //! Create a FieldInfo instance with the given name, type and size.
-      FieldInfo(std::string name, Type type, std::size_t size, Precision prec = Precision::float32)
+      FieldInfo(std::string name, Type type, std::size_t size = 0, Precision prec = Precision::float32)
         : _name(name)
         , _type(type)
-        , _size(size)
+        , _size(adjustSize(type,size))
         , _prec(prec)
-      {}
+      {
+        if (_size < size) {
+          DUNE_THROW(IOError, "Cannot write VTK data with more than " << _size << " components "
+            "for the specified `FieldInfo::Type` (components was " << size << "). Either adapt "
+            "the type or the size.");
+        }
+
+        if (_type == Type::tensor) {
+          std::cout << "WARNING: VTK output for tensors not implemented yet. Falling back to "
+            "Type::none." << std::endl;
+          _type = Type::none;
+          _size = size;
+        }
+
+        if (_size == 0) {
+          DUNE_THROW(IOError, "Cannot write VTK data with 0 components. Either adapt the type "
+            "or the size.");
+        }
+      }
 
       //! The name of the data field
       std::string name() const
