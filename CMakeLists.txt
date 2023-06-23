@@ -18,12 +18,8 @@ list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
 #include the dune macros
 include(DuneMacros)
 
-# start a dune project with information from dune.module
-dune_project()
-
-# create the dune library for dune-grid
-dune_add_library(dunegrid)
-target_link_libraries(dunegrid PUBLIC ${DUNE_LIBS})
+# start a dune project with information from dune.module and create the dunegrid library
+dune_project(dunegrid)
 
 # create a dune library for the albertagrid
 if(Alberta_FOUND)
