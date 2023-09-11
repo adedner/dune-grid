@@ -12,131 +12,151 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/grid/common/geometry.hh>
+#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
 
 namespace Dune {
 
   template<int mydim, int coorddim, class GridImp>
-  class VirtualizedGridGeometry :
-    public GeometryDefaultImplementation <mydim, coorddim, GridImp, VirtualizedGridGeometry>
+  struct VirtualizedGridGeometryDefinition
   {
-  public:
-    typedef typename GridImp::ctype ctype;
-    typedef FieldMatrix< ctype, mydim, coorddim > JacobianTransposed;
-    typedef FieldMatrix< ctype, coorddim, mydim > JacobianInverseTransposed;
+    using ctype = typename GridImp::ctype;
+    using Jacobian = FieldMatrix<ctype, coorddim, mydim>;
+    using JacobianTransposed = FieldMatrix<ctype, mydim, coorddim>;
+    using JacobianInverse = FieldMatrix<ctype, mydim, coorddim>;
+    using JacobianInverseTransposed = FieldMatrix<ctype, coorddim, mydim>;
 
-  private:
-    // VIRTUALIZATION BEGIN
     struct Interface
     {
       virtual ~Interface () = default;
-      virtual Interface *clone () const = 0;
       virtual GeometryType type () const = 0;
-      virtual bool affine() const = 0;
+      virtual bool affine () const = 0;
       virtual int corners () const = 0;
-      virtual const FieldVector<ctype, coorddim> corner (int i) const = 0;
+      virtual FieldVector<ctype, coorddim> corner (int i) const = 0;
       virtual FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const = 0;
-      virtual JacobianTransposed jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const = 0;
       virtual FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const = 0;
       virtual ctype integrationElement (const FieldVector<ctype, mydim>& local) const = 0;
+      virtual Jacobian jacobian (const FieldVector<ctype, mydim>& local) const = 0;
+      virtual JacobianTransposed jacobianTransposed (const FieldVector<ctype, mydim>& local) const = 0;
+      virtual JacobianInverse jacobianInverse (const FieldVector<ctype, mydim>& local) const = 0;
       virtual JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const = 0;
     };
 
-    template< class I >
-    struct DUNE_PRIVATE Implementation final
-      : public Interface
+    template<class Wrapper>
+    struct Implementation
+      : public Wrapper
     {
-      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      Implementation *clone() const override { return new Implementation( *this ); }
+      using Wrapper::Wrapper;
 
-      GeometryType type () const override { return impl().type(); }
-      bool affine() const override { return impl().affine(); }
-      int corners () const override { return impl().corners(); }
-      const FieldVector<ctype, coorddim> corner (int i) const override { return impl().corner(i); }
-      FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const override { return impl().global(local); }
-      JacobianTransposed jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const override { return impl().jacobianTransposed(local); }
-      FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const override { return impl().local(global); }
-      ctype integrationElement (const FieldVector<ctype, mydim>& local) const override { return impl().integrationElement(local); }
-      JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const override { return impl().jacobianInverseTransposed(local); }
-
-    private:
-      const auto &impl () const { return impl_; }
-      auto &impl () { return impl_; }
-
-      I impl_;
+      GeometryType type () const final { return this->get().type(); }
+      bool affine () const final { return this->get().affine(); }
+      int corners () const final { return this->get().corners(); }
+      FieldVector<ctype, coorddim> corner (int i) const final { return this->get().corner(i); }
+      FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const final { return this->get().global(local); }
+      FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const final { return this->get().local(global); }
+      ctype integrationElement (const FieldVector<ctype, mydim>& local) const final { return this->get().integrationElement(local); }
+      Jacobian jacobian (const FieldVector<ctype, mydim>& local) const final { return this->get().jacobian(local); }
+      JacobianTransposed jacobianTransposed (const FieldVector<ctype, mydim>& local) const final { return this->get().jacobianTransposed(local); }
+      JacobianInverse jacobianInverse (const FieldVector<ctype, mydim>& local) const final { return this->.jacobianInverse(local); }
+      JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const final { return this->.jacobianInverseTransposed(local); }
     };
-    // VIRTUALIZATION END
+
+    using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;
+  };
+
+
+  template<int mydim, int coorddim, class GridImp>
+  class VirtualizedGridGeometry :
+    public VirtualizedGridGeometryDefinition<mydim,coorddim,GridImp>::Base,
+    public GeometryDefaultImplementation <mydim, coorddim, GridImp, VirtualizedGridGeometry>
+  {
+    using Definition = VirtualizedGridGeometryDefinition<mydim,coorddim,GridImp>;
+    using Base = typename Definition::Base;
+
+  public:
+    using ctype = typename GridImp::ctype;
+    using Jacobian = FieldMatrix<ctype, coorddim, mydim>;
+    using JacobianTransposed = FieldMatrix<ctype, mydim, coorddim>;
+    using JacobianInverse = FieldMatrix<ctype, mydim, coorddim>;
+    using JacobianInverseTransposed = FieldMatrix<ctype, coorddim, mydim>;
 
   public:
 
     /** constructor from host geometry
      */
-    template< class ImplGridGeometry >
-    VirtualizedGridGeometry(ImplGridGeometry&& implGridGeometry)
-      : impl_( new Implementation<ImplGridGeometry>( std::forward<ImplGridGeometry>(implGridGeometry) ) )
+    template <class Impl, disableCopyMove<VirtualizedGridGeometry,Impl> = 0>
+    VirtualizedGridGeometry (Impl&& impl)
+      : Base{std::forward<Impl>(impl)}
     {}
-
-    VirtualizedGridGeometry(const VirtualizedGridGeometry& other)
-    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
-    {}
-
-    VirtualizedGridGeometry ( VirtualizedGridGeometry && ) = default;
-
-    VirtualizedGridGeometry& operator=(const VirtualizedGridGeometry& other)
-    {
-      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
-      return *this;
-    }
 
     /** \brief Return the element type identifier
      */
-    GeometryType type () const {
-      return impl_->type();
+    GeometryType type () const
+    {
+      return this->asInterface().type();
     }
 
     // return wether we have an affine mapping
-    bool affine() const {
-      return impl_->affine();
+    bool affine () const
+    {
+      return this->asInterface().affine();
     }
 
     //! return the number of corners of this element. Corners are numbered 0...n-1
-    int corners () const {
-      return impl_->corners();
+    int corners () const
+    {
+      return this->asInterface().corners();
     }
 
     //! access to coordinates of corners. Index is the number of the corner
-    const FieldVector<ctype, coorddim> corner (int i) const {
-      return impl_->corner(i);
+    const FieldVector<ctype, coorddim> corner (int i) const
+    {
+      return this->asInterface().corner(i);
     }
 
     /** \brief Maps a local coordinate within reference element to
      * global coordinate in element  */
-    FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const {
-      return impl_->global(local);
-    }
-
-    /** \brief Return the transposed of the Jacobian
-     */
-    JacobianTransposed
-    jacobianTransposed ( const FieldVector<ctype, mydim>& local ) const {
-      return impl_->jacobianTransposed(local);
+    FieldVector<ctype, coorddim> global (const FieldVector<ctype, mydim>& local) const
+    {
+      return this->asInterface().global(local);
     }
 
     /** \brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */
-    FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const {
-      return impl_->local(global);
+    FieldVector<ctype, mydim> local (const FieldVector<ctype, coorddim>& global) const
+    {
+      return this->asInterface().local(global);
     }
 
-    ctype integrationElement (const FieldVector<ctype, mydim>& local) const {
-      return impl_->integrationElement(local);
+    ctype integrationElement (const FieldVector<ctype, mydim>& local) const
+    {
+      return this->asInterface().integrationElement(local);
     }
+
+    /** \brief Return the transposed of the Jacobian
+     */
+    Jacobian jacobian (const FieldVector<ctype, mydim>& local) const
+    {
+      return this->asInterface().jacobian(local);
+    }
+
+    /** \brief Return the transposed of the Jacobian
+     */
+    JacobianTransposed jacobianTransposed (const FieldVector<ctype, mydim>& local) const
+    {
+      return this->asInterface().jacobianTransposed(local);
+    }
+
     //! The Jacobian matrix of the mapping from the reference element to this element
-    JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const {
-      return impl_->jacobianInverseTransposed(local);
+    JacobianInverse jacobianInverse (const FieldVector<ctype, mydim>& local) const
+    {
+      return this->asInterface().jacobianInverse(local);
     }
 
-    std::unique_ptr<Interface> impl_;
-
+    //! The Jacobian matrix of the mapping from the reference element to this element
+    JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const
+    {
+      return this->asInterface().jacobianInverseTransposed(local);
+    }
   };
 
 }  // namespace Dune

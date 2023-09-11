@@ -54,7 +54,7 @@ namespace Dune {
     };
 
     template<class Wrapper>
-    struct Model
+    struct Implementation
       : public Wrapper
     {
       using Wrapper::Wrapper;
@@ -62,7 +62,7 @@ namespace Dune {
 
       bool equals (const VirtualizedGridEntity<codim, dim, GridImp>& other) const final
       {
-        return this->get() == other.template asModel<Wrapped>().get();
+        return this->get() == Polymorphic::asWrapped<Wrapped>(other);
       }
 
       EntitySeed seed () const final
@@ -91,21 +91,7 @@ namespace Dune {
       }
     };
 
-    struct Concept
-    {
-      template <class E>
-      auto require(E&& e) -> decltype
-      (
-        e == e,
-        e.seed(),
-        e.level(),
-        e.partitionType(),
-        e.subEntities(0u),
-        e.geometry()
-      );
-    };
-
-    using Base = Polymorphic::TypeErasureBase<Interface, Model>;
+    using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;
   };
 
 
@@ -154,13 +140,10 @@ namespace Dune {
 
     VirtualizedGridEntity() = default;
 
-    template <class Impl, Dune::disableCopyMove<VirtualizedGridEntity,Impl> = 0>
+    template <class Impl, disableCopyMove<VirtualizedGridEntity,Impl> = 0>
     VirtualizedGridEntity (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
-    {
-      // static_assert(Concept::models<typename Definition::Concept,Impl>(),
-      //   "Implementation does not model the GridEntity concept.");
-    }
+    {}
 
     bool equals (const VirtualizedGridEntity& other) const
     {
@@ -235,7 +218,7 @@ namespace Dune {
     };
 
     template<class Wrapper>
-    struct Model
+    struct Implementation
       : public Wrapper
     {
       using Wrapper::Wrapper;
@@ -243,7 +226,7 @@ namespace Dune {
 
       bool equals (const VirtualizedGridEntity<0, dim, GridImp>& other) const final
       {
-        return this->get() == other.template asModel<Wrapped>().get();
+        return this->get() == Polymorphic::asWrapped<Wrapped>(other);
       }
 
       bool hasFather () const final
@@ -327,7 +310,7 @@ namespace Dune {
       }
     };
 
-    using Base = Polymorphic::TypeErasureBase<Interface, Model>;
+    using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;
   };
 
 

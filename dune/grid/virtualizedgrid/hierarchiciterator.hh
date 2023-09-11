@@ -9,8 +9,36 @@
  * \brief The VirtualizedGridHierarchicIterator class
  */
 
+#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
+
 namespace Dune {
 
+  template<class GridImp>
+  struct VirtualizedGridHierarchicIteratorDefinition
+  {
+    struct Interface
+    {
+      virtual ~Interface () = default;
+      virtual bool equals (const VirtualizedGridHierarchicIterator<GridImp>&) const = 0;
+      virtual void increment () = 0;
+      virtual Entity dereference () const = 0;
+    };
+
+    template<class Wrapper>
+    struct Implementation
+      : public Wrapper
+    {
+      using Wrapper::Wrapper;
+      bool equals (const VirtualizedGridHierarchicIterator<GridImp>& other) const final
+      {
+        return this->get() == Polymorphic::asWrapped<Wrapped>(other);
+      }
+      void increment () final { this->get().increment(); };
+      Entity dereference () const final { return this->get().dereference(); };
+    };
+
+    using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;
+  };
 
   //**********************************************************************
   //
@@ -22,85 +50,41 @@ namespace Dune {
      starting from a given entity.
    */
   template<class GridImp>
-  class VirtualizedGridHierarchicIterator
+  class VirtualizedGridHierarchicIterator :
+      public VirtualizedGridHierarchicIteratorDefinition<GridImp>::Base
   {
-  public:
-    enum {codimension = 0};
-
-    typedef typename GridImp::template Codim<0>::Entity Entity;
-
-  private:
-    // VIRTUALIZATION BEGIN
-    struct Interface
-    {
-      virtual ~Interface () = default;
-      virtual Interface *clone () const = 0;
-      virtual void increment () = 0;
-      virtual Entity dereference () const = 0;
-      virtual bool equals ( const VirtualizedGridHierarchicIterator<GridImp>& i ) const = 0;
-    };
-
-    template< class I >
-    struct DUNE_PRIVATE Implementation final
-      : public Interface
-    {
-      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      Implementation *clone() const override { return new Implementation( *this ); }
-
-      void increment() override { ++impl(); }
-
-      Entity dereference() const override
-      {
-        return VirtualizedGridEntity<codimension, GridImp::dimension, GridImp> ( *impl() );
-      }
-
-      bool equals( const VirtualizedGridHierarchicIterator<GridImp>& i ) const override
-      {
-        return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
-      }
-
-    private:
-      const auto &impl () const { return impl_; }
-      auto &impl () { return impl_; }
-
-      I impl_;
-    };
-    // VIRTUALIZATION END
+    using Definition = VirtualizedGridHierarchicIteratorDefinition<GridImp>;
+    using Base = typename Definition::Base;
 
   public:
-    template< class ImplHierarchicIterator >
-    explicit VirtualizedGridHierarchicIterator(ImplHierarchicIterator&& implHierarchicIterator)
-    : impl_( new Implementation<ImplHierarchicIterator>( std::forward<ImplHierarchicIterator>( implHierarchicIterator ) ) )
+    enum { codimension = 0 };
+
+    using Entity = typename GridImp::template Codim<0>::Entity;
+
+  public:
+    /**
+     * \brief Create HierarchicIterator from implementation
+     */
+    template <class Impl, disableCopyMove<VirtualizedGridHierarchicIterator,Impl> = 0>
+    VirtualizedGridHierarchicIterator (Impl&& impl)
+      : Base{std::forward<Impl>(impl)}
     {}
 
-    VirtualizedGridHierarchicIterator(const VirtualizedGridHierarchicIterator& other)
-    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
-    {}
-
-    VirtualizedGridHierarchicIterator ( VirtualizedGridHierarchicIterator && ) = default;
-
-    VirtualizedGridHierarchicIterator& operator=(const VirtualizedGridHierarchicIterator& other)
+    void increment ()
     {
-      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
-      return *this;
+      this->asInterface().increment();
     }
 
-    void increment()
+    Entity dereference () const
     {
-      impl_->increment();
+      return this->asInterface().dereference();
     }
 
-    Entity dereference() const {
-      return impl_->dereference();
+    bool equals (const VirtualizedGridHierarchicIterator& other) const
+    {
+      return this->asInterface().equals(other);
     }
-
-    bool equals(const VirtualizedGridHierarchicIterator& i) const {
-      return impl_->equals(i);
-    }
-
-    std::unique_ptr<Interface> impl_;
   };
-
 
 }  // end namespace Dune
 

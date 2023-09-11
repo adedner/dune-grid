@@ -113,13 +113,13 @@ namespace Dune
       typedef Dune::GridView< VirtualizedGridLevelViewTraits< const Grid > > LevelGridView;
 
       /** \brief The type of the level index set. */
-      typedef IndexSet< const Grid, VirtualizedGridLevelIndexSet< const Grid > > LevelIndexSet;
+      typedef IndexSet< const Grid, VirtualizedGridIndexSet< const Grid > > LevelIndexSet;
       /** \brief The type of the leaf index set. */
-      typedef IndexSet< const Grid, VirtualizedGridLeafIndexSet< const Grid > > LeafIndexSet;
+      typedef IndexSet< const Grid, VirtualizedGridIndexSet< const Grid > > LeafIndexSet;
       /** \brief The type of the global id set. */
-      typedef IdSet< const Grid, VirtualizedGridGlobalIdSet< const Grid >, VirtualizedGridIdType> GlobalIdSet;
+      typedef IdSet< const Grid, VirtualizedGridIdSet< const Grid >, VirtualizedIdType> GlobalIdSet;
       /** \brief The type of the local id set. */
-      typedef IdSet< const Grid, VirtualizedGridLocalIdSet< const Grid >, VirtualizedGridIdType> LocalIdSet;
+      typedef IdSet< const Grid, VirtualizedGridIdSet< const Grid >, VirtualizedIdType> LocalIdSet;
 
       /** \brief The type of the collective communication. */
       typedef VirtualizedCommunication Communication;
@@ -432,7 +432,7 @@ namespace Dune
     {
       using HG = std::decay_t<I>;
       using Entity0 = typename Traits::template Codim<0>::Entity;
-      using HostEntity0 = typename HG::template Codim<0>::Entity;
+      using WrappedEntity0 = typename HG::template Codim<0>::Entity;
 
       using LevelIntersectionIterator = typename Traits::LevelIntersectionIterator;
       using LevelIntersectionIteratorImpl = typename LevelIntersectionIterator::Implementation;
@@ -448,8 +448,8 @@ namespace Dune
       {
         for (int i = 0; i <= maxLevel(); i++)
         {
-          VirtualizedGridLevelIndexSet<const ThisType>* p
-            = new VirtualizedGridLevelIndexSet<const ThisType>( impl().levelIndexSet(i) );
+          VirtualizedGridIndexSet<const ThisType>* p
+            = new VirtualizedGridIndexSet<const ThisType>( impl().levelIndexSet(i) );
           levelIndexSets_.push_back(p);
         }
       }
@@ -465,16 +465,16 @@ namespace Dune
       virtual int maxLevel () const override { return impl().maxLevel(); }
 
       virtual LevelIntersectionIterator ilevelbegin (const Entity0& entity) const override {
-        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).ibegin(entity.impl().template asImpl<HostEntity0>())};
+        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).ibegin(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
       virtual LevelIntersectionIterator ilevelend (const Entity0& entity) const override {
-        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).iend(entity.impl().template asImpl<HostEntity0>())};
+        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).iend(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
       virtual LeafIntersectionIterator ileafbegin (const Entity0& entity) const override {
-        return LeafIntersectionIteratorImpl{impl().leafGridView().ibegin(entity.impl().template asImpl<HostEntity0>())};
+        return LeafIntersectionIteratorImpl{impl().leafGridView().ibegin(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
       virtual LeafIntersectionIterator ileafend (const Entity0& entity) const override {
-        return LeafIntersectionIteratorImpl{impl().leafGridView().iend(entity.impl().template asImpl<HostEntity0>())};
+        return LeafIntersectionIteratorImpl{impl().leafGridView().iend(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
 
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
@@ -498,10 +498,10 @@ namespace Dune
 
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark (int refCount, const Entity0& e) override {
-        return impl().mark(refCount, e.impl().template asImpl<HostEntity0>());
+        return impl().mark(refCount, Polymorphic::asWrapped<WrappedEntity0>(e));
       }
       virtual int getMark (const Entity0 & e) const override {
-        return impl().getMark(e.impl().template asImpl<HostEntity0>());
+        return impl().getMark(Polymorphic::asWrapped<WrappedEntity0>(e));
       }
 
       virtual bool preAdapt () override { return impl().preAdapt(); }
@@ -518,10 +518,10 @@ namespace Dune
 
     private:
       I impl_;
-      VirtualizedGridGlobalIdSet<const ThisType> globalIdSet_;
-      VirtualizedGridLocalIdSet<const ThisType> localIdSet_;
-      std::vector<VirtualizedGridLevelIndexSet<const ThisType>*> levelIndexSets_;
-      VirtualizedGridLeafIndexSet<const ThisType> leafIndexSet_;
+      VirtualizedGridIdSet<const ThisType> globalIdSet_;
+      VirtualizedGridIdSet<const ThisType> localIdSet_;
+      std::vector<VirtualizedGridIndexSet<const ThisType>*> levelIndexSets_;
+      VirtualizedGridIndexSet<const ThisType> leafIndexSet_;
       VirtualizedCommunication comm_{};
     };
     // VIRTUALIZATION END

@@ -185,31 +185,21 @@ public:
     return wrapped_.get();
   }
 
+
   template <class Wrapped>
-  auto& asModel()
+  auto& asWrapped()
   {
-    using Derived = Imp::TypeErasureWrapperImplementation<Interface, Implementation, Wrapped>;
-    return static_cast<Derived&>(asInterface());
+    using T = std::decay_t<Wrapped>;
+    using Derived = Imp::TypeErasureWrapperImplementation<Interface, Implementation, T>;
+    return static_cast<Derived const&>(asInterface()).get();
   }
 
   template <class Wrapped>
-  auto const& asModel() const
+  auto const& asWrapped() const
   {
-    using Derived = Imp::TypeErasureWrapperImplementation<Interface, Implementation, Wrapped>;
-    return static_cast<Derived const&>(asInterface());
-  }
-
-
-  template <class Wrapped>
-  auto& asImpl()
-  {
-    return asModel<Wrapped>().get();
-  }
-
-  template <class Wrapped>
-  auto const& asImpl() const
-  {
-    return asModel<Wrapped>().get();
+    using T = std::decay_t<Wrapped>;
+    using Derived = Imp::TypeErasureWrapperImplementation<Interface, Implementation, T>;
+    return static_cast<Derived const&>(asInterface()).get();
   }
 
 
@@ -223,6 +213,20 @@ protected:
   PolymorphicSmallObject<Imp::TypeErasureWrapperInterface<Interface>, bufferSize > wrapped_;
 };
 
+
+template <class Wrapped, class TypeErasure>
+auto asWrapped (TypeErasure&& typeErasure)
+  -> decltype(typeErasure.impl().template asWrapped<Wrapped>())
+{
+  return typeErasure.impl().template asWrapped<Wrapped>();
+}
+
+template <class Wrapped, class TypeErasure>
+auto asWrapped (TypeErasure&& typeErasure)
+  -> decltype(typeErasure.template asWrapped<Wrapped>())
+{
+  return typeErasure.template asWrapped<Wrapped>();
+}
 
 }} // namespace Dune::Polymorphic
 
