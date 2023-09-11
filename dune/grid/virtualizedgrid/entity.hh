@@ -10,6 +10,7 @@
  */
 
 #include <dune/grid/common/grid.hh>
+#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
 
 namespace Dune {
 
@@ -34,6 +35,80 @@ namespace Dune {
   template<class GridImp>
   class VirtualizedGridHierarchicIterator;
 
+
+  template<int codim, int dim, class GridImp>
+  struct VirtualizedGridEntityDefinition
+  {
+    using Geometry = typename GridImp::template Codim<codim>::Geometry;
+    using EntitySeed = typename GridImp::template Codim<codim>::EntitySeed;
+
+    struct Interface
+    {
+      virtual ~Interface () = default;
+      virtual bool equals (const VirtualizedGridEntity<codim, dim, GridImp>& other) const = 0;
+      virtual EntitySeed seed () const = 0;
+      virtual int level () const = 0;
+      virtual PartitionType partitionType () const = 0;
+      virtual unsigned int subEntities (unsigned int cc) const = 0;
+      virtual Geometry geometry () const = 0;
+    };
+
+    template<class Wrapper>
+    struct Model
+      : public Wrapper
+    {
+      using Wrapper::Wrapper;
+      using Wrapped = typename Wrapper::Wrapped;
+
+      bool equals (const VirtualizedGridEntity<codim, dim, GridImp>& other) const final
+      {
+        return this->get() == other.template asModel<Wrapped>().get();
+      }
+
+      EntitySeed seed () const final
+      {
+        return EntitySeed( this->get().seed() );
+      }
+
+      int level () const final
+      {
+        return this->get().level();
+      }
+
+      PartitionType partitionType () const final
+      {
+        return this->get().partitionType();
+      }
+
+      unsigned int subEntities (unsigned int cc) const final
+      {
+        return this->get().subEntities(cc);
+      }
+
+      Geometry geometry () const final
+      {
+        return Geometry( this->get().geometry() );
+      }
+    };
+
+    struct Concept
+    {
+      template <class E>
+      auto require(E&& e) -> decltype
+      (
+        e == e,
+        e.seed(),
+        e.level(),
+        e.partitionType(),
+        e.subEntities(0u),
+        e.geometry()
+      );
+    };
+
+    using Base = Polymorphic::TypeErasureBase<Interface, Model>;
+  };
+
+
   //**********************************************************************
   //
   // --VirtualizedGridEntity
@@ -48,8 +123,11 @@ namespace Dune {
    */
   template<int codim, int dim, class GridImp>
   class VirtualizedGridEntity :
+    public VirtualizedGridEntityDefinition<codim,dim,GridImp>::Base,
     public EntityDefaultImplementation <codim, dim, GridImp, VirtualizedGridEntity>
   {
+    using Definition = VirtualizedGridEntityDefinition<codim,dim,GridImp>;
+    using Base = typename Definition::Base;
 
     template <class GridImp_>
     friend class VirtualizedGridLevelIndexSet;
@@ -72,119 +150,185 @@ namespace Dune {
 
     typedef typename GridImp::ctype ctype;
 
-    // VIRTUALIZATION BEGIN
-    struct Interface
-    {
-      virtual ~Interface () = default;
-      virtual Interface *clone () const = 0;
-      virtual bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const = 0;
-      virtual EntitySeed seed () const = 0;
-      virtual int level () const = 0;
-      virtual PartitionType partitionType () const = 0;
-      virtual unsigned int subEntities (unsigned int cc) const = 0;
-      virtual Geometry geometry () const = 0;
-    };
-
-    template< class I >
-    struct DUNE_PRIVATE Implementation final
-      : public Interface
-    {
-      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-
-      Implementation *clone() const override { return new Implementation( *this ); }
-
-      bool equals(const VirtualizedGridEntity<codim, dim, GridImp>& other) const override
-      {
-        return impl() == static_cast<Implementation<I>&>(*other.impl_).impl();
-      }
-
-      EntitySeed seed () const override
-      {
-        return VirtualizedGridEntitySeed<codim, GridImp>( impl().seed() );
-      }
-
-      int level () const override { return impl().level(); }
-
-      PartitionType partitionType () const override { return impl().partitionType(); }
-
-      unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
-
-      Geometry geometry () const override
-      {
-        return Geometry( impl().geometry() );
-      }
-
-      const auto &impl () const { return impl_; }
-      auto &impl () { return impl_; }
-
-    private:
-      I impl_;
-    };
-    // VIRTUALIZATION END
-
   public:
 
-    VirtualizedGridEntity()
-    {}
+    VirtualizedGridEntity() = default;
 
-    template< class ImplGridEntity >
-    VirtualizedGridEntity(ImplGridEntity&& implEntity)
-    : impl_( new Implementation<const ImplGridEntity>( std::forward<ImplGridEntity>( implEntity ) ) )
-    {}
-
-    VirtualizedGridEntity(const VirtualizedGridEntity& other)
-    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
-    {}
-
-    VirtualizedGridEntity ( VirtualizedGridEntity && ) = default;
-
-    VirtualizedGridEntity& operator=(const VirtualizedGridEntity& other)
+    template <class Impl, Dune::disableCopyMove<VirtualizedGridEntity,Impl> = 0>
+    VirtualizedGridEntity (Impl&& impl)
+      : Base{std::forward<Impl>(impl)}
     {
-      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
-      return *this;
+      // static_assert(Concept::models<typename Definition::Concept,Impl>(),
+      //   "Implementation does not model the GridEntity concept.");
     }
 
-    VirtualizedGridEntity& operator=( VirtualizedGridEntity&& ) = default;
-
-    bool equals(const VirtualizedGridEntity& other) const
+    bool equals (const VirtualizedGridEntity& other) const
     {
-      return impl_->equals(other);
+      return this->asInterface().equals(other);
     }
 
     //! Create EntitySeed
     EntitySeed seed () const
     {
-      return impl_->seed();
+      return this->asInterface().seed();
     }
 
     //! level of this element
-    int level () const {
-      return impl_->level();
+    int level () const
+    {
+      return this->asInterface().level();
     }
 
     /** \brief The partition type for parallel computing
      */
-    PartitionType partitionType () const {
-      return impl_->partitionType();
+    PartitionType partitionType () const
+    {
+      return this->asInterface().partitionType();
     }
 
     /** \brief Return the number of subEntities of codimension codim.
      */
     unsigned int subEntities (unsigned int cc) const
     {
-      return impl_->subEntities(cc);
+      return this->asInterface().subEntities(cc);
     }
 
     //! geometry of this entity
     Geometry geometry () const
     {
-      return Geometry( impl_->geometry() );
+      return Geometry( this->asInterface().geometry() );
     }
-
-    std::unique_ptr<Interface> impl_;
   };
 
 
+
+  template<int dim, class GridImp>
+  struct VirtualizedGridEntityDefinition<0,dim,GridImp>
+  {
+    using Geometry = typename GridImp::template Codim<0>::Geometry;
+    using LocalGeometry = typename GridImp::template Codim<0>::LocalGeometry;
+    using EntitySeed = typename GridImp::template Codim<0>::EntitySeed;
+    using LevelIntersectionIterator = VirtualizedGridLevelIntersectionIterator<const GridImp>;
+    using LeafIntersectionIterator = VirtualizedGridLeafIntersectionIterator<const GridImp>;
+    using HierarchicIterator = VirtualizedGridHierarchicIterator<const GridImp>;
+
+    struct Interface
+    {
+      virtual ~Interface () = default;
+      virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const = 0;
+      virtual bool hasFather () const = 0;
+      virtual EntitySeed seed () const = 0;
+      virtual int level () const = 0;
+      virtual PartitionType partitionType () const = 0;
+      virtual Geometry geometry () const = 0;
+      virtual unsigned int subEntities (unsigned int cc) const = 0;
+      virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const = 0;
+      virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const = 0;
+      virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const = 0;
+      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0;
+      virtual bool isLeaf() const = 0;
+      virtual bool hasBoundaryIntersections () const = 0;
+      virtual typename GridImp::template Codim<0>::Entity father () const = 0;
+      virtual LocalGeometry geometryInFather () const = 0;
+      virtual HierarchicIterator hbegin (int maxLevel) const = 0;
+      virtual HierarchicIterator hend (int maxLevel) const = 0;
+    };
+
+    template<class Wrapper>
+    struct Model
+      : public Wrapper
+    {
+      using Wrapper::Wrapper;
+      using Wrapped = typename Wrapper::Wrapped;
+
+      bool equals (const VirtualizedGridEntity<0, dim, GridImp>& other) const final
+      {
+        return this->get() == other.template asModel<Wrapped>().get();
+      }
+
+      bool hasFather () const final
+      {
+        return this->get().hasFather();
+      }
+
+      EntitySeed seed () const final
+      {
+        return EntitySeed( this->get().seed() );
+      }
+
+      int level () const final
+      {
+        return this->get().level();
+      }
+
+      PartitionType partitionType () const final
+      {
+        return this->get().partitionType();
+      }
+
+      Geometry geometry () const final
+      {
+        return Geometry( this->get().geometry() );
+      }
+
+      unsigned int subEntities (unsigned int cc) const final
+      {
+        return this->get().subEntities(cc);
+      }
+
+      typename GridImp::template Codim<0>::Entity subEntity0 (int i) const final
+      {
+        return VirtualizedGridEntity<0, dim, GridImp>( this->get().template subEntity<0>(i) );
+      }
+
+      typename GridImp::template Codim<1>::Entity subEntity1 (int i) const final
+      {
+        return VirtualizedGridEntity<1, dim, GridImp>( this->get().template subEntity<1>(i) );
+      }
+
+      typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const final
+      {
+        return VirtualizedGridEntity<dim-1, dim, GridImp>( this->get().template subEntity<dim-1>(i) );
+      }
+
+      typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const final
+      {
+        return VirtualizedGridEntity<dim, dim, GridImp>( this->get().template subEntity<dim>(i) );
+      }
+
+      bool isLeaf () const final
+      {
+        return this->get().isLeaf();
+      }
+
+      bool hasBoundaryIntersections () const final
+      {
+        return this->get().hasBoundaryIntersections();
+      }
+
+      typename GridImp::template Codim<0>::Entity father () const final
+      {
+        return VirtualizedGridEntity<0, dim, GridImp>(this->get().father());
+      }
+
+      LocalGeometry geometryInFather () const final
+      {
+        return LocalGeometry(this->get().geometryInFather());
+      }
+
+      HierarchicIterator hbegin (int maxLevel) const final
+      {
+        return VirtualizedGridHierarchicIterator<const GridImp>(this->get().hbegin(maxLevel));
+      }
+
+      HierarchicIterator hend (int maxLevel) const final
+      {
+        return VirtualizedGridHierarchicIterator<const GridImp>(this->get().hend(maxLevel));
+      }
+    };
+
+    using Base = Polymorphic::TypeErasureBase<Interface, Model>;
+  };
 
 
   //***********************
@@ -201,8 +345,12 @@ namespace Dune {
    */
   template<int dim, class GridImp>
   class VirtualizedGridEntity<0, dim, GridImp> :
+    public VirtualizedGridEntityDefinition<0,dim,GridImp>::Base,
     public EntityDefaultImplementation<0, dim, GridImp, VirtualizedGridEntity>
   {
+    using Definition = VirtualizedGridEntityDefinition<0,dim,GridImp>;
+    using Base = typename Definition::Base;
+
   public:
     typedef typename GridImp::template Codim<0>::Geometry Geometry;
 
@@ -224,168 +372,53 @@ namespace Dune {
 
     typedef typename GridImp::ctype ctype;
 
-    // VIRTUALIZATION BEGIN
   public:
-    struct Interface
+
+    VirtualizedGridEntity() = default;
+
+    template <class Impl, Dune::disableCopyMove<VirtualizedGridEntity,Impl> = 0>
+    VirtualizedGridEntity (Impl&& impl)
+      : Base{std::forward<Impl>(impl)}
     {
-      virtual ~Interface () = default;
-      virtual Interface *clone () const = 0;
-      virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const = 0;
-      virtual bool hasFather () const = 0;
-      virtual EntitySeed seed () const = 0;
-      virtual int level () const = 0;
-      virtual PartitionType partitionType () const = 0;
-      virtual Geometry geometry () const = 0;
-      virtual unsigned int subEntities (unsigned int cc) const = 0;
-      virtual typename GridImp::template Codim<0>::Entity subEntity0 (int i) const = 0;
-      virtual typename GridImp::template Codim<1>::Entity subEntity1 (int i) const = 0;
-      virtual typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const = 0;
-      virtual typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const = 0;
-      virtual bool isLeaf() const = 0;
-      virtual bool hasBoundaryIntersections () const = 0;
-      virtual typename GridImp::template Codim<0>::Entity father () const = 0;
-      virtual LocalGeometry geometryInFather () const = 0;
-      virtual HierarchicIterator hbegin (int maxLevel) const = 0;
-      virtual HierarchicIterator hend (int maxLevel) const = 0;
-    };
-
-    template< class I >
-    struct DUNE_PRIVATE Implementation final
-      : public Interface
-    {
-      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-
-      Implementation *clone() const override { return new Implementation( *this ); }
-
-      bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const override {
-        return impl() == static_cast<Implementation<I>&>(*other.impl_).impl();
-      }
-
-      bool hasFather () const override { return impl().hasFather(); }
-
-      EntitySeed seed () const override
-      {
-        return VirtualizedGridEntitySeed<0, GridImp>( impl().seed() );
-      }
-
-      int level () const override { return impl().level(); }
-
-      PartitionType partitionType () const override { return impl().partitionType(); }
-
-      Geometry geometry () const override
-      {
-        return Geometry( impl().geometry() );
-      }
-
-      unsigned int subEntities (unsigned int cc) const override { return impl().subEntities(cc); }
-
-      typename GridImp::template Codim<0>::Entity subEntity0 (int i) const override
-      {
-        return VirtualizedGridEntity<0, dim, GridImp>( impl().template subEntity<0>(i) );
-      }
-
-      typename GridImp::template Codim<1>::Entity subEntity1 (int i) const override
-      {
-        return VirtualizedGridEntity<1, dim, GridImp>( impl().template subEntity<1>(i) );
-      }
-
-      typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const override
-      {
-        return VirtualizedGridEntity<dim-1, dim, GridImp>( impl().template subEntity<dim-1>(i) );
-      }
-
-      typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const override
-      {
-        return VirtualizedGridEntity<dim, dim, GridImp>( impl().template subEntity<dim>(i) );
-      }
-
-      bool isLeaf () const override { return impl().isLeaf(); }
-
-      bool hasBoundaryIntersections () const override { return impl().hasBoundaryIntersections(); }
-
-      typename GridImp::template Codim<0>::Entity father () const override
-      {
-        return VirtualizedGridEntity<0, dim, GridImp>(impl().father());
-      }
-
-      LocalGeometry geometryInFather () const override
-      {
-        return LocalGeometry( impl().geometryInFather() );
-      }
-
-      HierarchicIterator hbegin (int maxLevel) const override
-      {
-        return VirtualizedGridHierarchicIterator<const GridImp>(impl().hbegin(maxLevel));
-      }
-
-      HierarchicIterator hend (int maxLevel) const override
-      {
-        return VirtualizedGridHierarchicIterator<const GridImp>(impl().hend(maxLevel));
-      }
-
-      const auto &impl () const { return impl_; }
-      auto &impl () { return impl_; }
-
-    private:
-      I impl_;
-    };
-    // VIRTUALIZATION END
-
-    VirtualizedGridEntity()
-    {}
-
-    template< class ImplGridEntity >
-    VirtualizedGridEntity(ImplGridEntity&& implEntity)
-    : impl_( new Implementation<const ImplGridEntity>( std::forward<ImplGridEntity>( implEntity ) ) )
-    {}
-
-    VirtualizedGridEntity(const VirtualizedGridEntity& other)
-    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
-    {}
-
-    VirtualizedGridEntity ( VirtualizedGridEntity && ) = default;
-
-    VirtualizedGridEntity& operator=(const VirtualizedGridEntity& other)
-    {
-      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
-      return *this;
+      // static_assert(Concept::models<typename Definition::Concept,Impl>(),
+      //   "Implementation does not model the GridEntity concept.");
     }
 
-    VirtualizedGridEntity& operator=( VirtualizedGridEntity&& ) = default;
-
-    bool equals(const VirtualizedGridEntity& other) const
+    bool equals (const VirtualizedGridEntity& other) const
     {
-      return impl_->equals(other);
+      return this->asInterface().equals(other);
     }
 
     //! returns true if father entity exists
-    bool hasFather () const {
-      return impl_->hasFather();
+    bool hasFather () const
+    {
+      return this->asInterface().hasFather();
     }
 
     //! Create EntitySeed
     EntitySeed seed () const
     {
-      return impl_->seed();
+      return this->asInterface().seed();
     }
 
     //! Level of this element
     int level () const
     {
-      return impl_->level();
+      return this->asInterface().level();
     }
 
 
     /** \brief The partition type for parallel computing */
-    PartitionType partitionType () const {
-      return impl_->partitionType();
+    PartitionType partitionType () const
+    {
+      return this->asInterface().partitionType();
     }
 
 
     //! Geometry of this entity
     Geometry geometry () const
     {
-      return Geometry( impl_->geometry() );
+      return Geometry( this->asInterface().geometry() );
     }
 
 
@@ -393,7 +426,7 @@ namespace Dune {
      */
     unsigned int subEntities (unsigned int codim) const
     {
-      return impl_->subEntities(codim);
+      return this->asInterface().subEntities(codim);
     }
 
 
@@ -401,33 +434,37 @@ namespace Dune {
      *  are numbered 0 ... subEntities(cc)-1
      */
     template< int cc >
-    typename GridImp::template Codim<cc>::Entity subEntity (int i) const {
+    typename GridImp::template Codim<cc>::Entity subEntity (int i) const
+    {
       if constexpr (cc == 0)
-        return impl_->subEntity0(i);
+        return this->asInterface().subEntity0(i);
       if constexpr (cc == 1)
-        return impl_->subEntity1(i);
+        return this->asInterface().subEntity1(i);
       if constexpr (cc == dim-1)
-        return impl_->subEntityDimMinus1(i);
+        return this->asInterface().subEntityDimMinus1(i);
       if constexpr (cc == dim)
-        return impl_->subEntityDim(i);
+        return this->asInterface().subEntityDim(i);
     }
 
 
     //! returns true if Entity has NO children
-    bool isLeaf() const {
-      return impl_->isLeaf();
+    bool isLeaf() const
+    {
+      return this->asInterface().isLeaf();
     }
 
     // returns true if entity has boundary intersections
-    bool hasBoundaryIntersections () const {
-      return impl_->hasBoundaryIntersections();
+    bool hasBoundaryIntersections () const
+    {
+      return this->asInterface().hasBoundaryIntersections();
     }
 
 
     //! Inter-level access to father element on coarser grid.
     //! Assumes that meshes are nested.
-    typename GridImp::template Codim<0>::Entity father () const {
-      return impl_->father();
+    typename GridImp::template Codim<0>::Entity father () const
+    {
+      return this->asInterface().father();
     }
 
 
@@ -442,7 +479,7 @@ namespace Dune {
      */
     LocalGeometry geometryInFather () const
     {
-      return LocalGeometry( impl_->geometryInFather() );
+      return LocalGeometry( this->asInterface().geometryInFather() );
     }
 
 
@@ -452,17 +489,15 @@ namespace Dune {
      */
     VirtualizedGridHierarchicIterator<const GridImp> hbegin (int maxLevel) const
     {
-      return VirtualizedGridHierarchicIterator<const GridImp>( impl_->hbegin(maxLevel) );
+      return VirtualizedGridHierarchicIterator<const GridImp>( this->asInterface().hbegin(maxLevel) );
     }
 
 
     //! Returns iterator to one past the last son
     VirtualizedGridHierarchicIterator<const GridImp> hend (int maxLevel) const
     {
-      return VirtualizedGridHierarchicIterator<const GridImp>( impl_->hend(maxLevel) );
+      return VirtualizedGridHierarchicIterator<const GridImp>( this->asInterface().hend(maxLevel) );
     }
-
-    std::unique_ptr<Interface> impl_;
 
   }; // end of VirtualizedGridEntity codim = 0
 

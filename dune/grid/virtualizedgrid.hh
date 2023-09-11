@@ -432,9 +432,7 @@ namespace Dune
     {
       using HG = std::decay_t<I>;
       using Entity0 = typename Traits::template Codim<0>::Entity;
-      using Entity0Impl = typename Entity0::Implementation;
       using HostEntity0 = typename HG::template Codim<0>::Entity;
-      using Entity0TypeErasure = typename Entity0Impl::template Implementation<const HostEntity0>;
 
       using LevelIntersectionIterator = typename Traits::LevelIntersectionIterator;
       using LevelIntersectionIteratorImpl = typename LevelIntersectionIterator::Implementation;
@@ -467,16 +465,16 @@ namespace Dune
       virtual int maxLevel () const override { return impl().maxLevel(); }
 
       virtual LevelIntersectionIterator ilevelbegin (const Entity0& entity) const override {
-        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).ibegin(upcast<Entity0TypeErasure>(entity))};
+        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).ibegin(entity.impl().template asImpl<HostEntity0>())};
       }
       virtual LevelIntersectionIterator ilevelend (const Entity0& entity) const override {
-        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).iend(upcast<Entity0TypeErasure>(entity))};
+        return LevelIntersectionIteratorImpl{impl().levelGridView(entity.level()).iend(entity.impl().template asImpl<HostEntity0>())};
       }
       virtual LeafIntersectionIterator ileafbegin (const Entity0& entity) const override {
-        return LeafIntersectionIteratorImpl{impl().leafGridView().ibegin(upcast<Entity0TypeErasure>(entity))};
+        return LeafIntersectionIteratorImpl{impl().leafGridView().ibegin(entity.impl().template asImpl<HostEntity0>())};
       }
       virtual LeafIntersectionIterator ileafend (const Entity0& entity) const override {
-        return LeafIntersectionIteratorImpl{impl().leafGridView().iend(upcast<Entity0TypeErasure>(entity))};
+        return LeafIntersectionIteratorImpl{impl().leafGridView().iend(entity.impl().template asImpl<HostEntity0>())};
       }
 
       virtual int size (int level, int codim) const override { return impl().size(level, codim); }
@@ -500,10 +498,10 @@ namespace Dune
 
       virtual void globalRefine (int refCount) override { return impl().globalRefine(refCount); }
       virtual bool mark (int refCount, const Entity0& e) override {
-        return impl().mark(refCount, upcast<Entity0TypeErasure>(e));
+        return impl().mark(refCount, e.impl().template asImpl<HostEntity0>());
       }
       virtual int getMark (const Entity0 & e) const override {
-        return impl().getMark(upcast<Entity0TypeErasure>(e));
+        return impl().getMark(e.impl().template asImpl<HostEntity0>());
       }
 
       virtual bool preAdapt () override { return impl().preAdapt(); }

@@ -66,16 +66,16 @@ namespace Dune {
       : virtual InterfaceCodim<codim>
     {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
+      using EntityImpl = typename std::decay_t<I>::template Codim<codim>::Entity;
 
       int index (Codim<codim>, const Entity& e) const final {
-        return derived().impl().index(upcast<EntityImpl>(e));
+        return derived().impl().index(e.impl().template asImpl<EntityImpl>());
       }
       int subIndex (Codim<codim>, const Entity& e, int i, int cd) const final {
-        return derived().impl().template subIndex<codim>(upcast<EntityImpl>(e), i, cd);
+        return derived().impl().template subIndex<codim>(e.impl().template asImpl<EntityImpl>(), i, cd);
       }
       bool contains (Codim<codim>, const Entity& e) const final {
-        return derived().impl().contains(upcast<EntityImpl>(e));
+        return derived().impl().contains(e.impl().template asImpl<EntityImpl>());
       }
 
     private:
@@ -219,16 +219,16 @@ namespace Dune {
       : virtual InterfaceCodim<codim>
     {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
+      using EntityImpl = typename std::decay_t<I>::template Codim<codim>::Entity;
 
       int index (Codim<codim>, const Entity& e) const final {
-        return derived().impl().index(upcast<EntityImpl>(e));
+        return derived().impl().index(e.impl().template asImpl<EntityImpl>());
       }
       int subIndex (Codim<codim>, const Entity& e, int i, int cd) const final {
-        return derived().impl().template subIndex<codim>(upcast<EntityImpl>(e), i, cd);
+        return derived().impl().template subIndex<codim>(e.impl().template asImpl<EntityImpl>(), i, cd);
       }
       bool contains (Codim<codim>, const Entity& e) const final {
-        return derived().impl().contains(upcast<EntityImpl>(e));
+        return derived().impl().contains(e.impl().template asImpl<EntityImpl>());
       }
 
     private:
@@ -384,10 +384,10 @@ namespace Dune {
       : virtual InterfaceCodim<codim>
     {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
+      using EntityImpl = typename std::decay_t<I>::template Codim<codim>::Entity;
 
       IdType id (Codim<codim>, const Entity& e) const final {
-        return derived().impl().template id<codim>(upcast<EntityImpl>(e));
+        return derived().impl().template id<codim>(e.impl().template asImpl<EntityImpl>());
       }
 
     private:
@@ -400,13 +400,13 @@ namespace Dune {
       , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims>...
     {
       using Entity = typename GridImp::Traits::template Codim<0>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<0,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<0>::Entity>;
+      using EntityImpl = typename std::decay_t<I>::template Codim<0>::Entity;
 
       ImplementationImpl ( I&& i ) : impl_( std::forward<I>(i) ) {}
       ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
 
       IdType subId (const Entity& e, int i, int codim) const override {
-        return impl().subId(upcast<EntityImpl>(e), i, codim);
+        return impl().subId(e.impl().template asImpl<EntityImpl>(), i, codim);
       }
 
       const auto &impl () const { return impl_; }
@@ -508,10 +508,10 @@ namespace Dune {
       : virtual InterfaceCodim<codim>
     {
       using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<codim,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<codim>::Entity>;
+      using EntityImpl = typename std::decay_t<I>::template Codim<codim>::Entity;
 
       IdType id (Codim<codim>, const Entity& e) const final {
-        return derived().impl().template id<codim>(upcast<EntityImpl>(e));
+        return derived().impl().template id<codim>(e.impl().template asImpl<EntityImpl>());
       }
 
     private:
@@ -524,13 +524,13 @@ namespace Dune {
       , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims>...
     {
       using Entity = typename GridImp::Traits::template Codim<0>::Entity;
-      using EntityImpl = typename VirtualizedGridEntity<0,dim,GridImp>::template Implementation<const typename std::decay_t<I>::template Codim<0>::Entity>;
+      using EntityImpl = typename std::decay_t<I>::template Codim<0>::Entity;
 
       ImplementationImpl ( I&& i ) : impl_( std::forward<I>(i) ) {}
       ImplementationImpl *clone() const override { return new ImplementationImpl( *this ); }
 
       IdType subId (const Entity& e, int i, int codim) const override {
-        return impl().subId(upcast<EntityImpl>(e), i, codim);
+        return impl().subId(e.impl().template asImpl<EntityImpl>(), i, codim);
       }
 
       const auto &impl () const { return impl_; }
