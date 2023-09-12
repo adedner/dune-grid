@@ -81,7 +81,7 @@ namespace Dune {
   class VirtualizedGridIdType :
       public VirtualizedGridIdTypeDefinition::Base
   {
-    using Definition = VirtualizedGridHierarchicIteratorDefinition<GridImp>;
+    using Definition = VirtualizedGridIdTypeDefinition;
     using Base = typename Definition::Base;
 
   public:

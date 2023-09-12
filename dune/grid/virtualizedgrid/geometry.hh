@@ -56,8 +56,8 @@ namespace Dune {
       ctype integrationElement (const FieldVector<ctype, mydim>& local) const final { return this->get().integrationElement(local); }
       Jacobian jacobian (const FieldVector<ctype, mydim>& local) const final { return this->get().jacobian(local); }
       JacobianTransposed jacobianTransposed (const FieldVector<ctype, mydim>& local) const final { return this->get().jacobianTransposed(local); }
-      JacobianInverse jacobianInverse (const FieldVector<ctype, mydim>& local) const final { return this->.jacobianInverse(local); }
-      JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const final { return this->.jacobianInverseTransposed(local); }
+      JacobianInverse jacobianInverse (const FieldVector<ctype, mydim>& local) const final { return this->get().jacobianInverse(local); }
+      JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const final { return this->get().jacobianInverseTransposed(local); }
     };
 
     using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;

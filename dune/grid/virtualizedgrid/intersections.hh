@@ -5,15 +5,79 @@
 #ifndef DUNE_VIRTUALIZEDGRID_INTERSECTIONS_HH
 #define DUNE_VIRTUALIZEDGRID_INTERSECTIONS_HH
 
-#include "leafiterator.hh"
 #include "entity.hh"
 
 /** \file
- * \brief The VirtualizedGridLeafIntersection and VirtualizedGridLevelIntersection classes
+ * \brief The VirtualizedGridIntersection class
  */
 
 namespace Dune {
 
+  template<class GridImp, class Derived>
+  struct VirtualizedGridIntersectionDefinition
+  {
+    enum {dim=GridImp::dimension};
+    enum {dimworld=GridImp::dimensionworld};
+
+    using Geometry = typename GridImp::template Codim<1>::Geometry;
+    using GeometryImp = VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>;
+    using LocalGeometry = typename GridImp::template Codim<1>::LocalGeometry;
+    using LocalGeometryImp = VirtualizedGridGeometry<dim-1, dim, GridImp>;
+    using Entity = typename GridImp::template Codim<0>::Entity;
+    using EntityImp = VirtualizedGridEntity<0, dim, GridImp>;
+    using LocalCoordinate = typename Geometry::LocalCoordinate;
+    using NormalVector = FieldVector<typename GridImp::ctype, dimworld>;
+
+    struct Interface
+    {
+      virtual ~Interface () = default;
+      virtual bool equals (const Derived& other) const = 0;
+      virtual Entity inside () const = 0;
+      virtual Entity outside () const = 0;
+      virtual bool boundary () const = 0;
+      virtual bool neighbor () const = 0;
+      virtual size_t boundarySegmentIndex () const = 0;
+      virtual bool conforming () const = 0;
+      virtual GeometryType type () const = 0;
+      virtual LocalGeometry geometryInInside () const = 0;
+      virtual LocalGeometry geometryInOutside () const = 0;
+      virtual Geometry geometry () const = 0;
+      virtual int indexInInside () const = 0;
+      virtual int indexInOutside () const = 0;
+      virtual NormalVector outerNormal (const LocalCoordinate& local) const = 0;
+      virtual NormalVector integrationOuterNormal (const LocalCoordinate& local) const = 0;
+      virtual NormalVector unitOuterNormal (const LocalCoordinate& local) const = 0;
+      virtual NormalVector centerUnitOuterNormal () const = 0;
+    };
+
+    template<class Wrapper>
+    struct Implementation
+      : public Wrapper
+    {
+      using Wrapper::Wrapper;
+      using Wrapped = typename Wrapper::Wrapped;
+
+      bool equals (const Derived& other) const final { return this->get()() == Polymorphic::asWrapped<Wrapped>(other); }
+      Entity inside () const final { return EntityImp{this->get().inside()}; }
+      Entity outside () const final { return EntityImp{this->get().outside()}; }
+      bool boundary () const final { return this->get().boundary(); }
+      bool neighbor () const final { return this->get().neighbor(); }
+      size_t boundarySegmentIndex () const final { return this->get().boundarySegmentIndex(); }
+      bool conforming () const final { return this->get().conforming(); }
+      GeometryType type () const final { return this->get().type(); }
+      LocalGeometry geometryInInside () const final { return LocalGeometryImp{this->get().geometryInInside()}; }
+      LocalGeometry geometryInOutside () const final { return LocalGeometryImp{this->get().geometryInOutside()}; }
+      Geometry geometry () const final { return GeometryImp{this->get().geometry()}; }
+      int indexInInside () const final { return this->get().indexInInside(); }
+      int indexInOutside () const final { return this->get().indexInOutside(); }
+      NormalVector outerNormal (const LocalCoordinate& local) const final { return this->get().outerNormal(local); }
+      NormalVector integrationOuterNormal (const LocalCoordinate& local) const final { return this->get().integrationOuterNormal(local); }
+      NormalVector unitOuterNormal (const LocalCoordinate& local) const override { return this->get().unitOuterNormal(local); }
+      NormalVector centerUnitOuterNormal () const final { return this->get().centerUnitOuterNormal(); }
+    };
+
+    using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;
+  };
 
   /** \brief An intersection with a leaf neighbor element
    * \ingroup VirtualizedGrid
@@ -24,159 +88,84 @@ namespace Dune {
    * of an element!
    */
   template<class GridImp>
-  class VirtualizedGridLeafIntersection
+  class VirtualizedGridIntersection
   {
+    using Self = VirtualizedGridIntersection;
+    using Definition = VirtualizedGridIntersectionDefinition<GridImp,Self>;
+    using Base = typename Definition::Base;
 
-    friend class VirtualizedGridLeafIntersectionIterator<GridImp>;
+    friend class VirtualizedGridIntersectionIterator<GridImp>;
 
+  public:
     enum {dim=GridImp::dimension};
-
     enum {dimworld=GridImp::dimensionworld};
 
     // The type used to store coordinates
-    typedef typename GridImp::ctype ctype;
+    using ctype = typename GridImp::ctype;
 
   public:
-    typedef typename GridImp::template Codim<1>::Geometry Geometry;
-    typedef typename GridImp::template Codim<1>::LocalGeometry LocalGeometry;
-    typedef typename GridImp::template Codim<0>::Entity Entity;
-    typedef FieldVector<ctype, dimworld> NormalVector;
-
-  private:
-
-    // VIRTUALIZATION BEGIN
-    struct Interface
-    {
-      virtual ~Interface () = default;
-      virtual Interface *clone () const = 0;
-      virtual bool equals(const VirtualizedGridLeafIntersection<GridImp>& other) const = 0;
-      virtual Entity inside() const = 0;
-      virtual Entity outside() const = 0;
-      virtual bool boundary () const = 0;
-      virtual NormalVector centerUnitOuterNormal () const = 0;
-      virtual bool neighbor () const = 0;
-      virtual size_t boundarySegmentIndex() const = 0;
-      virtual bool conforming () const = 0;
-      virtual GeometryType type () const = 0;
-      virtual LocalGeometry geometryInInside () const = 0;
-      virtual LocalGeometry geometryInOutside () const = 0;
-      virtual Geometry geometry () const = 0;
-      virtual int indexInInside () const = 0;
-      virtual int indexInOutside () const = 0;
-      virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const = 0;
-      virtual FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const = 0;
-      virtual FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const = 0;
-    };
-
-    template< class I >
-    struct DUNE_PRIVATE Implementation final
-      : public Interface
-    {
-      Implementation ( const I& i ) : impl_( i ) {}
-      Implementation *clone() const override { return new Implementation( *this ); }
-
-      bool equals(const VirtualizedGridLeafIntersection<GridImp>& i) const override
-      {
-        return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
-      }
-
-      Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
-      Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
-      bool boundary () const override { return impl().boundary(); }
-      NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
-      bool neighbor () const override { return impl().neighbor(); }
-      size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
-      bool conforming () const override { return impl().conforming(); }
-      GeometryType type () const override { return impl().type(); }
-      LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
-      LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
-      Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
-      int indexInInside () const override { return impl().indexInInside(); }
-      int indexInOutside () const override { return impl().indexInOutside(); }
-      FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
-      FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().integrationOuterNormal(local); }
-      FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().unitOuterNormal(local); }
-
-    private:
-      const auto &impl () const { return impl_; }
-      const I impl_;
-    };
-    // VIRTUALIZATION END
+    using Geometry = typename GridImp::template Codim<1>::Geometry;
+    using LocalGeometry = typename GridImp::template Codim<1>::LocalGeometry;
+    using Entity = typename GridImp::template Codim<0>::Entity;
+    using LocalCoordinate = typename Geometry::LocalCoordinate;
+    using NormalVector = FieldVector<ctype, dimworld>;
 
   public:
-    VirtualizedGridLeafIntersection()
+    VirtualizedGridIntersection () = default;
+
+    template <class Impl, disableCopyMove<VirtualizedGridIntersection,Impl> = 0>
+    VirtualizedGridIntersection (Impl&& impl)
+      : Base{std::forward<Impl>(impl)}
     {}
 
-    template< class ImplLeafIntersection >
-    explicit VirtualizedGridLeafIntersection(const ImplLeafIntersection& implLeafIntersection)
-    : impl_( new Implementation<ImplLeafIntersection>( implLeafIntersection ) )
-    {}
-
-    VirtualizedGridLeafIntersection(const VirtualizedGridLeafIntersection& other)
-    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
-    {}
-
-    VirtualizedGridLeafIntersection ( VirtualizedGridLeafIntersection && ) = default;
-
-    VirtualizedGridLeafIntersection& operator=(const VirtualizedGridLeafIntersection& other)
+    bool equals (const Self& other) const
     {
-      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
-      return *this;
-    }
-
-    bool equals(const VirtualizedGridLeafIntersection& other) const
-    {
-      return impl_->equals(other);
+      return this->asInterface().equals(other);
     }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
-    Entity inside() const {
-      return impl_->inside();
+    Entity inside () const
+    {
+      return this->asInterface().inside();
     }
-
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
-    Entity outside() const {
-      return impl_->outside();
+    Entity outside () const
+    {
+      return this->asInterface().outside();
     }
-
 
     //! return true if intersection is with boundary.
-    bool boundary () const {
-      return impl_->boundary();
-    }
-
-    /** \brief Return unit outer normal (length == 1)
-     *
-     *   The returned vector is the normal at the center() of the
-     *     intersection's geometry.
-     *       It is scaled to have unit length. */
-    NormalVector centerUnitOuterNormal () const {
-      return impl_->centerUnitOuterNormal();
+    bool boundary () const
+    {
+      return this->asInterface().boundary();
     }
 
     //! return true if across the edge an neighbor on this level exists
-    bool neighbor () const {
-      return impl_->neighbor();
+    bool neighbor () const
+    {
+      return this->asInterface().neighbor();
     }
 
     //! return the boundary segment index
-    size_t boundarySegmentIndex() const {
-      return impl_->boundarySegmentIndex();
+    size_t boundarySegmentIndex() const
+    {
+      return this->asInterface().boundarySegmentIndex();
     }
 
     //! Return true if this is a conforming intersection
-    bool conforming () const {
-      return impl_->conforming();
+    bool conforming () const
+    {
+      return this->asInterface().conforming();
     }
 
     //! Geometry type of an intersection
-    GeometryType type () const {
-      return impl_->type();
+    GeometryType type () const
+    {
+      return this->asInterface().type();
     }
-
 
     //! intersection of codimension 1 of this neighbor with element where
     //! iteration started.
@@ -184,181 +173,51 @@ namespace Dune {
     //! where iteration started.
     LocalGeometry geometryInInside () const
     {
-      return LocalGeometry( impl_->geometryInInside() );
+      return this->asInterface().geometryInInside();
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     LocalGeometry geometryInOutside () const
     {
-      return LocalGeometry( impl_->geometryInOutside() );
+      return this->asInterface().geometryInOutside();
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      return Geometry( impl_->geometry() );
+      return this->asInterface().geometry();
     }
-
 
     //! local number of codim 1 entity in self where intersection is contained in
-    int indexInInside () const {
-      return impl_->indexInInside();
+    int indexInInside () const
+    {
+      return this->asInterface().indexInInside();
     }
-
 
     //! local number of codim 1 entity in neighbor where intersection is contained
-    int indexInOutside () const {
-      return impl_->indexInOutside();
+    int indexInOutside () const
+    {
+      return this->asInterface().indexInOutside();
     }
 
-
     //! return outer normal
-    FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const {
-      return impl_->outerNormal(local);
+    NormalVector outerNormal (const LocalCoordinate& local) const
+    {
+      return this->asInterface().outerNormal(local);
     }
 
     //! return outer normal multiplied by the integration element
-    FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const {
-      return impl_->integrationOuterNormal(local);
+    NormalVector integrationOuterNormal (const LocalCoordinate& local) const
+    {
+      return this->asInterface().integrationOuterNormal(local);
     }
 
     //! return unit outer normal
-    FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const {
-      return impl_->unitOuterNormal(local);
-    }
-
-    std::unique_ptr<Interface> impl_;
-  };
-
-
-
-
-  template<class GridImp>
-  class VirtualizedGridLevelIntersection
-  {
-
-    friend class VirtualizedGridLevelIntersectionIterator<GridImp>;
-
-    enum {dim=GridImp::dimension};
-
-    enum {dimworld=GridImp::dimensionworld};
-
-    // The type used to store coordinates
-    typedef typename GridImp::ctype ctype;
-
-  public:
-    typedef typename GridImp::template Codim<1>::Geometry Geometry;
-    typedef typename GridImp::template Codim<1>::LocalGeometry LocalGeometry;
-    typedef typename GridImp::template Codim<0>::Entity Entity;
-    typedef FieldVector<ctype, dimworld> NormalVector;
-
-  private:
-    // VIRTUALIZATION BEGIN
-    struct Interface
+    NormalVector unitOuterNormal (const LocalCoordinate& local) const
     {
-      virtual ~Interface () = default;
-      virtual Interface *clone () const = 0;
-      virtual bool equals(const VirtualizedGridLevelIntersection<GridImp>& other) const = 0;
-      virtual Entity inside() const = 0;
-      virtual Entity outside() const = 0;
-      virtual bool boundary () const = 0;
-      virtual NormalVector centerUnitOuterNormal () const = 0;
-      virtual bool neighbor () const = 0;
-      virtual size_t boundarySegmentIndex() const = 0;
-      virtual bool conforming () const = 0;
-      virtual GeometryType type () const = 0;
-      virtual LocalGeometry geometryInInside () const = 0;
-      virtual LocalGeometry geometryInOutside () const = 0;
-      virtual Geometry geometry () const = 0;
-      virtual int indexInInside () const = 0;
-      virtual int indexInOutside () const = 0;
-      virtual FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const = 0;
-      virtual FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const = 0;
-      virtual FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const = 0;
-    };
-
-    template< class I >
-    struct DUNE_PRIVATE Implementation final
-      : public Interface
-    {
-      Implementation ( I&& i ) : impl_( std::forward<I>(i) ) {}
-      Implementation *clone() const override { return new Implementation( *this ); }
-
-      bool equals(const VirtualizedGridLevelIntersection<GridImp>& i) const override
-      {
-        return impl() == static_cast<Implementation<I>&>(*i.impl_).impl();
-      }
-
-      Entity inside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().inside()); }
-      Entity outside() const override { return VirtualizedGridEntity<0, dim, GridImp>(impl().outside()); }
-      bool boundary () const override { return impl().boundary(); }
-      NormalVector centerUnitOuterNormal () const override { return impl().centerUnitOuterNormal(); }
-      bool neighbor () const override { return impl().neighbor(); }
-      size_t boundarySegmentIndex() const override { return impl().boundarySegmentIndex(); }
-      bool conforming () const override { return impl().conforming(); }
-      GeometryType type () const override { return impl().type(); }
-      LocalGeometry geometryInInside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInInside() ) ); }
-      LocalGeometry geometryInOutside () const override { return LocalGeometry( VirtualizedGridGeometry<dim-1, dim, GridImp>( impl().geometryInOutside() ) ); }
-      Geometry geometry () const override { return Geometry( VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>( impl().geometry() ) ); }
-      int indexInInside () const override { return impl().indexInInside(); }
-      int indexInOutside () const override { return impl().indexInOutside(); }
-      FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().outerNormal(local); }
-      FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().integrationOuterNormal(local); }
-      FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const override { return impl().unitOuterNormal(local); }
-
-    private:
-      const auto &impl () const { return impl_; }
-      I impl_;
-    };
-    // VIRTUALIZATION END
-
-  public:
-
-    VirtualizedGridLevelIntersection()
-    {}
-
-    template< class ImplLevelIntersection >
-    explicit VirtualizedGridLevelIntersection(ImplLevelIntersection&& implLevelIntersection)
-    : impl_( new Implementation<ImplLevelIntersection>( std::forward<ImplLevelIntersection>(implLevelIntersection) ) )
-    {}
-
-    VirtualizedGridLevelIntersection(const VirtualizedGridLevelIntersection& other)
-    : impl_( other.impl_ ? other.impl_->clone() : nullptr )
-    {}
-
-    VirtualizedGridLevelIntersection ( VirtualizedGridLevelIntersection && ) = default;
-
-    VirtualizedGridLevelIntersection& operator=(const VirtualizedGridLevelIntersection& other)
-    {
-      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
-      return *this;
-    }
-
-    bool equals(const VirtualizedGridLevelIntersection& other) const
-    {
-      return impl_->equals(other);
-    }
-
-    //! return Entity on the inside of this intersection
-    //! (that is the Entity where we started this Iterator)
-    Entity inside() const {
-      return impl_->inside();
-    }
-
-
-    //! return Entity on the outside of this intersection
-    //! (that is the neighboring Entity)
-    Entity outside() const {
-      return impl_->outside();
-    }
-
-
-    /** \brief return true if intersection is with boundary.
-     */
-    bool boundary () const {
-      return impl_->boundary();
+      return this->asInterface().unitOuterNormal(local);
     }
 
     /** \brief Return unit outer normal (length == 1)
@@ -366,85 +225,11 @@ namespace Dune {
      *   The returned vector is the normal at the center() of the
      *     intersection's geometry.
      *       It is scaled to have unit length. */
-    NormalVector centerUnitOuterNormal () const {
-      return impl_->centerUnitOuterNormal();
-    }
-
-    //! return true if across the edge an neighbor on this level exists
-    bool neighbor () const {
-      return impl_->neighbor();
-    }
-
-    //! return the boundary segment index
-    size_t boundarySegmentIndex() const {
-      return impl_->boundarySegmentIndex();
-    }
-
-    //! Return true if this is a conforming intersection
-    bool conforming () const {
-      return impl_->conforming();
-    }
-
-    //! Geometry type of an intersection
-    GeometryType type () const {
-      return impl_->type();
-    }
-
-
-    //! intersection of codimension 1 of this neighbor with element where
-    //! iteration started.
-    //! Here returned element is in LOCAL coordinates of the element
-    //! where iteration started.
-    LocalGeometry geometryInInside () const
+    NormalVector centerUnitOuterNormal () const
     {
-      return LocalGeometry( impl_->geometryInInside() );
+      return this->asInterface().centerUnitOuterNormal();
     }
-
-    //! intersection of codimension 1 of this neighbor with element where iteration started.
-    //! Here returned element is in LOCAL coordinates of neighbor
-    LocalGeometry geometryInOutside () const
-    {
-      return LocalGeometry( impl_->geometryInOutside() );
-    }
-
-    //! intersection of codimension 1 of this neighbor with element where iteration started.
-    //! Here returned element is in GLOBAL coordinates of the element where iteration started.
-    Geometry geometry () const
-    {
-      return Geometry( impl_->geometry() );
-    }
-
-
-    //! local number of codim 1 entity in self where intersection is contained in
-    int indexInInside () const {
-      return impl_->indexInInside();
-    }
-
-
-    //! local number of codim 1 entity in neighbor where intersection is contained
-    int indexInOutside () const {
-      return impl_->indexInOutside();
-    }
-
-
-    //! return outer normal
-    FieldVector<ctype, dimworld> outerNormal (const FieldVector<ctype, dim-1>& local) const {
-      return impl_->outerNormal(local);
-    }
-
-    //! return outer normal multiplied by the integration element
-    FieldVector<ctype, dimworld> integrationOuterNormal (const FieldVector<ctype, dim-1>& local) const {
-      return impl_->integrationOuterNormal(local);
-    }
-
-    //! return unit outer normal
-    FieldVector<ctype, dimworld> unitOuterNormal (const FieldVector<ctype, dim-1>& local) const {
-      return impl_->unitOuterNormal(local);
-    }
-
-    std::unique_ptr<Interface> impl_;
   };
-
 
 }  // namespace Dune
 

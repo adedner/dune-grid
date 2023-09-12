@@ -23,18 +23,11 @@ namespace Dune {
   template<int codim, class GridImp>
   class VirtualizedGridEntitySeed;
 
-  template<int codim, PartitionIteratorType pitype, class GridImp>
-  class VirtualizedGridLevelIterator;
+  template<int codim, class GridImp>
+  class VirtualizedGridEntityIterator;
 
   template<class GridImp>
-  class VirtualizedGridLevelIntersectionIterator;
-
-  template<class GridImp>
-  class VirtualizedGridLeafIntersectionIterator;
-
-  template<class GridImp>
-  class VirtualizedGridHierarchicIterator;
-
+  class VirtualizedGridIntersectionIterator;
 
   template<int codim, int dim, class GridImp>
   struct VirtualizedGridEntityDefinition
@@ -191,9 +184,7 @@ namespace Dune {
     using Geometry = typename GridImp::template Codim<0>::Geometry;
     using LocalGeometry = typename GridImp::template Codim<0>::LocalGeometry;
     using EntitySeed = typename GridImp::template Codim<0>::EntitySeed;
-    using LevelIntersectionIterator = VirtualizedGridLevelIntersectionIterator<const GridImp>;
-    using LeafIntersectionIterator = VirtualizedGridLeafIntersectionIterator<const GridImp>;
-    using HierarchicIterator = VirtualizedGridHierarchicIterator<const GridImp>;
+    using HierarchicIterator = VirtualizedGridEntityIterator<0,const GridImp>;
 
     struct Interface
     {
@@ -301,12 +292,12 @@ namespace Dune {
 
       HierarchicIterator hbegin (int maxLevel) const final
       {
-        return VirtualizedGridHierarchicIterator<const GridImp>(this->get().hbegin(maxLevel));
+        return HierarchicIterator(this->get().hbegin(maxLevel));
       }
 
       HierarchicIterator hend (int maxLevel) const final
       {
-        return VirtualizedGridHierarchicIterator<const GridImp>(this->get().hend(maxLevel));
+        return HierarchicIterator(this->get().hend(maxLevel));
       }
     };
 
@@ -335,25 +326,25 @@ namespace Dune {
     using Base = typename Definition::Base;
 
   public:
-    typedef typename GridImp::template Codim<0>::Geometry Geometry;
+    using Geometry = typename GridImp::template Codim<0>::Geometry;
 
-    typedef typename GridImp::template Codim<0>::LocalGeometry LocalGeometry;
+    using LocalGeometry = typename GridImp::template Codim<0>::LocalGeometry;
 
     //! The Iterator over intersections on this level
-    typedef VirtualizedGridLevelIntersectionIterator<const GridImp> LevelIntersectionIterator;
+    using LevelIntersectionIterator = VirtualizedGridIntersectionIterator<const GridImp>;
 
     //! The Iterator over intersections on the leaf level
-    typedef VirtualizedGridLeafIntersectionIterator<const GridImp> LeafIntersectionIterator;
+    using LeafIntersectionIterator = VirtualizedGridIntersectionIterator<const GridImp>;
 
     //! Iterator over descendants of the entity
-    typedef VirtualizedGridHierarchicIterator<const GridImp> HierarchicIterator;
+    using HierarchicIterator = VirtualizedGridEntityIterator<0,const GridImp>;
 
     //! The type of the EntitySeed interface class
-    typedef typename GridImp::template Codim<0>::EntitySeed EntitySeed;
+    using EntitySeed = typename GridImp::template Codim<0>::EntitySeed;
 
   private:
 
-    typedef typename GridImp::ctype ctype;
+    using ctype = typename GridImp::ctype;
 
   public:
 
@@ -470,16 +461,16 @@ namespace Dune {
      * This is provided for sparsely stored nested unstructured meshes.
      * Returns iterator to first son.
      */
-    VirtualizedGridHierarchicIterator<const GridImp> hbegin (int maxLevel) const
+    HierarchicIterator hbegin (int maxLevel) const
     {
-      return VirtualizedGridHierarchicIterator<const GridImp>( this->asInterface().hbegin(maxLevel) );
+      return HierarchicIterator( this->asInterface().hbegin(maxLevel) );
     }
 
 
     //! Returns iterator to one past the last son
-    VirtualizedGridHierarchicIterator<const GridImp> hend (int maxLevel) const
+    HierarchicIterator hend (int maxLevel) const
     {
-      return VirtualizedGridHierarchicIterator<const GridImp>( this->asInterface().hend(maxLevel) );
+      return HierarchicIterator( this->asInterface().hend(maxLevel) );
     }
 
   }; // end of VirtualizedGridEntity codim = 0

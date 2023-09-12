@@ -18,6 +18,9 @@
 namespace Dune {
 
   template<class GridImp>
+  class VirtualizedGridIndexSet;
+
+  template<class GridImp>
   struct VirtualizedGridIndexSetDefinition
   {
     using Types = typename IndexSet<GridImp, VirtualizedGridIndexSet<GridImp>>::Types;
@@ -58,15 +61,6 @@ namespace Dune {
     };
 
     using Interface = typename Interface_t<std::make_integer_sequence<int,dim+1>>::type;
-
-
-    template<class Wrapper>
-    struct Implementation
-      : public Wrapper
-    {
-      using Wrapper::Wrapper;
-      bool isValid () const final { return this->get().isValid(); }
-    };
 
     template<class Derived, class Wrapper, int codim>
     struct ImplementationCodim
@@ -202,6 +196,10 @@ namespace Dune {
   template <class GridImp>
   struct VirtualizedGridIdSetDefinition
   {
+    using IdType = typename GridImp::Traits::GlobalIdSet::IdType;
+
+    enum { dim = GridImp::dimension };
+
     template<int codim>
     struct InterfaceCodim
     {
@@ -290,7 +288,7 @@ namespace Dune {
   template <class GridImp>
   class VirtualizedGridIdSet :
     public VirtualizedGridIdSetDefinition<GridImp>::Base,
-    public IdSet<GridImp,VirtualizedGridIdSet<GridImp>,VirtualizedIdType>
+    public IdSet<GridImp,VirtualizedGridIdSet<GridImp>,VirtualizedGridIdType>
   {
     using Definition = VirtualizedGridIdSetDefinition<GridImp>;
     using Base = typename Definition::Base;
@@ -301,8 +299,8 @@ namespace Dune {
     enum { dim = GridImp::dimension };
 
   public:
-    template <class Impl, disableCopyMove<VirtualizedGridGlobalIdSet,Impl> = 0>
-    VirtualizedGridGlobalIdSet (Impl&& impl)
+    template <class Impl, disableCopyMove<VirtualizedGridIdSet,Impl> = 0>
+    VirtualizedGridIdSet (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 
