@@ -2,18 +2,18 @@
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 set(HEADERS
-  cast.hh
   datahandle.hh
   entity.hh
+  entityiterator.hh
   entityseed.hh
   geometry.hh
-  hierarchiciterator.hh
+  grid.hh
   idtype.hh
   indexsets.hh
   intersectioniterator.hh
-  intersections.hh
-  leafiterator.hh
-  leveliterator.hh)
+  intersections.hh)
 
 install(FILES ${HEADERS}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/grid/virtualizedgrid/)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/grid/polymorphicgrid/)
+
+add_subdirectory(common)

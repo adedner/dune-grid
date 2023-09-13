@@ -6,25 +6,25 @@
 #define DUNE_VIRTUALIZEDGRIDLEAFITERATOR_HH
 
 #include <dune/grid/common/gridenums.hh>
-#include <dune/grid/virtualizedgrid/common/iterator.hh>
+#include <dune/grid/polymorphicgrid/common/iterator.hh>
 
 /** \file
- * \brief The VirtualizedGridEntityIterator class
+ * \brief The PolymorphicEntityIterator class
  */
 
 namespace Dune {
 
   /** \brief Iterator over all entities of a given codimension and level of a grid.
-   *  \ingroup VirtualizedGrid
+   *  \ingroup Polymorphic
    */
   template<int codim, class GridImp>
-  class VirtualizedGridEntityIterator
+  class PolymorphicEntityIterator
       : public Polymorphic::IteratorDefinition<
-          VirtualizedGridEntityIterator<codim,GridImp>,
-          VirtualizedGridEntity<codim,GridImp::dimension,GridImp>>::Base
+          PolymorphicEntityIterator<codim,GridImp>,
+          PolymorphicEntity<codim,GridImp::dimension,GridImp>>::Base
   {
-    using Self = VirtualizedGridEntityIterator;
-    using EntityImp = VirtualizedGridEntity<codim,GridImp::dimension,GridImp>;
+    using Self = PolymorphicEntityIterator;
+    using EntityImp = PolymorphicEntity<codim,GridImp::dimension,GridImp>;
     using Definition = Polymorphic::IteratorDefinition<Self,EntityImp>;
     using Base = typename Definition::Base;
 
@@ -34,10 +34,10 @@ namespace Dune {
   public:
     using Entity = typename GridImp::template Codim<codim>::Entity;
 
-    VirtualizedGridEntityIterator () = default;
+    PolymorphicEntityIterator () = default;
 
-    template <class Impl, disableCopyMove<VirtualizedGridEntityIterator,Impl> = 0>
-    VirtualizedGridEntityIterator (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicEntityIterator,Impl> = 0>
+    PolymorphicEntityIterator (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 

@@ -9,9 +9,9 @@
 
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/gridview.hh>
-#include <dune/grid/virtualizedgrid/indexsets.hh>
-#include <dune/grid/virtualizedgrid/intersections.hh>
-#include <dune/grid/virtualizedgrid/intersectioniterator.hh>
+#include <dune/grid/polymorphicgrid/indexsets.hh>
+#include <dune/grid/polymorphicgrid/intersections.hh>
+#include <dune/grid/polymorphicgrid/intersectioniterator.hh>
 
 namespace Dune
 {
@@ -24,11 +24,11 @@ namespace Dune
   class VirtualizedLeafGridView;
 
 
-  // VirtualizedGridLevelViewTraits
+  // PolymorphicLevelViewTraits
   // ------------------------------
 
   template< class GridImp >
-  struct VirtualizedGridLevelViewTraits
+  struct PolymorphicLevelViewTraits
   {
     typedef VirtualizedLevelGridView< GridImp > GridViewImp;
 
@@ -69,7 +69,7 @@ namespace Dune
     constexpr static bool conforming = Capabilities::isLevelwiseConforming< Grid >::v;
   };
 
-  // VirtualizedGridView
+  // PolymorphicView
   // -------------------
 
   template< class GridImp >
@@ -78,7 +78,7 @@ namespace Dune
     typedef VirtualizedLevelGridView< GridImp > ThisType;
 
   public:
-    typedef VirtualizedGridLevelViewTraits< GridImp > Traits;
+    typedef PolymorphicLevelViewTraits< GridImp > Traits;
 
     typedef typename Traits::Grid Grid;
 
@@ -185,11 +185,11 @@ namespace Dune
   };
 
 
-  // VirtualizedGridLeafViewTraits
+  // PolymorphicLeafViewTraits
   // -----------------------------
 
   template< class GridImp >
-  struct VirtualizedGridLeafViewTraits
+  struct PolymorphicLeafViewTraits
   {
     typedef VirtualizedLeafGridView< GridImp > GridViewImp;
 
@@ -231,7 +231,7 @@ namespace Dune
   };
 
 
-  // VirtualizedGridView
+  // PolymorphicView
   // -------------------
 
   template< class GridImp >
@@ -240,7 +240,7 @@ namespace Dune
     typedef VirtualizedLeafGridView< GridImp > ThisType;
 
   public:
-    typedef VirtualizedGridLeafViewTraits< GridImp > Traits;
+    typedef PolymorphicLeafViewTraits< GridImp > Traits;
 
     typedef typename Traits::Grid Grid;
 

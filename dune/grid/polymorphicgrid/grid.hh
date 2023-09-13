@@ -6,7 +6,7 @@
 #define DUNE_GRID_VIRTUALIZEDGRID_GRID_HH
 
 /** \file
- * \brief The VirtualizedGrid class
+ * \brief The Polymorphic class
  */
 
 #include <string>
@@ -17,7 +17,7 @@
 #include <dune/geometry/dimension.hh>
 #include <dune/grid/common/grid.hh>
 
-// The components of the VirtualizedGrid interface
+// The components of the Polymorphic interface
 #include "datahandle.hh"
 #include "entity.hh"
 #include "entityiterator.hh"
@@ -30,22 +30,22 @@
 
 #if HAVE_MPI
   #include <dune/common/parallel/mpicommunication.hh>
-  using VirtualizedCommunication = Dune::Communication<MPI_Comm>;
+  using PolymorphicCommunication = Dune::Communication<MPI_Comm>;
 #else
-  using VirtualizedCommunication = Dune::Communication<No_Comm>;
+  using PolymorphicCommunication = Dune::Communication<No_Comm>;
 #endif
 
 namespace Dune
 {
   // Forward declaration
   template<int dimension, int dimensionworld, typename ct = double>
-  class VirtualizedGrid;
+  class PolymorphicGrid;
 
   template<int dimension, int dimensionworld, typename ct>
-  struct VirtualizedGridFamily;
+  struct PolymorphicGridFamily;
 
   template<class Grid, int dimension, int dimensionworld, typename ct>
-  class VirtualizedGridDefinition
+  struct PolymorphicGridDefinition
   {
     template <PartitionIteratorType p>
     struct _Partition {};
@@ -58,7 +58,7 @@ namespace Dune
 
   public:
     //! type of the used GridFamily for this grid
-    using GridFamily = VirtualizedGridFamily<dimension, dimensionworld, ct>;
+    using GridFamily = PolymorphicGridFamily<dimension, dimensionworld, ct>;
 
     //! the Traits
     using Traits = typename GridFamily::Traits;
@@ -67,8 +67,8 @@ namespace Dune
     struct InterfaceDataType
     {
       virtual ~InterfaceDataType () = default;
-      virtual void communicate (VirtualizedCommDataHandle<DataType,Grid>&, InterfaceType iftype, CommunicationDirection dir) const = 0;
-      virtual void communicate (VirtualizedCommDataHandle<DataType,Grid>&, InterfaceType iftype, CommunicationDirection dir, int level) const = 0;
+      virtual void communicate (PolymorphicCommDataHandle<DataType,Grid>&, InterfaceType iftype, CommunicationDirection dir) const = 0;
+      virtual void communicate (PolymorphicCommDataHandle<DataType,Grid>&, InterfaceType iftype, CommunicationDirection dir, int level) const = 0;
     };
 
     template<class DataTypes>
@@ -134,6 +134,7 @@ namespace Dune
       using Entity0 = typename Traits::template Codim<0>::Entity;
 
       virtual ~InterfaceImpl () = default;
+      virtual InterfaceImpl *clone () const = 0;
       virtual int maxLevel () const = 0;
       virtual int size (int level, int codim) const = 0;
       virtual int size (int codim) const = 0;
@@ -154,7 +155,7 @@ namespace Dune
       virtual unsigned int ghostSize (int codim) const = 0;
       virtual unsigned int overlapSize (int level, int codim) const = 0;
       virtual unsigned int ghostSize (int level, int codim) const = 0;
-      virtual const VirtualizedCommunication& comm () const = 0;
+      virtual const PolymorphicCommunication& comm () const = 0;
 
       virtual typename Traits::LevelIntersectionIterator ilevelbegin (const Entity0& entity) const = 0;
       virtual typename Traits::LevelIntersectionIterator ilevelend (const Entity0& entity) const = 0;
@@ -169,75 +170,78 @@ namespace Dune
       using InterfaceDataTypes<AllDataTypes>::communicate;
     };
 
-    template<class Derived, class DataType>
+    template<class Derived, class I, class DataType>
     struct ImplementationDataType
         : virtual InterfaceDataType<DataType>
     {
-      void communicate (VirtualizedCommDataHandle<DataType,Grid>& dh, InterfaceType iftype, CommunicationDirection dir) const final
+      using DataHandleImp = PolymorphicCommDataHandle<DataType,Grid>;
+
+      void communicate (DataHandleImp& dh, InterfaceType iftype, CommunicationDirection dir) const final
       {
-        derived().get().leafGridView().communicate(dh,iftype,dir);
+        derived().impl().leafGridView().communicate(dh,iftype,dir);
       }
 
-      void communicate (VirtualizedCommDataHandle<DataType,Grid>& dh, InterfaceType iftype, CommunicationDirection dir, int level) const final
+      void communicate (DataHandleImp& dh, InterfaceType iftype, CommunicationDirection dir, int level) const final
       {
-        derived().get().levelGridView(level).communicate(dh,iftype,dir);
+        derived().impl().levelGridView(level).communicate(dh,iftype,dir);
       }
 
     private:
       const Derived& derived () const { return static_cast<const Derived&>(*this); }
     };
 
-    template<class Derived, class DataTypes>
+    template<class Derived, class I, class DataTypes>
     struct ImplementationDataTypes;
 
-    template<class Derived, class... DataTypes>
-    struct ImplementationDataTypes<Derived,_Types<DataTypes...>>
-        : public ImplementationDataType<Derived,DataTypes>...
+    template<class Derived, class I, class... DataTypes>
+    struct ImplementationDataTypes<Derived,I,_Types<DataTypes...>>
+        : public ImplementationDataType<Derived,I,DataTypes>...
     {};
 
-    template<class Derived, class WrappedGrid, int codim, PartitionIteratorType pitype>
+    template<class Derived, class I, int codim, PartitionIteratorType pitype>
     struct ImplementationCodimPartition
         : virtual InterfaceCodimPartition<codim,pitype>
     {
+      using WrappedGrid = std::decay_t<I>;
       using LevelIterator = typename Traits::template Codim<codim>::template Partition<pitype>::LevelIterator;
-      using LevelIteratorImpl = typename LevelIterator::Implementation;
+      using LevelIteratorImp = typename LevelIterator::Implementation;
       using LeafIterator = typename Traits::template Codim<codim>::template Partition<pitype>::LeafIterator;
-      using LeafIteratorImpl = typename LeafIterator::Implementation;
+      using LeafIteratorImp = typename LeafIterator::Implementation;
 
-      virtual LevelIterator lbegin (Codim<codim>, _Partition<pitype>, int level) const final
+      LevelIterator lbegin (Codim<codim>, _Partition<pitype>, int level) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LevelIteratorImpl{derived().get().levelGridView(level).template begin<codim,pitype>()};
+          return LevelIteratorImp{derived().impl().levelGridView(level).template begin<codim,pitype>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LevelIterator{};
         }
       }
 
-      virtual LevelIterator lend (Codim<codim>, _Partition<pitype>, int level) const final
+      LevelIterator lend (Codim<codim>, _Partition<pitype>, int level) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LevelIteratorImpl{derived().get().levelGridView(level).template end<codim,pitype>()};
+          return LevelIteratorImp{derived().impl().levelGridView(level).template end<codim,pitype>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LevelIterator{};
         }
       }
 
-      virtual LeafIterator leafbegin (Codim<codim>, _Partition<pitype>) const final
+      LeafIterator leafbegin (Codim<codim>, _Partition<pitype>) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LeafIteratorImpl{derived().get().leafGridView().template begin<codim,pitype>()};
+          return LeafIteratorImp{derived().impl().leafGridView().template begin<codim,pitype>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LeafIterator{};
         }
       }
 
-      virtual LeafIterator leafend (Codim<codim>, _Partition<pitype>) const final
+      LeafIterator leafend (Codim<codim>, _Partition<pitype>) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LeafIteratorImpl{derived().get().leafGridView().template end<codim,pitype>()};
+          return LeafIteratorImp{derived().impl().leafGridView().template end<codim,pitype>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LeafIterator{};
@@ -248,191 +252,203 @@ namespace Dune
       const Derived& derived () const { return static_cast<const Derived&>(*this); }
     };
 
-    template<class Derived, class WrappedGrid, int codim, class Partitions>
+    template<class Derived, class I, int codim, class Partitions>
     struct ImplementationCodim;
 
-    template<class Derived, class WrappedGrid, int codim, PartitionIteratorType... pitypes>
-    struct ImplementationCodim<Derived,WrappedGrid,codim,_Partitions<pitypes...>>
+    template<class Derived, class I, int codim, PartitionIteratorType... pitypes>
+    struct ImplementationCodim<Derived,I,codim,_Partitions<pitypes...>>
         : virtual InterfaceCodim<codim,_Partitions<pitypes...>>
-        , public ImplementationCodimPartition<Derived,WrappedGrid,codim,pitypes>...
+        , public ImplementationCodimPartition<Derived,I,codim,pitypes>...
     {
+      using WrappedGrid = std::decay_t<I>;
       using LevelIterator = typename Traits::template Codim<codim>::LevelIterator;
-      using LevelIteratorImpl = typename LevelIterator::Implementation;
+      using LevelIteratorImp = typename LevelIterator::Implementation;
       using LeafIterator = typename Traits::template Codim<codim>::LeafIterator;
-      using LeafIteratorImpl = typename LeafIterator::Implementation;
+      using LeafIteratorImp = typename LeafIterator::Implementation;
       using Entity = typename Traits::template Codim<codim>::Entity;
       using EntityImpl = typename Entity::Implementation;
       using EntitySeed = typename Traits::template Codim<codim>::EntitySeed;
-      using EntitySeedImpl = typename EntitySeed::Implementation;
+      using WrappedEntitySeed = typename WrappedGrid::Traits::template Codim<codim>::EntitySeed;
 
-      virtual LevelIterator lbegin (Codim<codim>, int level) const final
+      LevelIterator lbegin (Codim<codim>, int level) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LevelIteratorImpl{derived().get().levelGridView(level).template begin<codim>()};
+          return LevelIteratorImp{derived().impl().levelGridView(level).template begin<codim>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LevelIterator{};
         }
       }
 
-      virtual LevelIterator lend (Codim<codim>, int level) const final
+      LevelIterator lend (Codim<codim>, int level) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LevelIteratorImpl{derived().get().levelGridView(level).template end<codim>()};
+          return LevelIteratorImp{derived().impl().levelGridView(level).template end<codim>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LevelIterator{};
         }
       }
 
-      virtual LeafIterator leafbegin (Codim<codim>) const final
+      LeafIterator leafbegin (Codim<codim>) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LeafIteratorImpl{derived().get().leafGridView().template begin<codim>()};
+          return LeafIteratorImp{derived().impl().leafGridView().template begin<codim>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LeafIterator{};
         }
       }
 
-      virtual LeafIterator leafend (Codim<codim>) const final
+      LeafIterator leafend (Codim<codim>) const final
       {
         if constexpr(Dune::Capabilities::hasEntityIterator<WrappedGrid,codim>::v)
-          return LeafIteratorImpl{derived().get().leafGridView().template end<codim>()};
+          return LeafIteratorImp{derived().impl().leafGridView().template end<codim>()};
         else {
           DUNE_THROW(Dune::NotImplemented, "EntityIterator<codim="<<codim<<"> not implemented");
           return LeafIterator{};
         }
       }
 
-      virtual Entity entity (Codim<codim>, const EntitySeed& seed) const final
+      Entity entity (Codim<codim>, const EntitySeed& seed) const final
       {
-        return EntityImpl{derived().get().entity(Polymorphic::asWrapped<EntitySeedImpl>(seed))};
+        return EntityImpl{derived().impl().entity(Polymorphic::asWrapped<WrappedEntitySeed>(seed))};
       }
 
-      using ImplementationCodimPartition<Derived,WrappedGrid,codim,pitypes>::lbegin...;
-      using ImplementationCodimPartition<Derived,WrappedGrid,codim,pitypes>::lend...;
-      using ImplementationCodimPartition<Derived,WrappedGrid,codim,pitypes>::leafbegin...;
-      using ImplementationCodimPartition<Derived,WrappedGrid,codim,pitypes>::leafend...;
+      using ImplementationCodimPartition<Derived,I,codim,pitypes>::lbegin...;
+      using ImplementationCodimPartition<Derived,I,codim,pitypes>::lend...;
+      using ImplementationCodimPartition<Derived,I,codim,pitypes>::leafbegin...;
+      using ImplementationCodimPartition<Derived,I,codim,pitypes>::leafend...;
 
     private:
       const Derived& derived () const { return static_cast<const Derived&>(*this); }
     };
 
-    template<class Wrapper, int... codims>
+    template<class I, int... codims>
     struct ImplementationImpl
       : virtual InterfaceImpl<codims...>
-      , public ImplementationCodim<ImplementationImpl<typename Wrapper::Wrapped,codims...>, typename Wrapper::Wrapped, codims, AllPartitions>...
-      , public ImplementationDataTypes<ImplementationImpl<typename Wrapper::Wrapped,codims...>, AllDataTypes>
-      , public Wrapper
+      , public ImplementationCodim<ImplementationImpl<I,codims...>, I, codims, AllPartitions>...
+      , public ImplementationDataTypes<ImplementationImpl<I,codims...>, I, AllDataTypes>
     {
-      using WrappedGrid = typename Wrapper::Wrapped;
+      using WrappedGrid = std::decay_t<I>;
       using Entity0 = typename Traits::template Codim<0>::Entity;
       using WrappedEntity0 = typename WrappedGrid::template Codim<0>::Entity;
 
       using LevelIntersectionIterator = typename Traits::LevelIntersectionIterator;
-      using LevelIntersectionIteratorImpl = typename LevelIntersectionIterator::Implementation;
+      using LevelIntersectionIteratorImp = typename LevelIntersectionIterator::Implementation;
       using LeafIntersectionIterator = typename Traits::LeafIntersectionIterator;
-      using LeafIntersectionIteratorImpl = typename LeafIntersectionIterator::Implementation;
+      using LeafIntersectionIteratorImp = typename LeafIntersectionIterator::Implementation;
 
-      template<class TT, disableCopyMove<ImplementationImpl, TT> = 0>
-      ImplementationImpl (TT&& tt)
-        : Wrapper{std::forward<TT>(tt)}
-        , globalIdSet_( Wrapper::get().globalIdSet() )
-        , localIdSet_( Wrapper::get().localIdSet() )
-        , leafIndexSet_( Wrapper::get().leafIndexSet() )
-        , comm_( Wrapper::get().comm() )
+      ImplementationImpl (I&& i)
+        : impl_(std::forward<I>(i))
+        , globalIdSet_( impl().globalIdSet() )
+        , localIdSet_( impl().localIdSet() )
+        , leafIndexSet_( impl().leafIndexSet() )
+        , comm_( impl().comm() )
       {
         for (int i = 0; i <= maxLevel(); i++)
         {
-          levelIndexSets_.push_back(
-            new VirtualizedGridIndexSet<const Grid>( this->get().levelIndexSet(i) )
-          );
+          PolymorphicIndexSet<const Grid>* p
+            = new PolymorphicIndexSet<const Grid>( impl().levelIndexSet(i) );
+          levelIndexSets_.push_back(p);
         }
       }
 
-      ~ImplementationImpl () noexcept
+      ~ImplementationImpl ()
       {
         for (size_t i = 0; i < levelIndexSets_.size(); i++)
           if (levelIndexSets_[i])
             delete (levelIndexSets_[i]);
       }
 
-      virtual int maxLevel () const final { return this->get().maxLevel(); }
+      ImplementationImpl* clone () const final { return new ImplementationImpl( *this ); }
+      int maxLevel () const final { return impl().maxLevel(); }
 
-      virtual LevelIntersectionIterator ilevelbegin (const Entity0& entity) const final
+      LevelIntersectionIterator ilevelbegin (const Entity0& entity) const final
       {
-        return LevelIntersectionIteratorImpl{this->get().levelGridView(entity.level()).ibegin(Polymorphic::asWrapped<WrappedEntity0>(entity))};
+        return LevelIntersectionIteratorImp{impl()
+          .levelGridView(entity.level())
+          .ibegin(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
 
-      virtual LevelIntersectionIterator ilevelend (const Entity0& entity) const final
+      LevelIntersectionIterator ilevelend (const Entity0& entity) const final
       {
-        return LevelIntersectionIteratorImpl{this->get().levelGridView(entity.level()).iend(Polymorphic::asWrapped<WrappedEntity0>(entity))};
+        return LevelIntersectionIteratorImp{impl()
+          .levelGridView(entity.level())
+          .iend(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
 
-      virtual LeafIntersectionIterator ileafbegin (const Entity0& entity) const final
+      LeafIntersectionIterator ileafbegin (const Entity0& entity) const final
       {
-        return LeafIntersectionIteratorImpl{this->get().leafGridView().ibegin(Polymorphic::asWrapped<WrappedEntity0>(entity))};
+        return LeafIntersectionIteratorImp{impl()
+          .leafGridView()
+          .ibegin(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
 
-      virtual LeafIntersectionIterator ileafend (const Entity0& entity) const final
+      LeafIntersectionIterator ileafend (const Entity0& entity) const final
       {
-        return LeafIntersectionIteratorImpl{this->get().leafGridView().iend(Polymorphic::asWrapped<WrappedEntity0>(entity))};
+        return LeafIntersectionIteratorImp{impl()
+          .leafGridView()
+          .iend(Polymorphic::asWrapped<WrappedEntity0>(entity))};
       }
 
-      virtual int size (int level, int codim) const final { return this->get().size(level, codim); }
-      virtual int size (int codim) const final { return this->get().size(codim); }
-      virtual int size (int level, GeometryType type) const final { return this->get().size(level, type); }
-      virtual int size (GeometryType type) const final { return this->get().size(type); }
-      virtual size_t numBoundarySegments () const final { return this->get().numBoundarySegments(); }
+      int size (int level, int codim) const final { return impl().size(level, codim); }
+      int size (int codim) const final { return impl().size(codim); }
+      int size (int level, GeometryType type) const final { return impl().size(level, type); }
+      int size (GeometryType type) const final { return impl().size(type); }
+      size_t numBoundarySegments () const final { return impl().numBoundarySegments(); }
 
-      virtual const typename Traits::GlobalIdSet& globalIdSet () const final
+      const typename Traits::GlobalIdSet& globalIdSet () const final
       {
         return dynamic_cast<const typename Traits::GlobalIdSet&>(globalIdSet_);
       }
 
-      virtual const typename Traits::LocalIdSet& localIdSet () const final
+      const typename Traits::LocalIdSet& localIdSet () const final
       {
         return dynamic_cast<const typename Traits::LocalIdSet&>(localIdSet_);
       }
 
-      virtual const typename Traits::LevelIndexSet& levelIndexSet (int level) const final
+      const typename Traits::LevelIndexSet& levelIndexSet (int level) const final
       {
         return dynamic_cast<const typename Traits::LevelIndexSet&>(*levelIndexSets_[level]);
       }
 
-      virtual const typename Traits::LeafIndexSet& leafIndexSet () const final
+      const typename Traits::LeafIndexSet& leafIndexSet () const final
       {
         return dynamic_cast<const typename Traits::LeafIndexSet&>(leafIndexSet_);
       }
 
-      virtual void globalRefine (int refCount) final { return this->get().globalRefine(refCount); }
+      void globalRefine (int refCount) final { return impl().globalRefine(refCount); }
 
-      virtual bool mark (int refCount, const Entity0& e) final
+      bool mark (int refCount, const Entity0& entity) final
       {
-        return this->get().mark(refCount, Polymorphic::asWrapped<WrappedEntity0>(e));
+        return impl().mark(refCount, Polymorphic::asWrapped<WrappedEntity0>(entity));
       }
 
-      virtual int getMark (const Entity0 & e) const final
+      int getMark (const Entity0& entity) const final
       {
-        return this->get().getMark(Polymorphic::asWrapped<WrappedEntity0>(e));
+        return impl().getMark(Polymorphic::asWrapped<WrappedEntity0>(entity));
       }
 
-      virtual bool preAdapt () final { return this->get().preAdapt(); }
-      virtual bool adapt () final { return this->get().adapt(); }
-      virtual void postAdapt () final { return this->get().postAdapt(); }
-      virtual unsigned int overlapSize (int codim) const final { return this->get().leafGridView().overlapSize(codim); }
-      virtual unsigned int ghostSize (int codim) const final { return this->get().leafGridView().ghostSize(codim); }
-      virtual unsigned int overlapSize (int level, int codim) const final { return this->get().levelGridView(level).overlapSize(codim); }
-      virtual unsigned int ghostSize (int level, int codim) const final { return this->get().levelGridView(level).ghostSize(codim); }
-      virtual const VirtualizedCommunication& comm () const override { return comm_; }
+      bool preAdapt () final { return impl().preAdapt(); }
+      bool adapt () final { return impl().adapt(); }
+      void postAdapt () final { return impl().postAdapt(); }
+      unsigned int overlapSize (int codim) const final { return impl().leafGridView().overlapSize(codim); }
+      unsigned int ghostSize (int codim) const final { return impl().leafGridView().ghostSize(codim); }
+      unsigned int overlapSize (int level, int codim) const final { return impl().levelGridView(level).overlapSize(codim); }
+      unsigned int ghostSize (int level, int codim) const final { return impl().levelGridView(level).ghostSize(codim); }
+      const PolymorphicCommunication& comm () const override { return comm_; }
+
+      const auto &impl () const { return impl_; }
+      auto &impl () { return impl_; }
 
     private:
-      VirtualizedGridIdSet<const Grid> globalIdSet_;
-      VirtualizedGridIdSet<const Grid> localIdSet_;
-      std::vector<VirtualizedGridIndexSet<const Grid>*> levelIndexSets_;
-      VirtualizedGridIndexSet<const Grid> leafIndexSet_;
-      VirtualizedCommunication comm_{};
+      I impl_;
+      PolymorphicIdSet<const Grid> globalIdSet_;
+      PolymorphicIdSet<const Grid> localIdSet_;
+      std::vector<PolymorphicIndexSet<const Grid>*> levelIndexSets_;
+      PolymorphicIndexSet<const Grid> leafIndexSet_;
+      PolymorphicCommunication comm_{};
     };
 
 
@@ -458,8 +474,6 @@ namespace Dune
 
     template<class I>
     using Implementation = typename Implementation_t<I,std::make_integer_sequence<int,dimension+1>>::type;
-
-    using Base = Polymorphic::TypeErasureBase<Interface, Implementation>;
   };
 
 } // namespace Dune

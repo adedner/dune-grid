@@ -5,7 +5,7 @@
 #ifndef DUNE_DGFPARSERVIRTUALIZED_HH
 #define DUNE_DGFPARSERVIRTUALIZED_HH
 
-#include <dune/grid/virtualizedgrid.hh>
+#include <dune/grid/polymorphicgrid.hh>
 #include "dgfparser.hh"
 
 namespace Dune
@@ -19,12 +19,12 @@ namespace Dune
 
 
   /*!
-   * \brief Dummy grid factory for VirtualizedGrid
+   * \brief Dummy grid factory for Polymorphic
    */
   template <int dim, int dimw>
-  struct DGFGridFactory< VirtualizedGrid<dim, dimw> >
+  struct DGFGridFactory< PolymorphicGrid<dim, dimw> >
   {
-    typedef VirtualizedGrid<dim, dimw> Grid;
+    typedef PolymorphicGrid<dim, dimw> Grid;
     const static int dimension = Grid::dimension;
     typedef MPIHelper::MPICommunicator MPICommunicatorType;
 
@@ -32,35 +32,35 @@ namespace Dune
     explicit DGFGridFactory ( std::istream &input,
                               MPICommunicatorType comm = MPIHelper::getCommunicator() )
     {
-      DUNE_THROW(NotImplemented, "DGFGridFactory for VirtualizedGrid is not available!");
+      DUNE_THROW(NotImplemented, "DGFGridFactory for Polymorphic is not available!");
     }
 
     explicit DGFGridFactory ( const std::string &filename,
                               MPICommunicatorType comm = MPIHelper::getCommunicator() )
     {
-      DUNE_THROW(NotImplemented, "DGFGridFactory for VirtualizedGrid is not available!");
+      DUNE_THROW(NotImplemented, "DGFGridFactory for Polymorphic is not available!");
     }
 
     Grid *grid() const
     {
-      DUNE_THROW(NotImplemented, "DGFGridFactory for VirtualizedGrid is not available!");
+      DUNE_THROW(NotImplemented, "DGFGridFactory for Polymorphic is not available!");
       return nullptr;
     }
 
   };
 
   template <int dim, int dimw>
-  struct DGFGridInfo< VirtualizedGrid<dim, dimw> >
+  struct DGFGridInfo< PolymorphicGrid<dim, dimw> >
   {
     static int refineStepsForHalf()
     {
-      DUNE_THROW(NotImplemented, "DGFGridFactory for VirtualizedGrid is not available!");
+      DUNE_THROW(NotImplemented, "DGFGridFactory for Polymorphic is not available!");
       return 1;
     }
 
     static double refineWeight()
     {
-      DUNE_THROW(NotImplemented, "DGFGridFactory for VirtualizedGrid is not available!");
+      DUNE_THROW(NotImplemented, "DGFGridFactory for Polymorphic is not available!");
       return 1;
     }
   };

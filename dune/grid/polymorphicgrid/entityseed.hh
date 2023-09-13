@@ -7,14 +7,14 @@
 
 /**
  * \file
- * \brief The VirtualizedGridEntitySeed class
+ * \brief The PolymorphicEntitySeed class
  */
 
-#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
+#include <dune/grid/polymorphicgrid/common/typeerasure.hh>
 
 namespace Dune {
 
-  struct VirtualizedGridEntitySeedDefinition
+  struct PolymorphicEntitySeedDefinition
   {
     struct Interface
     {
@@ -36,14 +36,14 @@ namespace Dune {
 
   /**
    * \brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
-   * \ingroup VirtualizedGrid
+   * \ingroup Polymorphic
    *
    */
   template<int codim, class GridImp>
-  class VirtualizedGridEntitySeed
-      : public VirtualizedGridEntitySeedDefinition::Base
+  class PolymorphicEntitySeed
+      : public PolymorphicEntitySeedDefinition::Base
   {
-    using Definition = VirtualizedGridEntitySeedDefinition;
+    using Definition = PolymorphicEntitySeedDefinition;
     using Base = typename Definition::Base;
 
   protected:
@@ -58,13 +58,13 @@ namespace Dune {
     /**
      * \brief Construct an empty (i.e. isValid() == false) seed.
      */
-    VirtualizedGridEntitySeed () = default;
+    PolymorphicEntitySeed () = default;
 
     /**
      * \brief Create EntitySeed from implementation entity
      */
-    template <class Impl, disableCopyMove<VirtualizedGridEntitySeed,Impl> = 0>
-    VirtualizedGridEntitySeed (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicEntitySeed,Impl> = 0>
+    PolymorphicEntitySeed (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 

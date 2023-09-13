@@ -8,23 +8,23 @@
 #include "entity.hh"
 
 /** \file
- * \brief The VirtualizedGridIntersection class
+ * \brief The PolymorphicIntersection class
  */
 
 namespace Dune {
 
   template<class GridImp, class Derived>
-  struct VirtualizedGridIntersectionDefinition
+  struct PolymorphicIntersectionDefinition
   {
     enum {dim=GridImp::dimension};
     enum {dimworld=GridImp::dimensionworld};
 
     using Geometry = typename GridImp::template Codim<1>::Geometry;
-    using GeometryImp = VirtualizedGridGeometry<dim-1, Geometry::coorddimension, GridImp>;
+    using GeometryImp = PolymorphicGeometry<dim-1, Geometry::coorddimension, GridImp>;
     using LocalGeometry = typename GridImp::template Codim<1>::LocalGeometry;
-    using LocalGeometryImp = VirtualizedGridGeometry<dim-1, dim, GridImp>;
+    using LocalGeometryImp = PolymorphicGeometry<dim-1, dim, GridImp>;
     using Entity = typename GridImp::template Codim<0>::Entity;
-    using EntityImp = VirtualizedGridEntity<0, dim, GridImp>;
+    using EntityImp = PolymorphicEntity<0, dim, GridImp>;
     using LocalCoordinate = typename Geometry::LocalCoordinate;
     using NormalVector = FieldVector<typename GridImp::ctype, dimworld>;
 
@@ -57,7 +57,7 @@ namespace Dune {
       using Wrapper::Wrapper;
       using Wrapped = typename Wrapper::Wrapped;
 
-      bool equals (const Derived& other) const final { return this->get()() == Polymorphic::asWrapped<Wrapped>(other); }
+      bool equals (const Derived& other) const final { return this->get() == Polymorphic::asWrapped<Wrapped>(other); }
       Entity inside () const final { return EntityImp{this->get().inside()}; }
       Entity outside () const final { return EntityImp{this->get().outside()}; }
       bool boundary () const final { return this->get().boundary(); }
@@ -65,9 +65,9 @@ namespace Dune {
       size_t boundarySegmentIndex () const final { return this->get().boundarySegmentIndex(); }
       bool conforming () const final { return this->get().conforming(); }
       GeometryType type () const final { return this->get().type(); }
-      LocalGeometry geometryInInside () const final { return LocalGeometryImp{this->get().geometryInInside()}; }
-      LocalGeometry geometryInOutside () const final { return LocalGeometryImp{this->get().geometryInOutside()}; }
-      Geometry geometry () const final { return GeometryImp{this->get().geometry()}; }
+      LocalGeometry geometryInInside () const final { return LocalGeometry(LocalGeometryImp{this->get().geometryInInside()}); }
+      LocalGeometry geometryInOutside () const final { return LocalGeometry(LocalGeometryImp{this->get().geometryInOutside()}); }
+      Geometry geometry () const final { return Geometry(GeometryImp{this->get().geometry()}); }
       int indexInInside () const final { return this->get().indexInInside(); }
       int indexInOutside () const final { return this->get().indexInOutside(); }
       NormalVector outerNormal (const LocalCoordinate& local) const final { return this->get().outerNormal(local); }
@@ -80,7 +80,7 @@ namespace Dune {
   };
 
   /** \brief An intersection with a leaf neighbor element
-   * \ingroup VirtualizedGrid
+   * \ingroup Polymorphic
    * Mesh entities of codimension 0 ("elements") allow to visit all neighbors, where
    * a neighbor is an entity of codimension 0 which has a common entity of codimension 1
    * These neighbors are accessed via a IntersectionIterator. This allows the implement
@@ -88,13 +88,14 @@ namespace Dune {
    * of an element!
    */
   template<class GridImp>
-  class VirtualizedGridIntersection
+  class PolymorphicIntersection
+      : public PolymorphicIntersectionDefinition<GridImp,PolymorphicIntersection<GridImp>>::Base
   {
-    using Self = VirtualizedGridIntersection;
-    using Definition = VirtualizedGridIntersectionDefinition<GridImp,Self>;
+    using Self = PolymorphicIntersection;
+    using Definition = PolymorphicIntersectionDefinition<GridImp,Self>;
     using Base = typename Definition::Base;
 
-    friend class VirtualizedGridIntersectionIterator<GridImp>;
+    friend class PolymorphicIntersectionIterator<GridImp>;
 
   public:
     enum {dim=GridImp::dimension};
@@ -111,10 +112,10 @@ namespace Dune {
     using NormalVector = FieldVector<ctype, dimworld>;
 
   public:
-    VirtualizedGridIntersection () = default;
+    PolymorphicIntersection () = default;
 
-    template <class Impl, disableCopyMove<VirtualizedGridIntersection,Impl> = 0>
-    VirtualizedGridIntersection (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicIntersection,Impl> = 0>
+    PolymorphicIntersection (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 

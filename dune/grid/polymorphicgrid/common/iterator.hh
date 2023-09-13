@@ -5,10 +5,10 @@
 #ifndef DUNE_POLYMORPHIC_COMMON_ITERATOR_HH
 #define DUNE_POLYMORPHIC_COMMON_ITERATOR_HH
 
-#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
+#include <dune/grid/polymorphicgrid/common/typeerasure.hh>
 
 /** \file
- * \brief The VirtualizedGridIntersectionIterator class
+ * \brief The PolymorphicIntersectionIterator class
  */
 
 namespace Dune::Polymorphic {

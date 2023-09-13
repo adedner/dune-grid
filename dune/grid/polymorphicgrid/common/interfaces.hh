@@ -26,8 +26,7 @@ class PolymorphicType
 public:
 
   /** \brief Destructor */
-  virtual ~PolymorphicType()
-  {}
+  virtual ~PolymorphicType() = default;
 
   /**
    * \brief Clones the object

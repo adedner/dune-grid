@@ -7,8 +7,8 @@
 
 #include <dune/common/typeutilities.hh>
 
-#include <dune/grid/virtualizedgrid/common/interfaces.hh>
-#include <dune/grid/virtualizedgrid/common/polymorphicsmallobject.hh>
+#include <dune/grid/polymorphicgrid/common/interfaces.hh>
+#include <dune/grid/polymorphicgrid/common/polymorphicsmallobject.hh>
 
 namespace Dune {
 namespace Polymorphic {
@@ -65,6 +65,8 @@ public:
   TypeErasureWrapperBase(TT&& t) :
     wrapped_(std::forward<TT>(t))
   {}
+
+  ~TypeErasureWrapperBase() noexcept { wrapped_.~Wrapped(); }
 
   //! Get mutable reference stored object
   T& get()

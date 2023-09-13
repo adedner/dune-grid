@@ -6,11 +6,11 @@
 #define DUNE_VIRTUALIZEDGRVIRTUALIZED_HH
 
 /** \file
- * \brief The VirtualizedGridEntity class
+ * \brief The PolymorphicEntity class
  */
 
 #include <dune/grid/common/grid.hh>
-#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
+#include <dune/grid/polymorphicgrid/common/typeerasure.hh>
 
 namespace Dune {
 
@@ -18,19 +18,19 @@ namespace Dune {
   // Forward declarations
 
   template<int codim, int dim, class GridImp>
-  class VirtualizedGridEntity;
+  class PolymorphicEntity;
 
   template<int codim, class GridImp>
-  class VirtualizedGridEntitySeed;
+  class PolymorphicEntitySeed;
 
   template<int codim, class GridImp>
-  class VirtualizedGridEntityIterator;
+  class PolymorphicEntityIterator;
 
   template<class GridImp>
-  class VirtualizedGridIntersectionIterator;
+  class PolymorphicIntersectionIterator;
 
   template<int codim, int dim, class GridImp>
-  struct VirtualizedGridEntityDefinition
+  struct PolymorphicEntityDefinition
   {
     using Geometry = typename GridImp::template Codim<codim>::Geometry;
     using EntitySeed = typename GridImp::template Codim<codim>::EntitySeed;
@@ -38,7 +38,7 @@ namespace Dune {
     struct Interface
     {
       virtual ~Interface () = default;
-      virtual bool equals (const VirtualizedGridEntity<codim, dim, GridImp>& other) const = 0;
+      virtual bool equals (const PolymorphicEntity<codim, dim, GridImp>& other) const = 0;
       virtual EntitySeed seed () const = 0;
       virtual int level () const = 0;
       virtual PartitionType partitionType () const = 0;
@@ -53,7 +53,7 @@ namespace Dune {
       using Wrapper::Wrapper;
       using Wrapped = typename Wrapper::Wrapped;
 
-      bool equals (const VirtualizedGridEntity<codim, dim, GridImp>& other) const final
+      bool equals (const PolymorphicEntity<codim, dim, GridImp>& other) const final
       {
         return this->get() == Polymorphic::asWrapped<Wrapped>(other);
       }
@@ -90,35 +90,35 @@ namespace Dune {
 
   //**********************************************************************
   //
-  // --VirtualizedGridEntity
+  // --PolymorphicEntity
   // --Entity
   //
-  /** \brief The implementation of entities in a VirtualizedGrid
-   *   \ingroup VirtualizedGrid
+  /** \brief The implementation of entities in a Polymorphic
+   *   \ingroup Polymorphic
    *
    *  A Grid is a container of grid entities. An entity is parametrized by the codimension.
    *  An entity of codimension c in dimension d is a d-c dimensional object.
    *
    */
   template<int codim, int dim, class GridImp>
-  class VirtualizedGridEntity :
-    public VirtualizedGridEntityDefinition<codim,dim,GridImp>::Base,
-    public EntityDefaultImplementation <codim, dim, GridImp, VirtualizedGridEntity>
+  class PolymorphicEntity :
+    public PolymorphicEntityDefinition<codim,dim,GridImp>::Base,
+    public EntityDefaultImplementation <codim, dim, GridImp, PolymorphicEntity>
   {
-    using Definition = VirtualizedGridEntityDefinition<codim,dim,GridImp>;
+    using Definition = PolymorphicEntityDefinition<codim,dim,GridImp>;
     using Base = typename Definition::Base;
 
     template <class GridImp_>
-    friend class VirtualizedGridLevelIndexSet;
+    friend class PolymorphicLevelIndexSet;
 
     template <class GridImp_>
-    friend class VirtualizedGridLeafIndexSet;
+    friend class PolymorphicLeafIndexSet;
 
     template <class GridImp_>
-    friend class VirtualizedGridLocalIdSet;
+    friend class PolymorphicLocalIdSet;
 
     template <class GridImp_>
-    friend class VirtualizedGridGlobalIdSet;
+    friend class PolymorphicGlobalIdSet;
 
   public:
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
@@ -131,14 +131,14 @@ namespace Dune {
 
   public:
 
-    VirtualizedGridEntity() = default;
+    PolymorphicEntity() = default;
 
-    template <class Impl, disableCopyMove<VirtualizedGridEntity,Impl> = 0>
-    VirtualizedGridEntity (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicEntity,Impl> = 0>
+    PolymorphicEntity (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 
-    bool equals (const VirtualizedGridEntity& other) const
+    bool equals (const PolymorphicEntity& other) const
     {
       return this->asInterface().equals(other);
     }
@@ -179,17 +179,17 @@ namespace Dune {
 
 
   template<int dim, class GridImp>
-  struct VirtualizedGridEntityDefinition<0,dim,GridImp>
+  struct PolymorphicEntityDefinition<0,dim,GridImp>
   {
     using Geometry = typename GridImp::template Codim<0>::Geometry;
     using LocalGeometry = typename GridImp::template Codim<0>::LocalGeometry;
     using EntitySeed = typename GridImp::template Codim<0>::EntitySeed;
-    using HierarchicIterator = VirtualizedGridEntityIterator<0,const GridImp>;
+    using HierarchicIterator = PolymorphicEntityIterator<0,const GridImp>;
 
     struct Interface
     {
       virtual ~Interface () = default;
-      virtual bool equals(const VirtualizedGridEntity<0, dim, GridImp>& other) const = 0;
+      virtual bool equals(const PolymorphicEntity<0, dim, GridImp>& other) const = 0;
       virtual bool hasFather () const = 0;
       virtual EntitySeed seed () const = 0;
       virtual int level () const = 0;
@@ -215,7 +215,7 @@ namespace Dune {
       using Wrapper::Wrapper;
       using Wrapped = typename Wrapper::Wrapped;
 
-      bool equals (const VirtualizedGridEntity<0, dim, GridImp>& other) const final
+      bool equals (const PolymorphicEntity<0, dim, GridImp>& other) const final
       {
         return this->get() == Polymorphic::asWrapped<Wrapped>(other);
       }
@@ -252,22 +252,22 @@ namespace Dune {
 
       typename GridImp::template Codim<0>::Entity subEntity0 (int i) const final
       {
-        return VirtualizedGridEntity<0, dim, GridImp>( this->get().template subEntity<0>(i) );
+        return PolymorphicEntity<0, dim, GridImp>( this->get().template subEntity<0>(i) );
       }
 
       typename GridImp::template Codim<1>::Entity subEntity1 (int i) const final
       {
-        return VirtualizedGridEntity<1, dim, GridImp>( this->get().template subEntity<1>(i) );
+        return PolymorphicEntity<1, dim, GridImp>( this->get().template subEntity<1>(i) );
       }
 
       typename GridImp::template Codim<dim-1>::Entity subEntityDimMinus1 (int i) const final
       {
-        return VirtualizedGridEntity<dim-1, dim, GridImp>( this->get().template subEntity<dim-1>(i) );
+        return PolymorphicEntity<dim-1, dim, GridImp>( this->get().template subEntity<dim-1>(i) );
       }
 
       typename GridImp::template Codim<dim>::Entity subEntityDim (int i) const final
       {
-        return VirtualizedGridEntity<dim, dim, GridImp>( this->get().template subEntity<dim>(i) );
+        return PolymorphicEntity<dim, dim, GridImp>( this->get().template subEntity<dim>(i) );
       }
 
       bool isLeaf () const final
@@ -282,7 +282,7 @@ namespace Dune {
 
       typename GridImp::template Codim<0>::Entity father () const final
       {
-        return VirtualizedGridEntity<0, dim, GridImp>(this->get().father());
+        return PolymorphicEntity<0, dim, GridImp>(this->get().father());
       }
 
       LocalGeometry geometryInFather () const final
@@ -307,22 +307,22 @@ namespace Dune {
 
   //***********************
   //
-  //  --VirtualizedGridEntity
+  //  --PolymorphicEntity
   //
   //***********************
   /** \brief Specialization for codim-0-entities.
-   * \ingroup VirtualizedGrid
+   * \ingroup Polymorphic
    *
    * This class embodies the topological parts of elements of the grid.
    * It has an extended interface compared to the general entity class.
    * For example, Entities of codimension 0  allow to visit all neighbors.
    */
   template<int dim, class GridImp>
-  class VirtualizedGridEntity<0, dim, GridImp> :
-    public VirtualizedGridEntityDefinition<0,dim,GridImp>::Base,
-    public EntityDefaultImplementation<0, dim, GridImp, VirtualizedGridEntity>
+  class PolymorphicEntity<0, dim, GridImp> :
+    public PolymorphicEntityDefinition<0,dim,GridImp>::Base,
+    public EntityDefaultImplementation<0, dim, GridImp, PolymorphicEntity>
   {
-    using Definition = VirtualizedGridEntityDefinition<0,dim,GridImp>;
+    using Definition = PolymorphicEntityDefinition<0,dim,GridImp>;
     using Base = typename Definition::Base;
 
   public:
@@ -331,13 +331,13 @@ namespace Dune {
     using LocalGeometry = typename GridImp::template Codim<0>::LocalGeometry;
 
     //! The Iterator over intersections on this level
-    using LevelIntersectionIterator = VirtualizedGridIntersectionIterator<const GridImp>;
+    using LevelIntersectionIterator = PolymorphicIntersectionIterator<const GridImp>;
 
     //! The Iterator over intersections on the leaf level
-    using LeafIntersectionIterator = VirtualizedGridIntersectionIterator<const GridImp>;
+    using LeafIntersectionIterator = PolymorphicIntersectionIterator<const GridImp>;
 
     //! Iterator over descendants of the entity
-    using HierarchicIterator = VirtualizedGridEntityIterator<0,const GridImp>;
+    using HierarchicIterator = PolymorphicEntityIterator<0,const GridImp>;
 
     //! The type of the EntitySeed interface class
     using EntitySeed = typename GridImp::template Codim<0>::EntitySeed;
@@ -348,17 +348,17 @@ namespace Dune {
 
   public:
 
-    VirtualizedGridEntity() = default;
+    PolymorphicEntity() = default;
 
-    template <class Impl, Dune::disableCopyMove<VirtualizedGridEntity,Impl> = 0>
-    VirtualizedGridEntity (Impl&& impl)
+    template <class Impl, Dune::disableCopyMove<PolymorphicEntity,Impl> = 0>
+    PolymorphicEntity (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {
       // static_assert(Concept::models<typename Definition::Concept,Impl>(),
       //   "Implementation does not model the GridEntity concept.");
     }
 
-    bool equals (const VirtualizedGridEntity& other) const
+    bool equals (const PolymorphicEntity& other) const
     {
       return this->asInterface().equals(other);
     }
@@ -473,7 +473,7 @@ namespace Dune {
       return HierarchicIterator( this->asInterface().hend(maxLevel) );
     }
 
-  }; // end of VirtualizedGridEntity codim = 0
+  }; // end of PolymorphicEntity codim = 0
 
 
 } // namespace Dune

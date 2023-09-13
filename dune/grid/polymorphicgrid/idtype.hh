@@ -7,25 +7,25 @@
 
 /**
  * \file
- * \brief The VirtualizedGridIdType class
+ * \brief The PolymorphicIdType class
  */
 
-#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
+#include <dune/grid/polymorphicgrid/common/typeerasure.hh>
 
 namespace Dune {
 
   // forward declaration
-  class VirtualizedGridIdType;
+  class PolymorphicIdType;
 
-  struct VirtualizedGridIdTypeDefinition
+  struct PolymorphicIdTypeDefinition
   {
     struct Interface
     {
       virtual ~Interface () = default;
-      virtual bool operator== (const VirtualizedGridIdType&) const = 0;
-      virtual bool operator!= (const VirtualizedGridIdType&) const = 0;
-      virtual bool operator< (const VirtualizedGridIdType&) const = 0;
-      virtual bool operator<= (const VirtualizedGridIdType&) const = 0;
+      virtual bool operator== (const PolymorphicIdType&) const = 0;
+      virtual bool operator!= (const PolymorphicIdType&) const = 0;
+      virtual bool operator< (const PolymorphicIdType&) const = 0;
+      virtual bool operator<= (const PolymorphicIdType&) const = 0;
       virtual std::size_t hash () const = 0;
       virtual std::string str () const = 0;
     };
@@ -37,22 +37,22 @@ namespace Dune {
       using Wrapper::Wrapper;
       using Wrapped = typename Wrapper::Wrapped;
 
-      bool operator== (const VirtualizedGridIdType& other) const final
+      bool operator== (const PolymorphicIdType& other) const final
       {
         return this->get() == Polymorphic::asWrapped<Wrapped>(other);
       }
 
-      bool operator!= (const VirtualizedGridIdType& other) const final
+      bool operator!= (const PolymorphicIdType& other) const final
       {
         return this->get() != Polymorphic::asWrapped<Wrapped>(other);
       }
 
-      bool operator< (const VirtualizedGridIdType& other) const final
+      bool operator< (const PolymorphicIdType& other) const final
       {
         return this->get() < Polymorphic::asWrapped<Wrapped>(other);
       }
 
-      bool operator<= (const VirtualizedGridIdType& other) const final
+      bool operator<= (const PolymorphicIdType& other) const final
       {
         return this->get() <= Polymorphic::asWrapped<Wrapped>(other);
       }
@@ -74,43 +74,43 @@ namespace Dune {
   };
 
   /**
-   * \brief The IdType class provides a virtualized id type.
-   * \ingroup VirtualizedGrid
+   * \brief The IdType class provides a polymorphic id type.
+   * \ingroup Polymorphic
    *
    */
-  class VirtualizedGridIdType :
-      public VirtualizedGridIdTypeDefinition::Base
+  class PolymorphicIdType :
+      public PolymorphicIdTypeDefinition::Base
   {
-    using Definition = VirtualizedGridIdTypeDefinition;
+    using Definition = PolymorphicIdTypeDefinition;
     using Base = typename Definition::Base;
 
   public:
-    VirtualizedGridIdType () = default;
+    PolymorphicIdType () = default;
 
     /**
      * \brief Create IdType from implementation
      */
-    template <class Impl, disableCopyMove<VirtualizedGridIdType,Impl> = 0>
-    VirtualizedGridIdType (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicIdType,Impl> = 0>
+    PolymorphicIdType (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 
-    bool operator== (const VirtualizedGridIdType& other) const
+    bool operator== (const PolymorphicIdType& other) const
     {
       return this->asInterface().operator==(other);
     }
 
-    bool operator!= (const VirtualizedGridIdType& other) const
+    bool operator!= (const PolymorphicIdType& other) const
     {
       return this->asInterface().operator!=(other);
     }
 
-    bool operator< (const VirtualizedGridIdType& other) const
+    bool operator< (const PolymorphicIdType& other) const
     {
       return this->asInterface().operator<(other);
     }
 
-    bool operator<= (const VirtualizedGridIdType& other) const
+    bool operator<= (const PolymorphicIdType& other) const
     {
       return this->asInterface().operator<=(other);
     }
@@ -126,7 +126,7 @@ namespace Dune {
     }
   };
 
-  inline std::ostream& operator<< (std::ostream &out, const VirtualizedGridIdType& idtype)
+  inline std::ostream& operator<< (std::ostream &out, const PolymorphicIdType& idtype)
   {
     return out << idtype.str();
   }
@@ -136,9 +136,9 @@ namespace Dune {
 
 namespace std
 {
-  template <> struct hash<Dune::VirtualizedGridIdType>
+  template <> struct hash<Dune::PolymorphicIdType>
   {
-    size_t operator() (const Dune::VirtualizedGridIdType& x) const
+    size_t operator() (const Dune::PolymorphicIdType& x) const
     {
       return x.hash();
     }

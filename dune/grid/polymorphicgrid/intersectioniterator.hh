@@ -9,16 +9,16 @@
 #include "entity.hh"
 
 #include <dune/grid/common/intersection.hh>
-#include <dune/grid/virtualizedgrid/common/iterator.hh>
+#include <dune/grid/polymorphicgrid/common/iterator.hh>
 
 /** \file
- * \brief The VirtualizedGridIntersectionIterator class
+ * \brief The PolymorphicIntersectionIterator class
  */
 
 namespace Dune {
 
   /** \brief Iterator over all element neighbors
-   * \ingroup VirtualizedGrid
+   * \ingroup Polymorphic
    * Mesh entities of codimension 0 ("elements") allow to visit all neighbors, where
    * a neighbor is an entity of codimension 0 which has a common entity of codimension 1
    * These neighbors are accessed via a IntersectionIterator. This allows the implement
@@ -26,11 +26,11 @@ namespace Dune {
    * of an element!
    */
   template<class GridImp>
-  class VirtualizedGridIntersectionIterator
-      : public Polymorphic::IteratorDefinition<VirtualizedGridIntersectionIterator<GridImp>,VirtualizedGridIntersection<GridImp>>::Base
+  class PolymorphicIntersectionIterator
+      : public Polymorphic::IteratorDefinition<PolymorphicIntersectionIterator<GridImp>,PolymorphicIntersection<GridImp>>::Base
   {
-    using Self = VirtualizedGridIntersectionIterator;
-    using IntersectionImp = VirtualizedGridIntersection<const GridImp>;
+    using Self = PolymorphicIntersectionIterator;
+    using IntersectionImp = PolymorphicIntersection<const GridImp>;
     using Definition = Polymorphic::IteratorDefinition<Self,IntersectionImp>;
     using Base = typename Definition::Base;
 
@@ -45,10 +45,10 @@ namespace Dune {
   public:
     using Intersection = Dune::Intersection<const GridImp, IntersectionImp>;
 
-    VirtualizedGridIntersectionIterator () = default;
+    PolymorphicIntersectionIterator () = default;
 
-    template <class Impl, disableCopyMove<VirtualizedGridIntersectionIterator,Impl> = 0>
-    VirtualizedGridIntersectionIterator (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicIntersectionIterator,Impl> = 0>
+    PolymorphicIntersectionIterator (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 

@@ -6,7 +6,7 @@
 #define DUNE_GRID_VIRTUALIZEDGRID_HH
 
 /** \file
- * \brief The VirtualizedGrid class
+ * \brief The Polymorphic class
  */
 
 #include <dune/common/exceptions.hh>
@@ -15,25 +15,25 @@
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/grid.hh>
 
-// The components of the VirtualizedGrid interface
-#include "virtualizedgrid/grid.hh"
+// The components of the Polymorphic interface
+#include "polymorphicgrid/grid.hh"
 
 namespace Dune
 {
   // Forward declaration
   template<int dimension, int dimensionworld, typename ct>
-  class VirtualizedGrid;
+  class PolymorphicGrid;
 
   template<int dimension, int dimensionworld, typename ct>
-  struct VirtualizedGridFamily
+  struct PolymorphicGridFamily
   {
     struct Traits
     {
       /** \brief The type that implements the grid. */
-      typedef VirtualizedGrid< dimension, dimensionworld, ct > Grid;
+      using Grid = PolymorphicGrid<dimension, dimensionworld, ct>;
 
-      using IntersectionImp = VirtualizedGridIntersection< const Grid >;
-      using IntersectionIteratorImp = VirtualizedGridIntersectionIterator<const Grid>;
+      using IntersectionImp = PolymorphicIntersection<const Grid>;
+      using IntersectionIteratorImp = PolymorphicIntersectionIterator<const Grid>;
 
       /** \brief The type of the intersection at the leafs of the grid. */
       using LeafIntersection = Dune::Intersection<const Grid, IntersectionImp>;
@@ -48,7 +48,7 @@ namespace Dune
       using LevelIntersectionIterator = Dune::IntersectionIterator<const Grid, IntersectionIteratorImp, IntersectionImp>;
 
       /** \brief The type of the  hierarchic iterator. */
-      typedef Dune::EntityIterator< 0, const Grid, VirtualizedGridEntityIterator<0,const Grid> > HierarchicIterator;
+      using HierarchicIterator = Dune::EntityIterator<0, const Grid, PolymorphicEntityIterator<0,const Grid> >;
 
       /**
        * \brief Traits associated with a specific codim.
@@ -59,14 +59,16 @@ namespace Dune
       {
       public:
         /** \brief The type of the geometry associated with the entity.*/
-        typedef Dune::Geometry< dimension-cd, dimensionworld, const Grid, VirtualizedGridGeometry > Geometry;
+        using Geometry = Dune::Geometry<dimension-cd, dimensionworld, const Grid, PolymorphicGeometry>;
+
         /** \brief The type of the local geometry associated with the entity.*/
-        typedef Dune::Geometry< dimension-cd, dimension, const Grid, VirtualizedGridGeometry > LocalGeometry;
+        using LocalGeometry = Dune::Geometry<dimension-cd, dimension, const Grid, PolymorphicGeometry>;
+
         /** \brief The type of the entity. */
-        typedef Dune::Entity< cd, dimension, const Grid, VirtualizedGridEntity > Entity;
+        using Entity = Dune::Entity<cd, dimension, const Grid, PolymorphicEntity>;
 
         /** \brief The type of the entity seed of this codim.*/
-        typedef Dune::EntitySeed< const Grid, VirtualizedGridEntitySeed<cd, const Grid> > EntitySeed;
+        using EntitySeed = Dune::EntitySeed<const Grid, PolymorphicEntitySeed<cd, const Grid> >;
 
         /**
          * \brief Traits associated with a specific grid partition type.
@@ -76,72 +78,70 @@ namespace Dune
         struct Partition
         {
           /** \brief The type of the iterator over the level entities of this codim on this partition. */
-          using LevelIterator = Dune::EntityIterator<cd, const Grid, VirtualizedGridEntityIterator<cd, const Grid> >;
+          using LevelIterator = Dune::EntityIterator<cd, const Grid, PolymorphicEntityIterator<cd, const Grid> >;
+
           /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
-          using LeafIterator = Dune::EntityIterator< cd, const Grid, VirtualizedGridEntityIterator<cd, const Grid> >;
+          using LeafIterator = Dune::EntityIterator<cd, const Grid, PolymorphicEntityIterator<cd, const Grid> >;
         };
 
         /** \brief The type of the iterator over all leaf entities of this codim. */
-        typedef typename Partition< All_Partition >::LeafIterator LeafIterator;
+        using LeafIterator = typename Partition< All_Partition >::LeafIterator;
 
         /** \brief The type of the entity pointer for entities of this codim.*/
-        typedef typename Partition< All_Partition >::LevelIterator LevelIterator;
+        using LevelIterator = typename Partition< All_Partition >::LevelIterator;
 
       private:
-        friend class Dune::Entity< cd, dimension, const Grid, VirtualizedGridEntity >;
+        friend class Dune::Entity<cd, dimension, const Grid, PolymorphicEntity>;
       };
 
       /** \brief The type of the leaf grid view. */
-      typedef Dune::GridView< VirtualizedGridLeafViewTraits< const Grid > > LeafGridView;
+      using LeafGridView = Dune::GridView<PolymorphicLeafViewTraits<const Grid> >;
+
       /** \brief The type of the level grid view. */
-      typedef Dune::GridView< VirtualizedGridLevelViewTraits< const Grid > > LevelGridView;
+      using LevelGridView = Dune::GridView<PolymorphicLevelViewTraits<const Grid> >;
 
       /** \brief The type of the level index set. */
-      typedef IndexSet< const Grid, VirtualizedGridIndexSet< const Grid > > LevelIndexSet;
+      using LevelIndexSet = IndexSet<const Grid, PolymorphicIndexSet<const Grid> >;
+
       /** \brief The type of the leaf index set. */
-      typedef IndexSet< const Grid, VirtualizedGridIndexSet< const Grid > > LeafIndexSet;
+      using LeafIndexSet = IndexSet<const Grid, PolymorphicIndexSet<const Grid> >;
+
       /** \brief The type of the global id set. */
-      typedef IdSet< const Grid, VirtualizedGridIdSet< const Grid >, VirtualizedGridIdType> GlobalIdSet;
+      using GlobalIdSet = IdSet<const Grid, PolymorphicIdSet<const Grid>, PolymorphicIdType>;
+
       /** \brief The type of the local id set. */
-      typedef IdSet< const Grid, VirtualizedGridIdSet< const Grid >, VirtualizedGridIdType> LocalIdSet;
+      using LocalIdSet = IdSet<const Grid, PolymorphicIdSet<const Grid>, PolymorphicIdType>;
 
       /** \brief The type of the collective communication. */
-      typedef VirtualizedCommunication Communication;
+      using Communication = PolymorphicCommunication;
     };
   };
 
-  //**********************************************************************
-  //
-  // --VirtualizedGrid
-  //
-  //************************************************************************
-  /*!
-   * \brief Provides a virtualized grid
-   * \ingroup GridImplementations
-   * \ingroup VirtualizedGrid
-   */
 
   template<int dimension, int dimensionworld, typename ct>
-  class VirtualizedGrid
-    : public VirtualizedGridDefinition<VirtualizedGrid<dimension,dimensionworld,ct>,dimension,dimensionworld,ct>::Base
-    , public GridDefaultImplementation<dimension, dimensionworld, ct, VirtualizedGridFamily<dimension, dimensionworld, ct>>
+  class PolymorphicGrid
+    : public GridDefaultImplementation<dimension, dimensionworld, ct, PolymorphicGridFamily<dimension, dimensionworld, ct>>
   {
-    using Self = VirtualizedGrid<dimension, dimensionworld, ct>;
-    using Definition = VirtualizedGridDefinition<Self,dimension,dimensionworld,ct>;
-    using Base = typename Definition::Base;
+    using Self = PolymorphicGrid<dimension, dimensionworld, ct>;
+    using Definition = PolymorphicGridDefinition<Self,dimension,dimensionworld,ct>;
 
     template <PartitionIteratorType p>
     using _Partition = typename Definition::template _Partition<p>;
 
+    template <class I>
+    using Implementation = typename Definition::template Implementation<I>;
+
+    using Interface = typename Definition::Interface;
+
   public:
     //! type of the used GridFamily for this grid
-    typedef VirtualizedGridFamily<dimension, dimensionworld, ct> GridFamily;
+    using GridFamily = PolymorphicGridFamily<dimension, dimensionworld, ct>;
 
     //! the Traits
-    typedef typename GridFamily::Traits Traits;
+    using Traits = typename GridFamily::Traits;
 
     //! The type used to store coordinates
-    typedef ct ctype;
+    using ctype = ct;
 
   public:
 
@@ -151,12 +151,24 @@ namespace Dune
 
     /** \brief Constructor
      *
-     * \param grid The grid hold by the VirtualizedGrid
+     * \param grid The grid hold by the Polymorphic
      */
-    template <class Impl, disableCopyMove<VirtualizedGrid,Impl> = 0>
-    VirtualizedGrid (Impl&& impl)
-      : Base{std::forward<Impl>(impl)}
+    template<class Impl>
+    PolymorphicGrid (Impl&& grid)
+      : impl_(new Implementation<Impl>( std::forward<Impl>(grid) ) )
     {}
+
+    PolymorphicGrid (const PolymorphicGrid& other)
+      : impl_( other.impl_ ? other.impl_->clone() : nullptr )
+    {}
+
+    PolymorphicGrid (PolymorphicGrid &&) = default;
+
+    PolymorphicGrid& operator= (const PolymorphicGrid& other)
+    {
+      impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+    }
+
 
     /** \brief Return maximum level defined in this grid.
      *
@@ -164,21 +176,21 @@ namespace Dune
      */
     int maxLevel() const
     {
-      return this->asInterface().maxLevel();
+      return impl().maxLevel();
     }
 
     //! Iterator to first entity of given codim on level
     template<int codim>
     typename Traits::template Codim<codim>::LevelIterator lbegin (int level) const
     {
-      return this->asInterface().lbegin(Codim<codim>{},level);
+      return impl().lbegin(Codim<codim>{},level);
     }
 
     //! one past the end on this level
     template<int codim>
     typename Traits::template Codim<codim>::LevelIterator lend (int level) const
     {
-      return this->asInterface().lend(Codim<codim>{},level);
+      return impl().lend(Codim<codim>{},level);
     }
 
 
@@ -186,14 +198,14 @@ namespace Dune
     template<int codim, PartitionIteratorType pitype>
     typename Traits::template Codim<codim>::template Partition<pitype>::LevelIterator lbegin (int level) const
     {
-      return this->asInterface().lbegin(Codim<codim>{},_Partition<pitype>{},level);
+      return impl().lbegin(Codim<codim>{},_Partition<pitype>{},level);
     }
 
     //! one past the end on this level
     template<int codim, PartitionIteratorType pitype>
     typename Traits::template Codim<codim>::template Partition<pitype>::LevelIterator lend (int level) const
     {
-      return this->asInterface().lend(Codim<codim>{},_Partition<pitype>{},level);
+      return impl().lend(Codim<codim>{},_Partition<pitype>{},level);
     }
 
 
@@ -201,14 +213,14 @@ namespace Dune
     template<int codim>
     typename Traits::template Codim<codim>::LeafIterator leafbegin () const
     {
-      return this->asInterface().leafbegin(Codim<codim>{});
+      return impl().leafbegin(Codim<codim>{});
     }
 
     //! one past the end of the sequence of leaf entities
     template<int codim>
     typename Traits::template Codim<codim>::LeafIterator leafend () const
     {
-      return this->asInterface().leafend(Codim<codim>{});
+      return impl().leafend(Codim<codim>{});
     }
 
 
@@ -216,98 +228,93 @@ namespace Dune
     template<int codim, PartitionIteratorType pitype>
     typename Traits::template Codim<codim>::template Partition<pitype>::LeafIterator leafbegin () const
     {
-      return this->asInterface().leafbegin(Codim<codim>{},_Partition<pitype>{});
+      return impl().leafbegin(Codim<codim>{},_Partition<pitype>{});
     }
 
     //! one past the end of the sequence of leaf entities
     template<int codim, PartitionIteratorType pitype>
     typename Traits::template Codim<codim>::template Partition<pitype>::LeafIterator leafend () const
     {
-      return this->asInterface().leafend(Codim<codim>{},_Partition<pitype>{});
+      return impl().leafend(Codim<codim>{},_Partition<pitype>{});
     }
 
 
     virtual typename Traits::LevelIntersectionIterator ilevelbegin (const typename Traits::template Codim<0>::Entity& entity) const
     {
-      return this->asInterface().ilevelbegin( entity );
+      return impl().ilevelbegin( entity );
     }
 
     virtual typename Traits::LevelIntersectionIterator ilevelend (const typename Traits::template Codim<0>::Entity& entity) const
     {
-      return this->asInterface().ilevelend( entity );
+      return impl().ilevelend( entity );
     }
 
     virtual typename Traits::LeafIntersectionIterator ileafbegin (const typename Traits::template Codim<0>::Entity& entity) const
     {
-      return this->asInterface().ileafbegin( entity );
+      return impl().ileafbegin( entity );
     }
 
     virtual typename Traits::LeafIntersectionIterator ileafend (const typename Traits::template Codim<0>::Entity& entity) const
     {
-      return this->asInterface().ileafend( entity );
+      return impl().ileafend( entity );
     }
 
-
-    /** \brief Number of grid entities per level and codim
-     */
-    int size (int level, int codim) const
-    {
-      return this->asInterface().size(level,codim);
-    }
 
     /** \brief returns the number of boundary segments within the macro grid
      */
     size_t numBoundarySegments () const
     {
-      return this->asInterface().numBoundarySegments();
+      return impl().numBoundarySegments();
+    }
+
+    /** \brief Number of grid entities per level and codim
+     */
+    int size (int level, int codim) const
+    {
+      return impl().size(level,codim);
     }
 
     //! number of leaf entities per codim in this process
     int size (int codim) const
     {
-      return this->asInterface().size(codim);
+      return impl().size(codim);
     }
-
 
     //! number of entities per level, codim and geometry type in this process
     int size (int level, GeometryType type) const
     {
-      return this->asInterface().size(level, type);
+      return impl().size(level, type);
     }
-
 
     //! number of leaf entities per codim and geometry type in this process
     int size (GeometryType type) const
     {
-      return this->asInterface().size(type);
+      return impl().size(type);
     }
 
 
     /** \brief Access to the GlobalIdSet */
     const typename Traits::GlobalIdSet& globalIdSet() const
     {
-      return this->asInterface().globalIdSet();
+      return impl().globalIdSet();
     }
-
 
     /** \brief Access to the LocalIdSet */
     const typename Traits::LocalIdSet& localIdSet() const
     {
-      return this->asInterface().localIdSet();
+      return impl().localIdSet();
     }
-
 
     /** \brief Access to the LevelIndexSets */
     const typename Traits::LevelIndexSet& levelIndexSet(int level) const
     {
-      return this->asInterface().levelIndexSet(level);
+      return impl().levelIndexSet(level);
     }
-
 
     /** \brief Access to the LeafIndexSet */
     const typename Traits::LeafIndexSet& leafIndexSet() const
     {
-      return this->asInterface().leafIndexSet();
+      return impl().leafIndexSet();
     }
 
 
@@ -315,7 +322,7 @@ namespace Dune
     template<class EntitySeed>
     typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const
     {
-      return this->asInterface().entity(Codim<EntitySeed::codimension>{}, seed);
+      return impl().entity(Codim<EntitySeed::codimension>{}, seed);
     }
 
 
@@ -328,7 +335,7 @@ namespace Dune
      */
     void globalRefine (int refCount)
     {
-      this->asInterface().globalRefine(refCount);
+      impl().globalRefine(refCount);
     }
 
     /** \brief Mark entity for refinement
@@ -343,7 +350,7 @@ namespace Dune
      */
     bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e)
     {
-      return this->asInterface().mark(refCount, e);
+      return impl().mark(refCount, e);
     }
 
     /** \brief Return refinement mark for entity
@@ -352,29 +359,29 @@ namespace Dune
      */
     int getMark (const typename Traits::template Codim<0>::Entity & e) const
     {
-      return this->asInterface().getMark(e);
+      return impl().getMark(e);
     }
 
     /** \brief returns true, if at least one entity is marked for adaption */
     bool preAdapt ()
     {
-      return this->asInterface().preAdapt();
+      return impl().preAdapt();
     }
-
 
     //! Triggers the grid refinement process
     bool adapt ()
     {
-      return this->asInterface().adapt();
+      return impl().adapt();
     }
 
     /** \brief Clean up refinement markers */
     void postAdapt ()
     {
-      return this->asInterface().postAdapt();
+      return impl().postAdapt();
     }
 
     /*@}*/
+
 
     /** \brief Size of the overlap on the leaf level */
     unsigned int overlapSize (int codim) const
@@ -382,20 +389,17 @@ namespace Dune
       return this->leafGridView().overlapSize(codim);
     }
 
-
     /** \brief Size of the ghost cell layer on the leaf level */
     unsigned int ghostSize (int codim) const
     {
       return this->leafGridView().ghostSize(codim);
     }
 
-
     /** \brief Size of the overlap on a given level */
     unsigned int overlapSize (int level, int codim) const
     {
       return this->levelGridView(level).overlapSize(codim);
     }
-
 
     /** \brief Size of the ghost cell layer on a given level */
     unsigned int ghostSize (int level, int codim) const
@@ -412,15 +416,15 @@ namespace Dune
      */
     void loadBalance (int strategy, int minlevel, int depth, int maxlevel, int minelement)
     {
-      DUNE_THROW(NotImplemented, "VirtualizedGrid::loadBalance()");
+      DUNE_THROW(NotImplemented, "Polymorphic::loadBalance()");
     }
 #endif
 
 
     //! Returns the collective communication object
-    const VirtualizedCommunication& comm () const
+    const PolymorphicCommunication& comm () const
     {
-      return ccobj;
+      return comm_;
     }
 
     //! The new communication interface
@@ -429,8 +433,8 @@ namespace Dune
                       InterfaceType iftype,
                       CommunicationDirection dir, int level) const
     {
-      VirtualizedCommDataHandle<DataType,Self> dh{data};
-      this->asInterface().communicate(dh, iftype, dir, level);
+      PolymorphicCommDataHandle<DataType,Self> dh{data};
+      impl().communicate(dh, iftype, dir, level);
     }
 
     //! The new communication interface
@@ -439,8 +443,8 @@ namespace Dune
                       InterfaceType iftype,
                       CommunicationDirection dir) const
     {
-      VirtualizedCommDataHandle<DataType,Self> dh{data};
-      this->asInterface().communicate(dh, iftype, dir);
+      PolymorphicCommDataHandle<DataType,Self> dh{data};
+      impl().communicate(dh, iftype, dir);
     }
 
 
@@ -448,51 +452,60 @@ namespace Dune
     // End of Interface Methods
     // **********************************************************
 
+    //! Returns the grid this VirtualizedGrid holds
+    Interface& impl() const
+    {
+      return *impl_;
+    }
+
   private:
-    VirtualizedCommunication ccobj;
+    //! The grid this VirtualizedGrid holds
+    std::unique_ptr< Interface > impl_;
+
+    PolymorphicCommunication comm_{};
   };
 
 
   namespace Capabilities
   {
     /** \brief has entities for all codimensions
-     * \ingroup VirtualizedGrid
+     * \ingroup Polymorphic
      */
     template<int dimension, int dimensionworld, typename ct, int codim>
-    struct hasEntity<VirtualizedGrid<dimension, dimensionworld, ct>, codim>
+    struct hasEntity<PolymorphicGrid<dimension, dimensionworld, ct>, codim>
     {
       static const bool v = true; // we assume this
     };
 
     template<int dimension, int dimensionworld, typename ct, int codim>
-    struct hasEntityIterator<VirtualizedGrid<dimension, dimensionworld, ct>, codim>
+    struct hasEntityIterator<PolymorphicGrid<dimension, dimensionworld, ct>, codim>
     {
       static const bool v = true; // we assume this
     };
 
-    /** \brief VirtualizedGrid can communicate
-     *  \ingroup VirtualizedGrid
+    /** \brief Polymorphic can communicate
+     *  \ingroup Polymorphic
      */
     template<int dimension, int dimensionworld, typename ct, int codim>
-    struct canCommunicate<VirtualizedGrid<dimension, dimensionworld, ct>, codim>
+    struct canCommunicate<PolymorphicGrid<dimension, dimensionworld, ct>, codim>
     {
       static const bool v = true; // we assume this
     };
 
     /** \brief has conforming level grids
-     * \ingroup VirtualizedGrid
+     * \ingroup Polymorphic
      */
     template<int dimension, int dimensionworld, typename ct>
-    struct isLevelwiseConforming<VirtualizedGrid<dimension, dimensionworld, ct>>
+    struct isLevelwiseConforming<PolymorphicGrid<dimension, dimensionworld, ct>>
     {
       static const bool v = true; // we assume this
     };
 
     /** \brief has conforming leaf grids
-     * \ingroup VirtualizedGrid
+     * \ingroup Polymorphic
      */
     template<int dimension, int dimensionworld, typename ct>
-    struct isLeafwiseConforming<VirtualizedGrid<dimension, dimensionworld, ct>>
+    struct isLeafwiseConforming<PolymorphicGrid<dimension, dimensionworld, ct>>
     {
       static const bool v = true; // we assume this
     };
@@ -500,6 +513,6 @@ namespace Dune
 
 } // namespace Dune
 
-#include "io/file/dgfparser/dgfvirtualized.hh"
+#include "io/file/dgfparser/dgfpolymorphic.hh"
 
 #endif // DUNE_GRID_VIRTUALIZEDGRID_HH

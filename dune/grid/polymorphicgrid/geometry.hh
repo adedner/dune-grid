@@ -6,18 +6,18 @@
 #define DUNE_VIRTUALIZEDGRIDGEOMETRY_HH
 
 /** \file
- * \brief The VirtualizedGridGeometry class and its specializations
+ * \brief The PolymorphicGeometry class and its specializations
  */
 
 #include <dune/common/fmatrix.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/grid/common/geometry.hh>
-#include <dune/grid/virtualizedgrid/common/typeerasure.hh>
+#include <dune/grid/polymorphicgrid/common/typeerasure.hh>
 
 namespace Dune {
 
   template<int mydim, int coorddim, class GridImp>
-  struct VirtualizedGridGeometryDefinition
+  struct PolymorphicGeometryDefinition
   {
     using ctype = typename GridImp::ctype;
     using Jacobian = FieldMatrix<ctype, coorddim, mydim>;
@@ -65,11 +65,11 @@ namespace Dune {
 
 
   template<int mydim, int coorddim, class GridImp>
-  class VirtualizedGridGeometry :
-    public VirtualizedGridGeometryDefinition<mydim,coorddim,GridImp>::Base,
-    public GeometryDefaultImplementation <mydim, coorddim, GridImp, VirtualizedGridGeometry>
+  class PolymorphicGeometry :
+    public PolymorphicGeometryDefinition<mydim,coorddim,GridImp>::Base,
+    public GeometryDefaultImplementation <mydim, coorddim, GridImp, PolymorphicGeometry>
   {
-    using Definition = VirtualizedGridGeometryDefinition<mydim,coorddim,GridImp>;
+    using Definition = PolymorphicGeometryDefinition<mydim,coorddim,GridImp>;
     using Base = typename Definition::Base;
 
   public:
@@ -83,8 +83,8 @@ namespace Dune {
 
     /** constructor from host geometry
      */
-    template <class Impl, disableCopyMove<VirtualizedGridGeometry,Impl> = 0>
-    VirtualizedGridGeometry (Impl&& impl)
+    template <class Impl, disableCopyMove<PolymorphicGeometry,Impl> = 0>
+    PolymorphicGeometry (Impl&& impl)
       : Base{std::forward<Impl>(impl)}
     {}
 

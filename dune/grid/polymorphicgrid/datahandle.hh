@@ -10,7 +10,7 @@
 #include <dune/common/visibility.hh>
 #include <dune/geometry/dimension.hh>
 #include <dune/grid/common/datahandleif.hh>
-#include <dune/grid/virtualizedgrid/entity.hh>
+#include <dune/grid/polymorphicgrid/entity.hh>
 
 namespace Dune
 {
@@ -28,8 +28,8 @@ namespace Dune
   };
 
   template <class Data, class GridImp>
-  class VirtualizedCommDataHandle
-      : public CommDataHandleIF<VirtualizedCommDataHandle<Data,GridImp>, Data>
+  class PolymorphicCommDataHandle
+      : public CommDataHandleIF<PolymorphicCommDataHandle<Data,GridImp>, Data>
   {
   public:
     using DataType = Data;
@@ -128,21 +128,21 @@ namespace Dune
 
   public:
     template<class Impl>
-    explicit VirtualizedCommDataHandle (Impl&& impl)
+    explicit PolymorphicCommDataHandle (Impl&& impl)
     : impl_(new Implementation<Impl>(std::forward<Impl>(impl)))
     {}
 
-    VirtualizedCommDataHandle (const VirtualizedCommDataHandle& other)
+    PolymorphicCommDataHandle (const PolymorphicCommDataHandle& other)
     : impl_(other.impl_ ? other.impl_->clone() : nullptr)
     {}
 
-    VirtualizedCommDataHandle& operator= (const VirtualizedCommDataHandle& other) {
+    PolymorphicCommDataHandle& operator= (const PolymorphicCommDataHandle& other) {
       impl_.reset(other.impl_ ? other.impl_->clone() : nullptr);
       return *this;
     }
 
-    VirtualizedCommDataHandle (VirtualizedCommDataHandle&&) = default;
-    VirtualizedCommDataHandle& operator= (VirtualizedCommDataHandle&&) = default;
+    PolymorphicCommDataHandle (PolymorphicCommDataHandle&&) = default;
+    PolymorphicCommDataHandle& operator= (PolymorphicCommDataHandle&&) = default;
 
 
     bool contains (int dim, int codim) const {

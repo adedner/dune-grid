@@ -12,7 +12,7 @@
 #include <dune/grid/onedgrid.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/grid/virtualizedgrid.hh>
+#include <dune/grid/polymorphicgrid.hh>
 
 #include "gridcheck.hh"
 
@@ -49,7 +49,7 @@ void run(std::string name, Grid& grid)
   const int dow = Grid::dimensionworld;
   std::cout << "============= " << dim << "D/" << dow << "D =============" << std::endl;
 
-  Dune::VirtualizedGrid<dim,dow> vgrid( grid );
+  Dune::PolymorphicGrid<dim,dow> vgrid( grid );
 
   Dune::Timer timer;
   gridcheck(grid);
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
   // ======== SMALL TEST COMPUTING CUMULATED VOLUME ========
 
   Dune::YaspGrid<2> yaspgrid2({1., 1.}, {1000, 1000});
-  Dune::VirtualizedGrid<2, 2> vgrid2( yaspgrid2 );
+  Dune::PolymorphicGrid<2, 2> vgrid2( yaspgrid2 );
 
   // Compute volume
   std::cout << "Volume calculation" << std::endl;
