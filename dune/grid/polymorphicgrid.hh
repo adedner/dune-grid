@@ -167,6 +167,7 @@ namespace Dune
     PolymorphicGrid& operator= (const PolymorphicGrid& other)
     {
       impl_.reset( other.impl_ ? other.impl_->clone() : nullptr );
+      return *this;
     }
 
 
