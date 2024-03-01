@@ -331,6 +331,12 @@ namespace Dune {
     //! only interior entities
     PartitionType partitionType () const { return InteriorEntity; }
 
+    //! only interior entities
+    PartitionType subPartitionType (int /*i*/, unsigned int /*codim*/) const
+    {
+      return InteriorEntity;
+    }
+
   private:
     //! Level index is unique and consecutive per level and codim
     unsigned int levelIndex() const {return target_->levelIndex_;}

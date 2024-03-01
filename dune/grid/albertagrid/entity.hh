@@ -346,6 +346,12 @@ namespace Dune
     //! return partition type of this entity
     PartitionType partitionType() const;
 
+    //! return partition type of this entity
+    PartitionType subPartitionType (int /*i*/, unsigned int /*codim*/) const
+    {
+      return InteriorEntity;
+    }
+
     //! equality of entities
     bool equals ( const This &i ) const;
 
