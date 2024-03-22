@@ -34,7 +34,7 @@ namespace Dune {
     typedef typename GridImp::ctype ct;
 
     // Stack entry
-    typedef OneDGridList<OneDEntityImp<1,dimw,ct> >::iterator StackEntry;
+    typedef typename OneDGridList<OneDEntityImp<1,dimw,ct> >::iterator StackEntry;
 
   public:
 

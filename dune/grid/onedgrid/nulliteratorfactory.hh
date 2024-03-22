@@ -19,7 +19,7 @@ namespace Dune {
 
   public:
 
-    static OneDGridList<OneDEntityImp<0,cdim,ct> >::iterator null() {
+    static typename OneDGridList<OneDEntityImp<0,cdim,ct> >::iterator null() {
       return emptyList_.end();
     }
 
@@ -32,7 +32,7 @@ namespace Dune {
 
   public:
 
-    static OneDGridList<OneDEntityImp<1,cdim,ct> >::iterator null() {
+    static typename OneDGridList<OneDEntityImp<1,cdim,ct> >::iterator null() {
       return emptyList_.end();
     }
 
