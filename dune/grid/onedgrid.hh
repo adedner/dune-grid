@@ -15,6 +15,7 @@
 #include <dune/grid/common/grid.hh>
 #include <dune/grid/common/gridfactory.hh>
 
+#include <dune/geometry/affinegeometry.hh>
 #include <dune/geometry/axisalignedcubegeometry.hh>
 #include <dune/geometry/type.hh>
 
@@ -36,21 +37,30 @@
 
 namespace Dune {
 
-  class OneDGrid;
+  template <int dimw, class ct>
+  class OneDEmbeddedGrid;
+
+  using OneDGrid = OneDEmbeddedGrid<1,double>;
 
   /** \brief The type used to for OneDGrid geometries
 
     If you ever want OneDGrid to use a different type for coordinates,
     you need to change the first argument of AxisAlignedCubeGeometry here.
   */
-  template <int mydim, int coorddim, class GridImp>
-  using OneDGridGeometry = AxisAlignedCubeGeometry<double, mydim, coorddim>;
 
+  template <int dimw, class ctype>
   struct OneDGridFamily
   {
-    typedef GridTraits<1,   // Grid dimension
-                       1,   // Dimension of the physical space
-                       Dune::OneDGrid,
+    template <int mydim, int coorddim, class GridImp>
+    using OneDGridGeometry = AffineGeometry<ctype, mydim, coorddim>;
+
+    template <int mydim, int coorddim, class GridImp>
+    using OneDGridLocalGeometry = AxisAlignedCubeGeometry<ctype, mydim, coorddim>;
+
+    typedef OneDEmbeddedGrid<dimw,ctype> Grid;
+    typedef GridTraits<1,     // Grid dimension
+                       dimw,  // Dimension of the physical space
+        Grid,
         OneDGridGeometry,
         OneDGridEntity,
         OneDGridLevelIterator,
@@ -60,17 +70,17 @@ namespace Dune {
         OneDGridLevelIntersectionIterator,
         OneDGridHierarchicIterator,
         OneDGridLeafIterator,
-        OneDGridLevelIndexSet<const OneDGrid>,
-        OneDGridLeafIndexSet<const OneDGrid>,
-        OneDGridIdSet<const OneDGrid>,
+        OneDGridLevelIndexSet<const Grid>,
+        OneDGridLeafIndexSet<const Grid>,
+        OneDGridIdSet<const Grid>,
         unsigned int,
-        OneDGridIdSet<const OneDGrid>,
+        OneDGridIdSet<const Grid>,
         unsigned int,
         Communication<No_Comm>,
         OneDGridLevelGridViewTraits,
         OneDGridLeafGridViewTraits,
         OneDGridEntitySeed,
-        OneDGridGeometry,
+        OneDGridLocalGeometry,
         unsigned int,
         std::array<GeometryType,1> >
     Traits;
@@ -90,37 +100,38 @@ namespace Dune {
      \ingroup OneDGrid
 
      This implementation of the grid interface provides one-dimensional
-     grids only. The OneDGrid can be nonuniform
+     grids only. The OneDEmbeddedGrid can be nonuniform
      and provides local mesh refinement and coarsening.
    */
-  class OneDGrid : public GridDefaultImplementation <1, 1,typename OneDGridGeometry<0,1,OneDGrid>::ctype, OneDGridFamily>
+  template <int dimw = 1, class ct = double>
+  class OneDEmbeddedGrid : public GridDefaultImplementation <1, dimw, ct, OneDGridFamily<dimw,ct>>
   {
     // Grid and world dimension are hardwired in this grid
     constexpr static int dim = 1;
-    constexpr static int dimworld = 1;
+    constexpr static int dimworld = dimw;
 
     template <int , PartitionIteratorType, class >
     friend class OneDGridLevelIterator;
 
-    friend class OneDGridHierarchicIterator<const OneDGrid>;
+    friend class OneDGridHierarchicIterator<const OneDEmbeddedGrid>;
 
     template <int codim_, int dim_, class GridImp_>
     friend class OneDGridEntity;
-    friend class OneDGridHierarchicIterator<OneDGrid>;
-    friend class OneDGridLeafIntersection<const OneDGrid>;
-    friend class OneDGridLevelIntersection<const OneDGrid>;
-    friend class OneDGridLeafIntersectionIterator<const OneDGrid>;
-    friend class OneDGridLevelIntersectionIterator<const OneDGrid>;
+    friend class OneDGridHierarchicIterator<OneDEmbeddedGrid>;
+    friend class OneDGridLeafIntersection<const OneDEmbeddedGrid>;
+    friend class OneDGridLevelIntersection<const OneDEmbeddedGrid>;
+    friend class OneDGridLeafIntersectionIterator<const OneDEmbeddedGrid>;
+    friend class OneDGridLevelIntersectionIterator<const OneDEmbeddedGrid>;
 
-    friend class OneDGridLevelIndexSet<const OneDGrid>;
-    friend class OneDGridLeafIndexSet<const OneDGrid>;
-    friend class OneDGridIdSet<const OneDGrid>;
+    friend class OneDGridLevelIndexSet<const OneDEmbeddedGrid>;
+    friend class OneDGridLeafIndexSet<const OneDEmbeddedGrid>;
+    friend class OneDGridIdSet<const OneDEmbeddedGrid>;
 
     template <int codim_, PartitionIteratorType PiType_, class GridImp_>
     friend class OneDGridLeafIterator;
 
-    friend class OneDGridLeafGridView<const OneDGrid>;
-    friend class OneDGridLevelGridView<const OneDGrid>;
+    friend class OneDGridLeafGridView<const OneDEmbeddedGrid>;
+    friend class OneDGridLevelGridView<const OneDEmbeddedGrid>;
 
     template <class GridType_>
     friend class GridFactory;
@@ -129,7 +140,7 @@ namespace Dune {
     friend class Entity;
 
     /** \brief Default constructor for the GridFactory */
-    OneDGrid();
+    OneDEmbeddedGrid();
 
     // **********************************************************
     // The Interface Methods
@@ -139,22 +150,31 @@ namespace Dune {
 
     /** \brief The type used to store coordinates
      */
-    typedef typename OneDGridGeometry<0,1,OneDGrid>::ctype ctype;
+    typedef ct ctype;
 
     /** \brief GridFamily of OneDGrid */
-    typedef OneDGridFamily GridFamily;
+    typedef OneDGridFamily<dimw,ct> GridFamily;
 
     //Provides the standard grid types
-    typedef OneDGridFamily::Traits Traits;
+    typedef typename GridFamily::Traits Traits;
+
+    typedef typename Traits::template Codim<0>::Entity::Geometry::GlobalCoordinate GlobalCoordinate;
 
     /** \brief Constructor with an explicit set of coordinates */
-    OneDGrid(const std::vector<ctype>& coords);
+    template <class C>
+    OneDEmbeddedGrid(const std::vector<C>& coords);
 
     /** \brief Constructor for a uniform grid */
-    OneDGrid(int numElements, const ctype& leftBoundary, const ctype& rightBoundary);
+    template <int d = dimw, std::enable_if_t<(d == 1), int> = 0>
+    OneDEmbeddedGrid(int numElements, const ctype& leftBoundary, const ctype& rightBoundary)
+      : OneDEmbeddedGrid(numElements, GlobalCoordinate(leftBoundary), GlobalCoordinate(rightBoundary))
+    {}
+
+    /** \brief Constructor for a uniform grid */
+    OneDEmbeddedGrid(int numElements, const GlobalCoordinate& leftBoundary, const GlobalCoordinate& rightBoundary);
 
     //! Destructor
-    ~OneDGrid();
+    ~OneDEmbeddedGrid();
 
     /** \brief Return maximum level defined in this grid.
 
@@ -168,7 +188,7 @@ namespace Dune {
     entity(const Seed& seed)
     {
       const int codim = Seed::codimension;
-      return typename Traits::template Codim<codim>::Entity(OneDGridEntity<codim,dim,const OneDGrid>(seed.impl().target()));
+      return typename Traits::template Codim<codim>::Entity(OneDGridEntity<codim,dim,const OneDEmbeddedGrid>(seed.impl().target()));
     }
 
 
@@ -218,23 +238,23 @@ namespace Dune {
     }
 
     /** \brief Get the set of global ids */
-    const Traits::GlobalIdSet& globalIdSet() const
+    const typename Traits::GlobalIdSet& globalIdSet() const
     {
       return idSet_;
     }
 
     /** \brief Get the set of local ids */
-    const Traits::LocalIdSet& localIdSet() const
+    const typename Traits::LocalIdSet& localIdSet() const
     {
       return idSet_;
     }
 
     /** \brief Get an index set for the given level */
-    const Traits::LevelIndexSet& levelIndexSet(int level) const
+    const typename Traits::LevelIndexSet& levelIndexSet(int level) const
     {
       if (! levelIndexSets_[level]) {
         levelIndexSets_[level] =
-          new OneDGridLevelIndexSet<const OneDGrid>(*this, level);
+          new OneDGridLevelIndexSet<const OneDEmbeddedGrid>(*this, level);
         levelIndexSets_[level]->update();
       }
 
@@ -242,7 +262,7 @@ namespace Dune {
     }
 
     /** \brief Get an index set for the leaf level */
-    const Traits::LeafIndexSet& leafIndexSet() const
+    const typename Traits::LeafIndexSet& leafIndexSet() const
     {
       return leafIndexSet_;
     }
@@ -255,7 +275,7 @@ namespace Dune {
      *
      * \return True, if marking was successful
      */
-    bool mark(int refCount, const Traits::Codim<0>::Entity& e );
+    bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e );
 
     /** \brief return current adaptation marker of given entity
 
@@ -263,7 +283,7 @@ namespace Dune {
 
         \return int current adaptation marker of entity pointer e
      */
-    int getMark(const Traits::Codim<0>::Entity& e ) const;
+    int getMark(const typename Traits::template Codim<0>::Entity& e ) const;
 
     //! Does nothing except return true if some element has been marked for refinement
     bool preAdapt();
@@ -300,7 +320,7 @@ namespace Dune {
 
     // dummy parallel functions
 
-    const Communication &comm () const
+    const Communication<No_Comm> &comm () const
     {
       return ccobj;
     }
@@ -326,26 +346,26 @@ namespace Dune {
   private:
 
     /** \brief Get vertex lists directly -- makes the code more readable */
-    OneDGridList<OneDEntityImp<0> >& vertices(int level) {
+    OneDGridList<OneDEntityImp<0,dimw,ct> >& vertices(int level) {
       return std::get<0>(entityImps_[level]);
     }
 
     /** \brief Get vertex lists directly -- makes the code more readable */
-    const OneDGridList<OneDEntityImp<0> >& vertices(int level) const {
+    const OneDGridList<OneDEntityImp<0,dimw,ct> >& vertices(int level) const {
       return std::get<0>(entityImps_[level]);
     }
 
     /** \brief Get element lists directly -- makes the code more readable */
-    OneDGridList<OneDEntityImp<1> >& elements(int level) {
+    OneDGridList<OneDEntityImp<1,dimw,ct> >& elements(int level) {
       return std::get<1>(entityImps_[level]);
     }
 
     /** \brief Get element lists directly -- makes the code more readable */
-    const OneDGridList<OneDEntityImp<1> >& elements(int level) const {
+    const OneDGridList<OneDEntityImp<1,dimw,ct> >& elements(int level) const {
       return std::get<1>(entityImps_[level]);
     }
 
-    Communication ccobj;
+    Communication<No_Comm> ccobj;
 
     /** \brief Update all indices and ids */
     void setIndices();
@@ -360,25 +380,25 @@ namespace Dune {
     //! The type of grid refinement currently in use
     RefinementType refinementType_;
 
-    OneDGridList<OneDEntityImp<0> >::iterator getLeftUpperVertex(const OneDEntityImp<1>* eIt);
+    typename OneDGridList<OneDEntityImp<0,dimw,ct> >::iterator getLeftUpperVertex(const OneDEntityImp<1,dimw,ct>* eIt);
 
-    OneDGridList<OneDEntityImp<0> >::iterator getRightUpperVertex(const OneDEntityImp<1>* eIt);
+    typename OneDGridList<OneDEntityImp<0,dimw,ct> >::iterator getRightUpperVertex(const OneDEntityImp<1,dimw,ct>* eIt);
 
     /** \brief Returns an iterator to the first element on the left of
         the input element which has sons.
      */
-    OneDGridList<OneDEntityImp<1> >::iterator getLeftNeighborWithSon(OneDGridList<OneDEntityImp<1> >::iterator eIt);
+    typename OneDGridList<OneDEntityImp<1,dimw,ct> >::iterator getLeftNeighborWithSon(typename OneDGridList<OneDEntityImp<1,dimw,ct> >::iterator eIt);
 
     // The vertices and elements of the grid hierarchy
-    std::vector<std::tuple<OneDGridList<OneDEntityImp<0> >,
-            OneDGridList<OneDEntityImp<1> > > > entityImps_;
+    std::vector<std::tuple<OneDGridList<OneDEntityImp<0,dimw,ct> >,
+            OneDGridList<OneDEntityImp<1,dimw,ct> > > > entityImps_;
 
     // Our set of level indices
-    mutable std::vector<OneDGridLevelIndexSet<const OneDGrid>* > levelIndexSets_;
+    mutable std::vector<OneDGridLevelIndexSet<const OneDEmbeddedGrid>* > levelIndexSets_;
 
-    OneDGridLeafIndexSet<const OneDGrid> leafIndexSet_;
+    OneDGridLeafIndexSet<const OneDEmbeddedGrid> leafIndexSet_;
 
-    OneDGridIdSet<const OneDGrid> idSet_;
+    OneDGridIdSet<const OneDEmbeddedGrid> idSet_;
 
     // Every entity gets a unique id, unless it is a copy of an entity on a coarser level.
     // This is the counter that we use to create the unique id.
@@ -389,7 +409,15 @@ namespace Dune {
         This flag stores which is the case. */
     bool reversedBoundarySegmentNumbering_;
 
-  }; // end Class OneDGrid
+  }; // end Class OneDEmbeddedGrid
+
+  extern template class OneDEmbeddedGrid<1,double>;
+  extern template OneDEmbeddedGrid<1,double>::OneDEmbeddedGrid(const std::vector<double>&);
+  extern template OneDEmbeddedGrid<1,double>::OneDEmbeddedGrid(const std::vector<FieldVector<double,1>>&);
+  extern template class OneDEmbeddedGrid<2,double>;
+  extern template OneDEmbeddedGrid<2,double>::OneDEmbeddedGrid(const std::vector<FieldVector<double,2>>&);
+  extern template class OneDEmbeddedGrid<3,double>;
+  extern template OneDEmbeddedGrid<3,double>::OneDEmbeddedGrid(const std::vector<FieldVector<double,3>>&);
 
   namespace Capabilities
   {
@@ -404,8 +432,8 @@ namespace Dune {
     /** \brief OneDGrid has only one geometry type for codim 0 entities
        \ingroup OneDGrid
      */
-    template< >
-    struct hasSingleGeometryType< OneDGrid >
+    template<int dimw, class ct>
+    struct hasSingleGeometryType< OneDEmbeddedGrid<dimw,ct> >
     {
       static const bool v = true;
       static const unsigned int topologyId = GeometryTypes::cube(1).id();
@@ -415,8 +443,8 @@ namespace Dune {
     /** \brief OneDGrid has entities for all codimension
        \ingroup OneDGrid
      */
-    template<int cdim>
-    struct hasEntity< OneDGrid, cdim >
+    template<int dimw, class ct, int cdim>
+    struct hasEntity< OneDEmbeddedGrid<dimw,ct>, cdim >
     {
       static const bool v = true;
     };
@@ -425,8 +453,8 @@ namespace Dune {
      * \brief OneDGrid can iterate over all codimensions
      * \ingroup OneDGrid
      **/
-    template<int codim>
-    struct hasEntityIterator<OneDGrid, codim>
+    template<int dimw, class ct, int codim>
+    struct hasEntityIterator<OneDEmbeddedGrid<dimw,ct>, codim>
     {
       static const bool v = true;
     };
@@ -434,8 +462,8 @@ namespace Dune {
     /** \brief OneDGrid is levelwise conforming
        \ingroup OneDGrid
      */
-    template<>
-    struct isLevelwiseConforming< OneDGrid >
+    template<int dimw, class ct>
+    struct isLevelwiseConforming< OneDEmbeddedGrid<dimw,ct> >
     {
       static const bool v = true;
     };
@@ -443,8 +471,8 @@ namespace Dune {
     /** \brief OneDGrid is leafwise conforming
        \ingroup OneDGrid
      */
-    template<>
-    struct isLeafwiseConforming< OneDGrid >
+    template<int dimw, class ct>
+    struct isLeafwiseConforming< OneDEmbeddedGrid<dimw,ct> >
     {
       static const bool v = true;
     };

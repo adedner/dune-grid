@@ -28,10 +28,13 @@ namespace Dune {
   class OneDGridHierarchicIterator
   {
     constexpr static int dim = GridImp::dimension;
+    constexpr static int dimw = GridImp::dimensionworld;
     friend class OneDGridEntity<0,dim,GridImp>;
 
+    typedef typename GridImp::ctype ct;
+
     // Stack entry
-    typedef OneDGridList<OneDEntityImp<1> >::iterator StackEntry;
+    typedef OneDGridList<OneDEntityImp<1,dimw,ct> >::iterator StackEntry;
 
   public:
 
@@ -72,7 +75,7 @@ namespace Dune {
       }
 
       this->virtualEntity_.impl().setToTarget((elemStack.empty())
-                                                                       ? OneDGridNullIteratorFactory<1>::null() : elemStack.top());
+                                                                       ? OneDGridNullIteratorFactory<1,dimw,ct>::null() : elemStack.top());
     }
 
     //! dereferencing

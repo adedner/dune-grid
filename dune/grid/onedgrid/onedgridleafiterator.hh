@@ -18,6 +18,9 @@ namespace Dune {
   class OneDGridLeafIterator
   {
     constexpr static int dim = GridImp::dimension;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
 
     friend class OneDGridEntity<codim,dim,GridImp>;
 
@@ -31,7 +34,7 @@ namespace Dune {
       /** \todo Can a make the fullRefineLevel work somehow? */
       const int fullRefineLevel = 0;
 
-      this->virtualEntity_.impl().setToTarget((OneDEntityImp<1-codim>*) std::get<1-codim>(grid_->entityImps_[fullRefineLevel]).begin());
+      this->virtualEntity_.impl().setToTarget((OneDEntityImp<1-codim,dimw,ct>*) std::get<1-codim>(grid_->entityImps_[fullRefineLevel]).begin());
 
       if (!this->virtualEntity_.impl().target_->isLeaf())
         increment();
@@ -40,7 +43,7 @@ namespace Dune {
     //! Constructor
     OneDGridLeafIterator() : grid_(nullptr)
     {
-      this->virtualEntity_.impl().setToTarget(OneDGridNullIteratorFactory<1-codim>::null());
+      this->virtualEntity_.impl().setToTarget(OneDGridNullIteratorFactory<1-codim,dimw,ct>::null());
     }
 
     //! prefix increment
@@ -75,7 +78,7 @@ namespace Dune {
       // If beyond the end of this level set to first of next level
       if (!this->virtualEntity_.impl().target_ && oldLevel < grid_->maxLevel()) {
 
-        this->virtualEntity_.impl().setToTarget(const_cast<OneDEntityImp<dim-codim>*>(std::get<1-codim>(grid_->entityImps_[oldLevel+1]).begin()));
+        this->virtualEntity_.impl().setToTarget(const_cast<OneDEntityImp<dim-codim,dimw,ct>*>(std::get<1-codim>(grid_->entityImps_[oldLevel+1]).begin()));
 
       }
 

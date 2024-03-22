@@ -121,13 +121,14 @@ std::unique_ptr<OneDGrid> testFactory()
   return grid;
 }
 
-void testOneDGrid(OneDGrid& grid)
+template <int dimw, class ct>
+void testOneDGrid(OneDEmbeddedGrid<dimw,ct>& grid)
 {
   // check macro grid
   gridcheck(grid);
 
   // create hybrid grid
-  grid.mark(1, * grid.leafGridView().begin<0>());
+  grid.mark(1, * grid.leafGridView().template begin<0>());
   grid.preAdapt();
   grid.adapt();
   grid.postAdapt();
@@ -167,15 +168,23 @@ int main () try
                                  1};
 
   Dune::OneDGrid coordsGrid(coords);
-
   testOneDGrid(coordsGrid);
+
+  std::vector<Dune::FieldVector<double,1>> coords2 = {-1,
+                                -0.4,
+                                 0.1,
+                                 0.35,
+                                 0.38,
+                                 1};
+
+  Dune::OneDGrid coordsGrid2(coords2);
+  testOneDGrid(coordsGrid2);
 
   // Create a uniform OneDGrid and test it
   Dune::OneDGrid uniformGrid(7,       // Number of elements
                              -0.5,    // Left boundary
                              2.3      // Right boundary
                              );
-
   testOneDGrid(uniformGrid);
 
   // Test a uniform grid with RefinementType set to COPY
@@ -187,6 +196,12 @@ int main () try
   uniformGrid2.setRefinementType(OneDGrid::COPY);
 
   testOneDGrid(uniformGrid2);
+
+  Dune::OneDEmbeddedGrid<2> uniformGrid3(7,       // Number of elements
+                             Dune::FieldVector<double,2>(-0.5),    // Left boundary
+                             Dune::FieldVector<double,2>( 2.3)     // Right boundary
+                             );
+  testOneDGrid(uniformGrid3);
 
 
   // everything okay

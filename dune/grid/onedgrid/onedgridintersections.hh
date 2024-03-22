@@ -18,7 +18,9 @@ namespace Dune {
   class OneDGridLevelIntersection
   {
     constexpr static int dim = GridImp::dimension;
-    constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
 
     // The corresponding iterator needs to access all members
     friend class OneDGridLevelIntersectionIterator<GridImp>;
@@ -32,12 +34,12 @@ namespace Dune {
     {}
 
     //! Constructor for a given grid entity and a given neighbor
-    OneDGridLevelIntersection(OneDEntityImp<1>* center, int nb)
+    OneDGridLevelIntersection(OneDEntityImp<1,dimw,ct>* center, int nb)
       : center_(center), neighbor_(nb)
     {}
 
     /** \brief Constructor creating the 'one-after-last'-iterator */
-    OneDGridLevelIntersection(OneDEntityImp<1>* center)
+    OneDGridLevelIntersection(OneDEntityImp<1,dimw,ct>* center)
       : center_(center), neighbor_(2)
     {}
 
@@ -55,7 +57,7 @@ namespace Dune {
       return (center_ == other.center_) && (neighbor_ == other.neighbor_);
     }
 
-    OneDEntityImp<1>* target() const {
+    OneDEntityImp<1,dimw,ct>* target() const {
       const bool isValid = center_ && neighbor_>=0 && neighbor_<2;
 
       if (!isValid)
@@ -77,7 +79,7 @@ namespace Dune {
         if (center_->pred_)
           return false;
 
-        const OneDEntityImp<1>* ancestor = center_;
+        const OneDEntityImp<1,dimw,ct>* ancestor = center_;
 
         while (ancestor->level_!=0) {
 
@@ -100,7 +102,7 @@ namespace Dune {
       if (center_->succ_)
         return false;
 
-      const OneDEntityImp<1>* ancestor = center_;
+      const OneDEntityImp<1,dimw,ct>* ancestor = center_;
 
       while (ancestor->level_!=0) {
 
@@ -172,7 +174,7 @@ namespace Dune {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      return Geometry( GeometryImpl( center_->vertex_[neighbor_]->pos_ ) );
+      return Geometry( GeometryImpl( type(), std::array{center_->vertex_[neighbor_]->pos_} ) );
     }
 
     /** \brief obtain the type of reference element for this intersection */
@@ -195,23 +197,23 @@ namespace Dune {
     }
 
     //! return outer normal
-    FieldVector<typename GridImp::ctype, dimworld> outerNormal ([[maybe_unused]] const FieldVector<typename GridImp::ctype, dim-1>&  local ) const {
+    FieldVector<ct, dimw> outerNormal ([[maybe_unused]] const FieldVector<ct, dim-1>&  local ) const {
       return centerUnitOuterNormal();
     }
 
     //! Return outer normal scaled with the integration element
-    FieldVector<typename GridImp::ctype, dimworld> integrationOuterNormal ([[maybe_unused]] const FieldVector<typename GridImp::ctype, dim-1>& local ) const {
+    FieldVector<ct, dimw> integrationOuterNormal ([[maybe_unused]] const FieldVector<ct, dim-1>& local ) const {
       return centerUnitOuterNormal();
     }
 
     //! return unit outer normal
-    FieldVector<typename GridImp::ctype, dimworld> unitOuterNormal ([[maybe_unused]] const FieldVector<typename GridImp::ctype, dim-1>& local ) const {
+    FieldVector<ct, dimw> unitOuterNormal ([[maybe_unused]] const FieldVector<ct, dim-1>& local ) const {
       return centerUnitOuterNormal();
     }
 
     //! return unit outer normal at center of intersection
-    FieldVector<typename GridImp::ctype, dimworld> centerUnitOuterNormal () const {
-      return FieldVector<typename GridImp::ctype, dimworld>(2 * neighbor_ - 1);
+    FieldVector<ct, dimw> centerUnitOuterNormal () const {
+      return FieldVector<ct, dimw>(2 * neighbor_ - 1);
     }
 
   private:
@@ -219,7 +221,7 @@ namespace Dune {
     //  private methods
     //**********************************************************
 
-    OneDEntityImp<1>* center_;
+    OneDEntityImp<1,dimw,ct>* center_;
 
     /** \brief Count on which neighbor we are lookin' at.  Can be only 0 or 1. */
     int neighbor_;
@@ -232,7 +234,9 @@ namespace Dune {
   class OneDGridLeafIntersection
   {
     constexpr static int dim = GridImp::dimension;
-    constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
 
     // The corresponding iterator needs to access all members
     friend class OneDGridLeafIntersectionIterator<GridImp>;
@@ -246,12 +250,12 @@ namespace Dune {
     {}
 
     //! Constructor for a given grid entity and a given neighbor
-    OneDGridLeafIntersection(OneDEntityImp<1>* center, int nb)
+    OneDGridLeafIntersection(OneDEntityImp<1,dimw,ct>* center, int nb)
       : center_(center), neighbor_(nb)
     {}
 
     /** \brief Constructor creating the 'one-after-last'-iterator */
-    OneDGridLeafIntersection(OneDEntityImp<1>* center)
+    OneDGridLeafIntersection(OneDEntityImp<1,dimw,ct>* center)
       : center_(center), neighbor_(2)
     {}
 
@@ -269,7 +273,7 @@ namespace Dune {
       return (center_ == other.center_) && (neighbor_ == other.neighbor_);
     }
 
-    OneDEntityImp<1>* target() const {
+    OneDEntityImp<1,dimw,ct>* target() const {
       const bool isValid = center_ && neighbor_>=0 && neighbor_<2;
 
       if (!isValid)
@@ -280,7 +284,7 @@ namespace Dune {
         // Get left leaf neighbor
         if (center_->pred_ && center_->pred_->vertex_[1] == center_->vertex_[0]) {
 
-          OneDEntityImp<1>* leftLeafNeighbor = center_->pred_;
+          OneDEntityImp<1,dimw,ct>* leftLeafNeighbor = center_->pred_;
           while (!leftLeafNeighbor->isLeaf()) {
             assert (leftLeafNeighbor->sons_[1] != NULL);
             leftLeafNeighbor = leftLeafNeighbor->sons_[1];
@@ -289,7 +293,7 @@ namespace Dune {
 
         } else {
 
-          OneDEntityImp<1>* ancestor = center_;
+          OneDEntityImp<1,dimw,ct>* ancestor = center_;
           while (ancestor->father_) {
             ancestor = ancestor->father_;
             if (ancestor->pred_ && ancestor->pred_->vertex_[1] == ancestor->vertex_[0]) {
@@ -306,7 +310,7 @@ namespace Dune {
         // Get right leaf neighbor
         if (center_->succ_ && center_->succ_->vertex_[0] == center_->vertex_[1]) {
 
-          OneDEntityImp<1>* rightLeafNeighbor = center_->succ_;
+          OneDEntityImp<1,dimw,ct>* rightLeafNeighbor = center_->succ_;
           while (!rightLeafNeighbor->isLeaf()) {
             assert (rightLeafNeighbor->sons_[0] != NULL);
             rightLeafNeighbor = rightLeafNeighbor->sons_[0];
@@ -315,7 +319,7 @@ namespace Dune {
 
         } else {
 
-          OneDEntityImp<1>* ancestor = center_;
+          OneDEntityImp<1,dimw,ct>* ancestor = center_;
           while (ancestor->father_) {
             ancestor = ancestor->father_;
             if (ancestor->succ_ && ancestor->succ_->vertex_[0] == ancestor->vertex_[1]) {
@@ -341,7 +345,7 @@ namespace Dune {
         if (center_->pred_)
           return false;
 
-        const OneDEntityImp<1>* ancestor = center_;
+        const OneDEntityImp<1,dimw,ct>* ancestor = center_;
 
         while (ancestor->level_!=0) {
 
@@ -364,7 +368,7 @@ namespace Dune {
       if (center_->succ_)
         return false;
 
-      const OneDEntityImp<1>* ancestor = center_;
+      const OneDEntityImp<1,dimw,ct>* ancestor = center_;
 
       while (ancestor->level_!=0) {
 
@@ -430,7 +434,7 @@ namespace Dune {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      return Geometry( GeometryImpl( center_->vertex_[neighbor_%2]->pos_ ) );
+      return Geometry( GeometryImpl( type(), std::array{center_->vertex_[neighbor_%2]->pos_} ) );
     }
 
     /** \brief obtain the type of reference element for this intersection */
@@ -453,24 +457,24 @@ namespace Dune {
     }
 
     //! return outer normal
-    FieldVector<typename GridImp::ctype, dimworld> outerNormal ([[maybe_unused]] const FieldVector<typename GridImp::ctype, dim-1>& local) const {
+    FieldVector<ct, dimw> outerNormal ([[maybe_unused]] const FieldVector<ct, dim-1>& local) const {
       return centerUnitOuterNormal();
     }
 
     //! Return outer normal scaled with the integration element
-    FieldVector<typename GridImp::ctype, dimworld> integrationOuterNormal ([[maybe_unused]] const FieldVector<typename GridImp::ctype, dim-1>& local) const
+    FieldVector<ct, dimw> integrationOuterNormal ([[maybe_unused]] const FieldVector<ct, dim-1>& local) const
     {
       return centerUnitOuterNormal();
     }
 
     //! return unit outer normal
-    FieldVector<typename GridImp::ctype, dimworld> unitOuterNormal ([[maybe_unused]] const FieldVector<typename GridImp::ctype, dim-1>& local) const {
+    FieldVector<ct, dimw> unitOuterNormal ([[maybe_unused]] const FieldVector<ct, dim-1>& local) const {
       return centerUnitOuterNormal();
     }
 
     //! return unit outer normal at center of intersection
-    FieldVector<typename GridImp::ctype, dimworld> centerUnitOuterNormal () const {
-      return FieldVector<typename GridImp::ctype, dimworld>(2 * neighbor_ - 1);
+    FieldVector<ct, dimw> centerUnitOuterNormal () const {
+      return FieldVector<ct, dimw>(2 * neighbor_ - 1);
     }
 
   private:
@@ -478,7 +482,7 @@ namespace Dune {
     //  private methods
     //**********************************************************
 
-    OneDEntityImp<1>* center_;
+    OneDEntityImp<1,dimw,ct>* center_;
 
     /** \brief Count on which neighbor we are lookin' at
 

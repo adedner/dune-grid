@@ -9,37 +9,44 @@
 
 namespace Dune {
 
-  template <int mydim> class OneDEntityImp;
+  template <int mydim, int cdim, class ct> class OneDEntityImp;
 
-  template <int dim>
+  template <int dim, int dimw, class ct>
   class OneDGridNullIteratorFactory {};
 
-  template <>
-  class OneDGridNullIteratorFactory<0> {
+  template <int cdim, class ct>
+  class OneDGridNullIteratorFactory<0,cdim,ct> {
 
   public:
 
-    static OneDGridList<OneDEntityImp<0> >::iterator null() {
+    static OneDGridList<OneDEntityImp<0,cdim,ct> >::iterator null() {
       return emptyList_.end();
     }
 
   private:
-    static OneDGridList<OneDEntityImp<0> > emptyList_;
+    static OneDGridList<OneDEntityImp<0,cdim,ct> > emptyList_;
   };
 
-  template <>
-  class OneDGridNullIteratorFactory<1> {
+  template <int cdim, class ct>
+  class OneDGridNullIteratorFactory<1,cdim,ct> {
 
   public:
 
-    static OneDGridList<OneDEntityImp<1> >::iterator null() {
+    static OneDGridList<OneDEntityImp<1,cdim,ct> >::iterator null() {
       return emptyList_.end();
     }
 
   private:
-    static OneDGridList<OneDEntityImp<1> > emptyList_;
+    static OneDGridList<OneDEntityImp<1,cdim,ct> > emptyList_;
   };
 
-}
+  extern template class OneDGridNullIteratorFactory<0,1,double>;
+  extern template class OneDGridNullIteratorFactory<1,1,double>;
+  extern template class OneDGridNullIteratorFactory<0,2,double>;
+  extern template class OneDGridNullIteratorFactory<1,2,double>;
+  extern template class OneDGridNullIteratorFactory<0,3,double>;
+  extern template class OneDGridNullIteratorFactory<1,3,double>;
+
+} // end namespace Dune
 
 #endif

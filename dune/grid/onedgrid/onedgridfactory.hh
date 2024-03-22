@@ -25,17 +25,36 @@
 #include <dune/grid/onedgrid.hh>
 
 namespace Dune {
+namespace Impl {
+
+  struct CompareFieldVector
+  {
+    template<class ct, int dimw>
+    constexpr bool operator() (const FieldVector<ct,dimw>& lhs, const FieldVector<ct,dimw>& rhs) const
+    {
+      using std::abs;
+      for (int i = 0; i < dimw; ++i) {
+        if (abs(lhs[i] - rhs[i]) < std::numeric_limits<ct>::epsilon())
+          continue;
+        return lhs[i] < rhs[i];
+      }
+      return false;
+    }
+  };
+
+} // end namespace Impl
 
   /** \brief Specialization of the generic GridFactory for OneDGrid
 
    */
-  template <>
-  class GridFactory<OneDGrid> : public GridFactoryInterface<OneDGrid> {
+  template <int dimw, class ct>
+  class GridFactory<OneDEmbeddedGrid<dimw,ct>> : public GridFactoryInterface<OneDEmbeddedGrid<dimw,ct>> {
 
-    typedef GridFactoryInterface<OneDGrid> Base;
+    typedef OneDEmbeddedGrid<dimw,ct> Grid;
+    typedef GridFactoryInterface<Grid> Base;
 
     /** \brief Type used by the grid for coordinates */
-    typedef OneDGrid::ctype ctype;
+    typedef ct ctype;
 
   public:
 
@@ -54,13 +73,13 @@ namespace Dune {
        the pointer handed over to you by the method createGrid() is
        the one you supplied here.
      */
-    GridFactory(OneDGrid* grid);
+    GridFactory(Grid* grid);
 
     /** \brief Destructor */
     ~GridFactory();
 
     /** \brief Insert a vertex into the coarse grid */
-    virtual void insertVertex(const FieldVector<ctype,1>& pos);
+    virtual void insertVertex(const FieldVector<ctype,dimw>& pos);
 
     /** \brief Insert an element into the coarse grid
         \param type The GeometryType of the new element
@@ -83,15 +102,15 @@ namespace Dune {
                                        const std::shared_ptr<BoundarySegment<1> >& boundarySegment);
 
     /** \brief Return true if the intersection has been explicitly inserted into the factory */
-    virtual bool wasInserted(const typename OneDGrid::LeafIntersection& intersection) const;
+    virtual bool wasInserted(const typename Grid::LeafIntersection& intersection) const;
 
     /** \brief Return the number of the intersection in the order of insertion into the factory */
-    virtual unsigned int insertionIndex(const typename OneDGrid::LeafIntersection& intersection) const;
+    virtual unsigned int insertionIndex(const typename Grid::LeafIntersection& intersection) const;
 
     /** \brief Finalize grid creation and hand over the grid
         The receiver takes responsibility of the memory allocated for the grid
      */
-    virtual std::unique_ptr<OneDGrid> createGrid();
+    virtual std::unique_ptr<Grid> createGrid();
 
   private:
 
@@ -99,7 +118,7 @@ namespace Dune {
     void createBegin();
 
     // Pointer to the grid being built
-    OneDGrid* grid_;
+    Grid* grid_;
 
     // True if the factory allocated the grid itself, false if the
     // grid was handed over from the outside
@@ -110,7 +129,7 @@ namespace Dune {
     std::vector<std::array<unsigned int, 2> > elements_;
 
     /** \brief Buffer the vertices until createGrid() is called */
-    std::map<FieldVector<ctype,1>, unsigned int > vertexPositions_;
+    std::map<FieldVector<ctype,dimw>, unsigned int, Impl::CompareFieldVector> vertexPositions_;
 
     /** \brief Counter that creates the vertex indices */
     unsigned int vertexIndex_;
@@ -119,9 +138,13 @@ namespace Dune {
     std::vector<unsigned int> boundarySegments_;
 
     /** \brief Store vertex positions sorted by index */
-    std::vector<ctype> vertexPositionsByIndex_;
+    std::vector<FieldVector<ctype,dimw>> vertexPositionsByIndex_;
   };
 
-}
+  extern template class GridFactory<OneDEmbeddedGrid<1,double>>;
+  extern template class GridFactory<OneDEmbeddedGrid<2,double>>;
+  extern template class GridFactory<OneDEmbeddedGrid<3,double>>;
+
+} // end namespace Dune
 
 #endif

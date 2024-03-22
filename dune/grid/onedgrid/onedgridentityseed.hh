@@ -20,6 +20,10 @@ namespace Dune {
   {
     // grid dimension
     constexpr static int dim = GridImp::dimension;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
+
   public:
 
     constexpr static int codimension = codim;
@@ -41,14 +45,14 @@ namespace Dune {
     }
 
     /** \brief Access to the underlying OneDGrid data structure */
-    OneDEntityImp<dim-codim>* target() const
+    OneDEntityImp<dim-codim,dimw,ct>* target() const
     {
       return target_;
     }
 
   private:
     /** \brief Plain old pointer to the corresponding OneDGrid data structure */
-    OneDEntityImp<dim-codim>* target_;
+    OneDEntityImp<dim-codim,dimw,ct>* target_;
   };
 
 } // end namespace Dune
