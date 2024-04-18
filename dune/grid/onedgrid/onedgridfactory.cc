@@ -5,6 +5,7 @@
 
 #include <config.h>
 
+#include <dune/common/reservedvector.hh>
 #include <dune/grid/onedgrid/onedgridfactory.hh>
 #include <dune/grid/onedgrid/onedgridindexsets.hh>
 
@@ -13,8 +14,7 @@ namespace Dune {
 template <int dimw, class ct>
 GridFactory<OneDEmbeddedGrid<dimw,ct>>::
 GridFactory() :
-  factoryOwnsGrid_(true),
-  vertexIndex_(0)
+  factoryOwnsGrid_(true)
 {
   grid_ = new OneDEmbeddedGrid<dimw,ct>;
 
@@ -24,8 +24,7 @@ GridFactory() :
 template <int dimw, class ct>
 GridFactory<OneDEmbeddedGrid<dimw,ct>>::
 GridFactory(Grid* grid) :
-  factoryOwnsGrid_(false),
-  vertexIndex_(0)
+  factoryOwnsGrid_(false)
 {
   grid_ = grid;
 
@@ -44,7 +43,7 @@ template <int dimw, class ct>
 void GridFactory<OneDEmbeddedGrid<dimw,ct>>::
 insertVertex(const Dune::FieldVector<ct,dimw>& pos)
 {
-  vertexPositions_.insert(std::make_pair(pos, vertexIndex_++));
+  vertexPositions_.push_back(pos);
 }
 
 template <int dimw, class ct>
@@ -85,29 +84,22 @@ template <int dimw, class ct>
 bool GridFactory<OneDEmbeddedGrid<dimw,ct>>::
 wasInserted(const typename Grid::LeafIntersection& intersection) const
 {
-  bool inserted(false);
-  const auto vtx(intersection.geometry().center());
-  for(const auto& idx : boundarySegments_)
-    if((vertexPositionsByIndex_[idx]-vtx).two_norm()<1.e-12)
-    {
-      inserted=true;
-      break;
-    }
-  return inserted;
+  std::size_t idx = intersection.inside().impl().leafIndex();
+  for(const auto& bidx : boundarySegments_)
+    if(idx == bidx)
+      return true;
+  return false;
 }
 
 template <int dimw, class ct>
 unsigned int GridFactory<OneDEmbeddedGrid<dimw,ct>>::
 insertionIndex(const typename Grid::LeafIntersection& intersection) const
 {
-  unsigned int insertionIdx(0);
-  const auto vtx(intersection.geometry().center());
-  for(const auto& idx : boundarySegments_)
-    if((vertexPositionsByIndex_[idx]-vtx).two_norm()<1.e-12)
-      break;
-    else
-      ++insertionIdx;
-  return insertionIdx;
+  std::size_t idx = intersection.inside().impl().leafIndex();
+  for(std::size_t i = 0; i < boundarySegments_.size(); ++i)
+    if(idx == boundarySegments_[i])
+      return i;
+  return (unsigned int)(-1);
 }
 
 template <int dimw, class ct>
@@ -122,63 +114,95 @@ createGrid()
   // Assert that vertices are given
   assert (vertexPositions_.size() > 0);
 
+  std::vector<Dune::ReservedVector<std::size_t,2>> vertexToElements(vertexPositions_.size());
+  for (std::size_t i = 0; i < elements_.size(); ++i) {
+    auto [v0,v1] = elements_[i];
+    vertexToElements[v0].push_back(i);
+    vertexToElements[v1].push_back(i);
+  }
+
+  // Check the numbering of the boundary segments
+  if (!(boundarySegments_.empty() || boundarySegments_.size() == 2))
+    DUNE_THROW(GridError, "You cannot provide more than two boundary segments to a OneDGrid (it must be connected).");
+
+  // order the elements, such that the 2nd vertex of the ith element corresponds to
+  // the 1st vertex of the (i+1)th element.
+  std::vector<std::pair<std::array<unsigned int, 2>,std::size_t>> sortedElements;
+  sortedElements.reserve(elements_.size());
+
+  // The first vertex is either the first boundarySegment index or first first element vertex
+  std::size_t v0 = boundarySegments_.size() > 0 ? boundarySegments_[0] : elements_[0][0];
+  std::size_t v1 = v0;
+  std::size_t e1 = std::size_t(-1);
+  while (sortedElements.size() < elements_.size()) {
+    for (std::size_t e : vertexToElements[v1]) {
+      if (e != e1) {
+        if (elements_[e][0] != v1)
+          std::swap(elements_[e][0], elements_[e][1]);
+
+        sortedElements.push_back(std::make_pair(elements_[e],e));
+        v1 = elements_[e][1];
+        e1 = e;
+        break;
+      }
+    }
+  }
+
   // Insert the vertices into the grid
   grid_->entityImps_.resize(1);
-  for (const auto& vtx : vertexPositions_)
-  {
-    OneDEntityImp<0,dimw,ct> newVertex(0, vtx.first, grid_->getNextFreeId());
 
-    newVertex.leafIndex_ = vtx.second;
-    newVertex.levelIndex_ = vtx.second;
+  v0 = sortedElements[0].first[0];
 
+  { // insert the first vertex into the grid
+    OneDEntityImp<0,dimw,ct> newVertex(0, vertexPositions_[v0], grid_->getNextFreeId());
+    newVertex.leafIndex_ = v0;
+    newVertex.levelIndex_ = v0;
     grid_->vertices(0).push_back(newVertex);
   }
 
-  // Fill the vector with the vertex positions accessible by index
-  vertexPositionsByIndex_.resize(vertexPositions_.size());
-  for (const auto& vtx : vertexPositions_)
-    vertexPositionsByIndex_[vtx.second] = vtx.first;
-
-  // Set the numbering of the boundary segments
-  if (boundarySegments_.size() > 2)
-    DUNE_THROW(GridError, "You cannot provide more than two boundary segments to a OneDGrid (it must be connected).");
-
-  Impl::CompareFieldVector cmp;
-  if (boundarySegments_.size() > 1
-      && cmp(vertexPositions_.begin()->first, vertexPositionsByIndex_[boundarySegments_[0]]))
-    grid_->reversedBoundarySegmentNumbering_ = true;
-
-  // ///////////////////////////////////////////////////////////////////
-  //   Insert the elements into the grid
-  //
-  // This is a 1d grid and it has to be connected. Hence we actually
-  // know where the elements are, even without being told explicitly.
-  // The only thing of interest are the indices.
-  // ///////////////////////////////////////////////////////////////////
-
-  // First sort elements by increasing position. That is how they are expected in the grid data structure
-  std::map<Dune::FieldVector<ct,dimw>, std::pair<std::array<unsigned int, 2>, unsigned int>, Impl::CompareFieldVector > elementsByPosition;
-  for (std::size_t i=0; i<elements_.size(); i++)
-    elementsByPosition.insert(std::make_pair(vertexPositionsByIndex_[elements_[i][0]],     // order by position of left vertex
-                                             std::make_pair(elements_[i], i)      // the element and its position in the insertion sequence
-                                             ));
-
-  auto it = std::get<0>(grid_->entityImps_[0]).begin();
-  auto eIt = elementsByPosition.begin();
-
-  // Looping over the vertices to get all elements assumes that the grid is connected
-  for (size_t i=0; i<vertexPositions_.size()-1; i++, ++eIt)
+  // insert the second vertex of all elements in order of the elements
+  for (const auto& e : sortedElements)
   {
-    OneDEntityImp<1,dimw,ct> newElement(0, grid_->getNextFreeId(), grid_->reversedBoundarySegmentNumbering_);
-    newElement.vertex_[0] = it;
-    it = it->succ_;
-    newElement.vertex_[1] = it;
+    auto vIt = grid_->vertices(0).rbegin();
 
-    newElement.levelIndex_ = eIt->second.second;
-    newElement.leafIndex_  = eIt->second.second;
+    v1 = e.first[1];
+    if (v1 != v0) {
+      OneDEntityImp<0,dimw,ct> newVertex(0, vertexPositions_[v1], grid_->getNextFreeId());
+      newVertex.leafIndex_ = v1;
+      newVertex.levelIndex_ = v1;
+      grid_->vertices(0).push_back(newVertex);
+    } else {
+      // connect the first and the last vertex
+      auto rbegin = grid_->vertices(0).rbegin();
+      auto begin = grid_->vertices(0).begin();
+      rbegin->succ_ = begin;
+      begin->pred_ = rbegin;
+    }
 
+    OneDEntityImp<1,dimw,ct> newElement(0, grid_->getNextFreeId(), false);
+    newElement.vertex_[0] = vIt;
+    vIt = vIt->succ_;
+    newElement.vertex_[1] = vIt;
+    newElement.levelIndex_ = e.second;
+    newElement.leafIndex_  = e.second;
     grid_->elements(0).push_back(newElement);
+
+    // periodic connectivity of the elements
+    if (v0 == v1) {
+      auto rbegin = grid_->elements(0).rbegin();
+      auto begin = grid_->elements(0).begin();
+      rbegin->succ_ = begin;
+      begin->pred_ = rbegin;
+    }
   }
+
+  if (v0 == v1 && boundarySegments_.size() > 0)
+    DUNE_THROW(GridError, "Boundary segments given for a periodic grid!");
+
+  if (boundarySegments_.size() > 1 && (v0 != boundarySegments_[0] || v1 != boundarySegments_[1])) {
+    DUNE_THROW(GridError, "The boundary segments are not at the boundary!");
+  }
+
 
   // Create the index sets
   grid_->levelIndexSets_.resize(1);

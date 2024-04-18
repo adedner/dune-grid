@@ -172,6 +172,8 @@ namespace Dune {
     template <int dimw_, class ct_>
     friend class OneDEmbeddedGrid;
 
+    friend class GridFactory<std::remove_const_t<GridImp>>;
+
     // IndexSets and IdSets need to access indices and ids
     friend class OneDGridLevelIndexSet<GridImp>;
     friend class OneDGridLeafIndexSet<GridImp>;
@@ -292,6 +294,8 @@ namespace Dune {
     friend class OneDGridLevelIndexSet<GridImp>;
     friend class OneDGridLeafIndexSet<GridImp>;
     friend class OneDGridIdSet<GridImp>;
+
+    friend class GridFactory<std::remove_const_t<GridImp>>;
 
     typedef typename GridImp::Traits::template Codim< 0 >::GeometryImpl GeometryImpl;
     typedef typename GridImp::Traits::template Codim< 0 >::LocalGeometryImpl LocalGeometryImpl;

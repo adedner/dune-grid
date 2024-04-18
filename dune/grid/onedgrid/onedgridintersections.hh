@@ -213,14 +213,10 @@ namespace Dune {
 
     //! return unit outer normal at center of intersection
     FieldVector<ct, dimw> centerUnitOuterNormal () const {
-      if constexpr(dimw == 1)
-        return FieldVector<ct, dimw>(2 * neighbor_ - 1);
-      else {
         auto e = inside();
         auto g = e.geometry();
         auto n = g.corner(indexInInside()) - g.corner(1-indexInInside());
         return n / n.two_norm();
-      }
     }
 
   private:
@@ -481,14 +477,10 @@ namespace Dune {
 
     //! return unit outer normal at center of intersection
     FieldVector<ct, dimw> centerUnitOuterNormal () const {
-      if constexpr(dimw == 1)
-        return FieldVector<ct, dimw>(2 * neighbor_ - 1);
-      else {
         auto e = inside();
         auto g = e.geometry();
         auto n = g.corner(indexInInside()) - g.corner(1-indexInInside());
         return n / n.two_norm();
-      }
     }
 
   private:

@@ -63,16 +63,16 @@ std::unique_ptr<OneDGrid> testFactory()
   }
 
   // //////////////////////////////////////////////////////////////
-  //   Test whether the element numbering is in insertion order
+  //   Test whether the element numbering is in the connectivity order
   // //////////////////////////////////////////////////////////////
 
   std::vector<FieldVector<double,1> > elementCenters(6);    // a priori knowledge: this is where the element centers should be
   elementCenters[0] = 0.85;
-  elementCenters[1] = 0.5;
   elementCenters[2] = 0.65;
+  elementCenters[1] = 0.5;
   elementCenters[3] = 0.35;
-  elementCenters[4] = 0.1;
   elementCenters[5] = 0.25;
+  elementCenters[4] = 0.1;
 
   for (const auto& element : elements(grid->levelGridView(0)))
   {
@@ -160,23 +160,11 @@ int main () try
   testOneDGrid(*factoryGrid);
 
   // Create a OneDGrid with an array of vertex coordinates and test it
-  std::vector<double> coords = {-1,
-                                -0.4,
-                                 0.1,
-                                 0.35,
-                                 0.38,
-                                 1};
-
+  std::vector<double> coords = {-1,-0.4,0.1,0.35,0.38,1};
   Dune::OneDGrid coordsGrid(coords);
   testOneDGrid(coordsGrid);
 
-  std::vector<Dune::FieldVector<double,1>> coords2 = {-1,
-                                -0.4,
-                                 0.1,
-                                 0.35,
-                                 0.38,
-                                 1};
-
+  std::vector<Dune::FieldVector<double,1>> coords2 = {-1,-0.4,0.1,0.35,0.38,1};
   Dune::OneDGrid coordsGrid2(coords2);
   testOneDGrid(coordsGrid2);
 
@@ -192,14 +180,13 @@ int main () try
                               -0.5,    // Left boundary
                               2.3      // Right boundary
                               );
-
   uniformGrid2.setRefinementType(OneDGrid::COPY);
-
   testOneDGrid(uniformGrid2);
 
+  // Test an embedded uniform grid
   Dune::OneDEmbeddedGrid<2> uniformGrid3(7,       // Number of elements
-                             Dune::FieldVector<double,2>(-0.5),    // Left boundary
-                             Dune::FieldVector<double,2>( 2.3)     // Right boundary
+                             Dune::FieldVector<double,2>( 2.3),     // Right boundary
+                             Dune::FieldVector<double,2>(-0.5)    // Left boundary
                              );
   testOneDGrid(uniformGrid3);
 

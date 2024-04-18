@@ -129,10 +129,7 @@ namespace Impl {
     std::vector<std::array<unsigned int, 2> > elements_;
 
     /** \brief Buffer the vertices until createGrid() is called */
-    std::map<FieldVector<ctype,dimw>, unsigned int, Impl::CompareFieldVector> vertexPositions_;
-
-    /** \brief Counter that creates the vertex indices */
-    unsigned int vertexIndex_;
+    std::vector<FieldVector<ctype,dimw>> vertexPositions_;
 
     /** \brief Store the explicitly given boundary segments until createGrid() is called */
     std::vector<unsigned int> boundarySegments_;

@@ -29,10 +29,6 @@ OneDEmbeddedGrid<dimw,ct>::OneDEmbeddedGrid(int numElements, const GlobalCoordin
   if (numElements<1)
     DUNE_THROW(GridError, "Nonpositive number of elements requested!");
 
-  Impl::CompareFieldVector cmp;
-  if (!cmp(leftBoundary, rightBoundary))
-    DUNE_THROW(GridError, "The left boundary coordinate has to be strictly less than the right boundary one!");
-
   // Init grid hierarchy
   entityImps_.resize(1);
 
@@ -92,10 +88,6 @@ OneDEmbeddedGrid<dimw,ct>::OneDEmbeddedGrid(const std::vector<C>& coords)
     it = it->succ_;
     newElement.vertex_[1] = it;
 
-    Impl::CompareFieldVector cmp;
-    if (!cmp(newElement.vertex_[0]->pos_, newElement.vertex_[1]->pos_))
-      DUNE_THROW(GridError, "The coordinates have to be in ascending order!");
-
     elements(0).push_back(newElement);
 
   }
@@ -115,7 +107,7 @@ OneDEmbeddedGrid<dimw,ct>::~OneDEmbeddedGrid()
 
       typename OneDGridList<OneDEntityImp<0,dimw,ct> >::iterator vSucc = v->succ_;
       vertices(i).erase(v);
-      v = vSucc;
+        v = vSucc;
 
     }
 
@@ -130,7 +122,7 @@ OneDEmbeddedGrid<dimw,ct>::~OneDEmbeddedGrid()
 
       typename OneDGridList<OneDEntityImp<1,dimw,ct> >::iterator eSucc = e->succ_;
       elements(i).erase(e);
-      e = eSucc;
+        e = eSucc;
 
     }
 
@@ -320,7 +312,7 @@ bool OneDEmbeddedGrid<dimw,ct>::adapt()
           leftUpperVertex = vertices(i+1).insert((leftNeighbor)
                                                  ? leftNeighbor->sons_[1]->vertex_[1]->succ_
                                                  : vertices(i+1).begin(),
-                                                 newLeftUpperVertex);
+            newLeftUpperVertex);
 
         }
 
