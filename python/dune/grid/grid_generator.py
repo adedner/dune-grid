@@ -372,7 +372,7 @@ def module(includes, typeName, *args, **kwargs):
     except KeyError:
         generator = SimpleGenerator("HierarchicalGrid", "Dune::Python")
     includes = includes + ["dune/python/grid/hierarchical.hh"]
-    typeHash = "hierarchicalgrid_" + hashIt(typeName)
+    typeHash = "hierarchicalgrid_" + hashIt(typeName) + hashIt(str(*args))
     kwargs["dynamicAttr"] = True
     kwargs["holder"] = "std::shared_ptr"
     module = generator.load(includes, typeName, typeHash, *args, **kwargs)

@@ -320,9 +320,24 @@ def yaspGrid(constructor, dimgrid=None, coordinates="equidistant", ctype=None,
     else:
         return gridModule.HierarchicalGrid(constructor,periodic,overlap).leafView
 
+
+def virtualizedGrid(constructor):
+    from dune.generator import Constructor
+    from .grid_generator import module
+    typeName = "Dune::VirtualizedGrid<"+str(constructor.dimension)+", "+str(constructor.dimensionworld)+">"
+    includes = ["dune/grid/virtualizedgrid.hh"]
+    ctor = Constructor(
+        ['typename ' + constructor.cppTypeName + '::Grid& grid'],
+        ['return new DuneType(grid);']
+    )
+    gridModule = module(includes, typeName, ctor, extraIncludes=constructor.cppIncludes)
+    return gridModule.HierarchicalGrid(constructor.hierarchicalGrid).leafView
+
+
 grid_registry = {
         "OneD"       : onedGrid,
         "Yasp"       : yaspGrid,
+        "Virtualized": virtualizedGrid,
     }
 
 from dune.packagemetadata import getCMakeFlags

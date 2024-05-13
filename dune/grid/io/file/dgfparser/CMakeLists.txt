@@ -19,6 +19,7 @@ install(FILES
   entitykey_inline.hh
   dgfoned.hh
   dgfgridfactory.hh
+  dgfvirtualized.hh
   macrogrid.hh
   gridptr.hh
   parser.hh
