@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 // dune headers
+#include <dune/common/math.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/io/file/vtk/vtksequencewriter.hh>
 
@@ -76,7 +77,7 @@ public:
   virtual double evaluate (int comp, [[maybe_unused]] const Entity& e,
                            [[maybe_unused]] const Dune::FieldVector<DT,n>& xi) const
   {
-    return comp*0.1*sin(time_*2.*M_PI);
+    return comp*0.1*sin(time_*2.*Dune::MathematicalConstants<DT>::pi());
   }
 
   // get name
