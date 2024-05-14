@@ -27,7 +27,12 @@ namespace Dune {
   {
   public:
     constexpr static int dim = GridImp::dimension;
-    friend class OneDGrid;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
+
+    template <int dimw_, class ct_>
+    friend class OneDEmbeddedGrid;
     friend class OneDGridEntity<codim,dim,GridImp>;
     friend class OneDGridEntity<0,dim,GridImp>;
     friend class OneDGridLevelGridView<GridImp>;
@@ -38,7 +43,7 @@ namespace Dune {
   protected:
 
     /** \brief Constructor from a given iterator */
-    OneDGridLevelIterator(OneDEntityImp<dim-codim>* it)
+    OneDGridLevelIterator(OneDEntityImp<dim-codim,dimw,ct>* it)
     {
       virtualEntity_.impl().setToTarget(it);
     }

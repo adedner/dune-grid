@@ -22,6 +22,9 @@ namespace Dune {
   class OneDGridLevelIndexSet :
     public IndexSet<GridImp,OneDGridLevelIndexSet<GridImp>,unsigned int,std::array<GeometryType,1> >
   {
+    static const int dimw = GridImp::dimensionworld;
+    typedef typename GridImp::ctype ct;
+
   public:
 
     /** \brief Constructor for a given level of a given grid
@@ -102,20 +105,20 @@ namespace Dune {
       //   Init the element indices
       // ///////////////////////////////
       numElements_ = 0;
-      OneDGridList<OneDEntityImp<1> >::const_iterator eIt;
+      typename OneDGridList<OneDEntityImp<1,dimw,ct> >::const_iterator eIt;
       for (eIt = grid_->elements(level_).begin(); eIt != grid_->elements(level_).end(); eIt = eIt->succ_)
         /** \todo Remove this const cast */
-        const_cast<OneDEntityImp<1>*>(eIt)->levelIndex_ = numElements_++;
+        const_cast<OneDEntityImp<1,dimw,ct>*>(eIt)->levelIndex_ = numElements_++;
 
       // //////////////////////////////
       //   Init the vertex indices
       // //////////////////////////////
 
       numVertices_ = 0;
-      OneDGridList<OneDEntityImp<0> >::const_iterator vIt;
+      typename OneDGridList<OneDEntityImp<0,dimw,ct> >::const_iterator vIt;
       for (vIt = grid_->vertices(level_).begin(); vIt != grid_->vertices(level_).end(); vIt = vIt->succ_)
         /** \todo Remove this const cast */
-        const_cast<OneDEntityImp<0>*>(vIt)->levelIndex_ = numVertices_++;
+        const_cast<OneDEntityImp<0,dimw,ct>*>(vIt)->levelIndex_ = numVertices_++;
 
       // set the list of geometry types
       setSizesAndTypes(numVertices_, numElements_);
@@ -133,6 +136,9 @@ namespace Dune {
   class OneDGridLeafIndexSet :
     public IndexSet<GridImp,OneDGridLeafIndexSet<GridImp>,unsigned int,std::array<GeometryType,1> >
   {
+    static const int dimw = GridImp::dimensionworld;
+    typedef typename GridImp::ctype ct;
+
   public:
     //! constructor stores reference to a grid and level
     OneDGridLeafIndexSet (const GridImp& g) : grid_(g)
@@ -238,14 +244,14 @@ namespace Dune {
 
       for (int i=grid_.maxLevel(); i>=0; i--) {
 
-        const OneDEntityImp<0>* vIt;
+        const OneDEntityImp<0,dimw,ct>* vIt;
         for (vIt = grid_.vertices(i).begin(); vIt != grid_.vertices(i).end(); vIt = vIt->succ_) {
 
           /** \todo Remove the const casts */
           if (vIt->isLeaf())
-            const_cast<OneDEntityImp<0>*>(vIt)->leafIndex_ = numVertices_++;
+            const_cast<OneDEntityImp<0,dimw,ct>*>(vIt)->leafIndex_ = numVertices_++;
           else
-            const_cast<OneDEntityImp<0>*>(vIt)->leafIndex_ = vIt->son_->leafIndex_;
+            const_cast<OneDEntityImp<0,dimw,ct>*>(vIt)->leafIndex_ = vIt->son_->leafIndex_;
 
         }
 

@@ -63,16 +63,16 @@ std::unique_ptr<OneDGrid> testFactory()
   }
 
   // //////////////////////////////////////////////////////////////
-  //   Test whether the element numbering is in insertion order
+  //   Test whether the element numbering is in the connectivity order
   // //////////////////////////////////////////////////////////////
 
   std::vector<FieldVector<double,1> > elementCenters(6);    // a priori knowledge: this is where the element centers should be
   elementCenters[0] = 0.85;
-  elementCenters[1] = 0.5;
   elementCenters[2] = 0.65;
+  elementCenters[1] = 0.5;
   elementCenters[3] = 0.35;
-  elementCenters[4] = 0.1;
   elementCenters[5] = 0.25;
+  elementCenters[4] = 0.1;
 
   for (const auto& element : elements(grid->levelGridView(0)))
   {
@@ -121,13 +121,14 @@ std::unique_ptr<OneDGrid> testFactory()
   return grid;
 }
 
-void testOneDGrid(OneDGrid& grid)
+template <int dimw, class ct>
+void testOneDGrid(OneDEmbeddedGrid<dimw,ct>& grid)
 {
   // check macro grid
   gridcheck(grid);
 
   // create hybrid grid
-  grid.mark(1, * grid.leafGridView().begin<0>());
+  grid.mark(1, * grid.leafGridView().template begin<0>());
   grid.preAdapt();
   grid.adapt();
   grid.postAdapt();
@@ -159,23 +160,19 @@ int main () try
   testOneDGrid(*factoryGrid);
 
   // Create a OneDGrid with an array of vertex coordinates and test it
-  std::vector<double> coords = {-1,
-                                -0.4,
-                                 0.1,
-                                 0.35,
-                                 0.38,
-                                 1};
-
+  std::vector<double> coords = {-1,-0.4,0.1,0.35,0.38,1};
   Dune::OneDGrid coordsGrid(coords);
-
   testOneDGrid(coordsGrid);
+
+  std::vector<Dune::FieldVector<double,1>> coords2 = {-1,-0.4,0.1,0.35,0.38,1};
+  Dune::OneDGrid coordsGrid2(coords2);
+  testOneDGrid(coordsGrid2);
 
   // Create a uniform OneDGrid and test it
   Dune::OneDGrid uniformGrid(7,       // Number of elements
                              -0.5,    // Left boundary
                              2.3      // Right boundary
                              );
-
   testOneDGrid(uniformGrid);
 
   // Test a uniform grid with RefinementType set to COPY
@@ -183,10 +180,15 @@ int main () try
                               -0.5,    // Left boundary
                               2.3      // Right boundary
                               );
-
   uniformGrid2.setRefinementType(OneDGrid::COPY);
-
   testOneDGrid(uniformGrid2);
+
+  // Test an embedded uniform grid
+  Dune::OneDEmbeddedGrid<2> uniformGrid3(7,       // Number of elements
+                             Dune::FieldVector<double,2>( 2.3),     // Right boundary
+                             Dune::FieldVector<double,2>(-0.5)    // Left boundary
+                             );
+  testOneDGrid(uniformGrid3);
 
 
   // everything okay

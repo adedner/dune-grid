@@ -105,6 +105,10 @@ namespace Dune
 
     constexpr static bool conforming = Traits :: conforming;
 
+    constexpr static int dimw = Grid::dimensionworld;
+
+    typedef typename Grid::ctype ct;
+
     OneDGridLevelGridView ( const Grid &grid, int level )
       : grid_( &grid ),
         level_( level )
@@ -142,14 +146,14 @@ namespace Dune
     template< int cd >
     typename Codim< cd > :: Iterator begin () const
     {
-      return OneDGridLevelIterator<cd,All_Partition,GridImp>(const_cast<OneDEntityImp<1-cd>*>(std::get<1-cd>(grid_->entityImps_[level_]).begin()));
+      return OneDGridLevelIterator<cd,All_Partition,GridImp>(const_cast<OneDEntityImp<1-cd,dimw,ct>*>(std::get<1-cd>(grid_->entityImps_[level_]).begin()));
     }
 
     /** \brief obtain begin iterator for this view */
     template< int cd, PartitionIteratorType pit >
     typename Codim< cd > :: template Partition< pit > :: Iterator begin () const
     {
-      return OneDGridLevelIterator<cd,pit,GridImp>(const_cast<OneDEntityImp<1-cd>*>(std::get<1-cd>(grid_->entityImps_[level_]).begin()));
+      return OneDGridLevelIterator<cd,pit,GridImp>(const_cast<OneDEntityImp<1-cd,dimw,ct>*>(std::get<1-cd>(grid_->entityImps_[level_]).begin()));
     }
 
     /** \brief obtain end iterator for this view */
@@ -163,7 +167,7 @@ namespace Dune
     template< int cd, PartitionIteratorType pit >
     typename Codim< cd > :: template Partition< pit > :: Iterator end () const
     {
-      return OneDGridLevelIterator<cd,pit,GridImp>(static_cast<OneDEntityImp<1-cd>*>(nullptr));
+      return OneDGridLevelIterator<cd,pit,GridImp>(static_cast<OneDEntityImp<1-cd,dimw,ct>*>(nullptr));
     }
 
     /** \brief obtain begin intersection iterator with respect to this view */
@@ -285,6 +289,10 @@ namespace Dune
     struct Codim : public Traits :: template Codim<cd> {};
 
     constexpr static bool conforming = Traits :: conforming;
+
+    constexpr static int dimw = Grid::dimensionworld;
+
+    typedef typename Grid::ctype ct;
 
   public:
     OneDGridLeafGridView ( const Grid &grid )

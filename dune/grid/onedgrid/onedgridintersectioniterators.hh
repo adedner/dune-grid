@@ -18,7 +18,9 @@ namespace Dune {
   class OneDGridLevelIntersectionIterator
   {
     constexpr static int dim = GridImp::dimension;
-    constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
 
     friend class OneDGridEntity<0,dim,GridImp>;
 
@@ -29,12 +31,12 @@ namespace Dune {
     {}
 
     //! Constructor for a given grid entity and a given neighbor
-    OneDGridLevelIntersectionIterator(OneDEntityImp<1>* center, int nb)
+    OneDGridLevelIntersectionIterator(OneDEntityImp<1,dimw,ct>* center, int nb)
       : intersection_(OneDGridLevelIntersection<GridImp>(center,nb))
     {}
 
     /** \brief Constructor creating the 'one-after-last'-iterator */
-    OneDGridLevelIntersectionIterator(OneDEntityImp<1>* center)
+    OneDGridLevelIntersectionIterator(OneDEntityImp<1,dimw,ct>* center)
       : intersection_(OneDGridLevelIntersection<GridImp>(center))
     {}
 
@@ -69,7 +71,9 @@ namespace Dune {
   class OneDGridLeafIntersectionIterator
   {
     constexpr static int dim = GridImp::dimension;
-    constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static int dimw = GridImp::dimensionworld;
+
+    typedef typename GridImp::ctype ct;
 
     friend class OneDGridEntity<0,dim,GridImp>;
 
@@ -80,12 +84,12 @@ namespace Dune {
     {}
 
     //! Constructor for a given grid entity and a given neighbor
-    OneDGridLeafIntersectionIterator(OneDEntityImp<1>* center, int nb)
+    OneDGridLeafIntersectionIterator(OneDEntityImp<1,dimw,ct>* center, int nb)
       : intersection_(OneDGridLeafIntersection<GridImp>(center,nb))
     {}
 
     /** \brief Constructor creating the 'one-after-last'-iterator */
-    OneDGridLeafIntersectionIterator(OneDEntityImp<1>* center)
+    OneDGridLeafIntersectionIterator(OneDEntityImp<1,dimw,ct>* center)
       : intersection_(OneDGridLeafIntersection<GridImp>(center))
     {}
 

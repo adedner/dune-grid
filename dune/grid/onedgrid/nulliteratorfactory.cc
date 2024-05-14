@@ -4,5 +4,18 @@
 // vi: set et ts=4 sw=2 sts=2:
 #include "nulliteratorfactory.hh"
 
-Dune::OneDGridList<Dune::OneDEntityImp<0> > Dune::OneDGridNullIteratorFactory<0>::emptyList_;
-Dune::OneDGridList<Dune::OneDEntityImp<1> > Dune::OneDGridNullIteratorFactory<1>::emptyList_;
+namespace Dune {
+
+template<int dimw, class ct>
+OneDGridList<OneDEntityImp<0,dimw,ct> > OneDGridNullIteratorFactory<0,dimw,ct>::emptyList_;
+template<int dimw, class ct>
+OneDGridList<OneDEntityImp<1,dimw,ct> > OneDGridNullIteratorFactory<1,dimw,ct>::emptyList_;
+
+template class OneDGridNullIteratorFactory<0,1,double>;
+template class OneDGridNullIteratorFactory<1,1,double>;
+template class OneDGridNullIteratorFactory<0,2,double>;
+template class OneDGridNullIteratorFactory<1,2,double>;
+template class OneDGridNullIteratorFactory<0,3,double>;
+template class OneDGridNullIteratorFactory<1,3,double>;
+
+} // end namespace Dune
