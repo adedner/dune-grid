@@ -312,6 +312,12 @@ namespace Dune
     //! @copydoc Dune::Entity::partitionType()
     PartitionType partitionType () const { return realEntity.partitionType(); }
 
+    //! Return the partition type of the i'th subentity of codimension `codim`
+    PartitionType subPartitionType (int i, unsigned int codim) const
+    {
+      return realEntity.subPartitionType(i, codim);
+    }
+
     //! @copydoc Dune::Entity::geometry()
     Geometry geometry () const { return realEntity.geometry(); }
 
@@ -662,6 +668,18 @@ namespace Dune
           return true;
 
       return false;
+    }
+
+    /**\brief Returns the partition type of the i'th subEntity of codimension `codim`
+     */
+    PartitionType subPartitionType (int i, unsigned int codim) const
+    {
+      return Dune::Hybrid::switchCases(std::make_index_sequence<dim+1>{}, codim,
+      [&](auto cd) { return asImp().template subEntity<cd>(i).partitionType(); },
+      [&] {
+          DUNE_THROW(Dune::Exception, "Invalid codimension codim=" << codim);
+          return PartitionType{};
+      });
     }
 
   private:
