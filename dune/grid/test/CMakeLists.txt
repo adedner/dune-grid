@@ -9,7 +9,6 @@ dune_add_test(SOURCES geometrygrid-coordfunction-copyconstructor.cc)
 
 dune_add_test(NAME test-geogrid-yaspgrid
               SOURCES test-geogrid.cc
-              LINK_LIBRARIES dunegrid
               COMPILE_DEFINITIONS COORDFUNCTION=IdenticalCoordFunction<double,2>
                                   CACHECOORDFUNCTION=0
                                   DUNE_GRID_EXAMPLE_GRIDS_PATH=\"${PROJECT_SOURCE_DIR}/doc/grids/\"
@@ -17,7 +16,6 @@ dune_add_test(NAME test-geogrid-yaspgrid
 
 dune_add_test(NAME test-geogrid-uggrid
               SOURCES test-geogrid.cc
-              LINK_LIBRARIES dunegrid
               COMPILE_DEFINITIONS COORDFUNCTION=IdenticalCoordFunction<double,2>
                                   CACHECOORDFUNCTION=0
                                   DUNE_GRID_EXAMPLE_GRIDS_PATH=\"${PROJECT_SOURCE_DIR}/doc/grids/\"
@@ -28,8 +26,7 @@ dune_add_test(SOURCES test-gridinfo.cc)
 
 dune_add_test(SOURCES test-identitygrid.cc)
 
-dune_add_test(SOURCES test-oned.cc
-              LINK_LIBRARIES dunegrid)
+dune_add_test(SOURCES test-oned.cc)
 
 dune_add_test(SOURCES test-mcmg-geogrid.cc)
 
@@ -38,22 +35,20 @@ dune_add_test(SOURCES testiteratorranges.cc)
 dune_add_test(SOURCES test-hierarchicsearch.cc)
 
 dune_add_test(SOURCES test-ug.cc
-              LINK_LIBRARIES dunegrid
               COMPILE_DEFINITIONS DUNE_GRID_EXAMPLE_GRIDS_PATH=\"${PROJECT_SOURCE_DIR}/doc/grids/\"
               CMAKE_GUARD dune-uggrid_FOUND)
 
 dune_add_test(SOURCES test-parallel-ug.cc
-              LINK_LIBRARIES dunegrid
               CMAKE_GUARD dune-uggrid_FOUND
               MPI_RANKS 1 2 3 4 8
               TIMEOUT 300)
+add_dune_mpi_flags(test-parallel-ug)
 
 dune_add_test(SOURCES test-loadbalancing.cc
-              LINK_LIBRARIES dunegrid
               CMAKE_GUARD dune-uggrid_FOUND)
+add_dune_parmetis_flags(test-loadbalancing)
 
 dune_add_test(SOURCES issue-53-uggrid-intersections.cc
-              LINK_LIBRARIES dunegrid
               CMAKE_GUARD dune-uggrid_FOUND)
 
 # The alberta tests are only alibi-ported, until the  grid and world dimension
