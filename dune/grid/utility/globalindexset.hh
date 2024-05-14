@@ -47,6 +47,7 @@
 /** include base class functionality for the communication interface */
 #include <dune/grid/common/gridenums.hh>
 #include <dune/grid/common/datahandleif.hh>
+#include <dune/grid/utility/entityownertype.hh>
 
 /** include parallel capability */
 #if HAVE_MPI
@@ -105,121 +106,6 @@ namespace Dune
 
     typedef std::map<IdType,Index> MapId2Index;
     typedef std::map<Index,Index>    IndexMap;
-
-    /*********************************************************************************************/
-    /* calculate unique partitioning for all entities of a given codim in a given GridView,      */
-    /* assuming they all have the same geometry, i.e. codim, type                                */
-    /*********************************************************************************************/
-    class UniqueEntityPartition
-    {
-    private:
-      /* A DataHandle class to calculate the minimum of a std::vector which is accompanied by an index set */
-      template<class IS, class V> // mapper type and vector type
-      class MinimumExchange
-      : public Dune::CommDataHandleIF<MinimumExchange<IS,V>,typename V::value_type>
-      {
-      public:
-        //! export type of data for message buffer
-        typedef typename V::value_type DataType;
-
-        //! returns true if data for this codim should be communicated
-        bool contains (int /*dim*/, unsigned int codim) const
-        {
-          return codim==indexSetCodim_;
-        }
-
-        //! returns true if size per entity of given dim and codim is a constant
-        bool fixedSize (int /*dim*/, int /*codim*/) const
-        {
-          return true ;
-        }
-
-        /*! how many objects of type DataType have to be sent for a given entity
-         *
-         *  Note: Only the sender side needs to know this size. */
-        template<class EntityType>
-        std::size_t size (EntityType&) const
-        {
-          return 1 ;
-        }
-
-        /*! pack data from user to message buffer */
-        template<class MessageBuffer, class EntityType>
-        void gather (MessageBuffer& buff, const EntityType& e) const
-        {
-          buff.write(v_[indexset_.index(e)]);
-        }
-
-        /** \brief Unpack data from message buffer to user
-         *
-         * \param n The number of objects sent by the sender
-         */
-        template<class MessageBuffer, class EntityType>
-        void scatter (MessageBuffer& buff, const EntityType& e, std::size_t)
-        {
-          DataType x;
-          buff.read(x);
-          if (x>=0) // other is -1 means, he does not want it
-            v_[indexset_.index(e)] = std::min(x,v_[indexset_.index(e)]);
-        }
-
-        //! constructor
-        MinimumExchange (const IS& indexset, V& v, unsigned int indexSetCodim)
-        : indexset_(indexset),
-          v_(v),
-          indexSetCodim_(indexSetCodim)
-        {}
-
-      private:
-        const IS& indexset_;
-        V& v_;
-        unsigned int indexSetCodim_;
-      };
-
-    public:
-      /*! \brief Constructor needs to know the grid function space
-       */
-      UniqueEntityPartition (const GridView& gridview, unsigned int codim)
-      : assignment_(gridview.size(codim))
-      {
-        /** extract types from the GridView data type */
-        typedef typename GridView::IndexSet IndexSet;
-
-        // assign own rank to entities that I might have
-        for (auto it = gridview.template begin<0>(); it!=gridview.template end<0>(); ++it)
-          for (unsigned int i=0; i<it->subEntities(codim); i++)
-          {
-            // Evil hack: I need to call subEntity, which needs the entity codimension as a static parameter.
-            // However, we only have it as a run-time parameter.
-            PartitionType subPartitionType = SubPartitionTypeProvider<typename GridView::template Codim<0>::Entity, GridView::dimension>::get(*it,codim,i);
-
-            assignment_[gridview.indexSet().subIndex(*it,i,codim)]
-              = ( subPartitionType==Dune::InteriorEntity or subPartitionType==Dune::BorderEntity )
-              ? gridview.comm().rank()  // set to own rank
-              : - 1;   // it is a ghost entity, I will not possibly own it.
-          }
-
-        /** exchange entity index through communication */
-        MinimumExchange<IndexSet,std::vector<Index> > dh(gridview.indexSet(),assignment_,codim);
-
-        gridview.communicate(dh,Dune::All_All_Interface,Dune::ForwardCommunication);
-      }
-
-      /** \brief Which rank is the i-th entity assigned to? */
-      int owner(std::size_t i)
-      {
-        return assignment_[i];
-      }
-
-      /** \brief Report the number of entities assigned to the rank 'rank' */
-      std::size_t numOwners(int rank) const
-      {
-        return std::count(assignment_.begin(), assignment_.end(), rank);
-      }
-
-    private:
-      std::vector<int> assignment_;
-    };
 
   private:
     /* A DataHandle class to communicate the global index from the
@@ -332,13 +218,15 @@ namespace Dune
 
       const typename GridView::IndexSet& indexSet = gridview.indexSet();
 
-      std::unique_ptr<UniqueEntityPartition> uniqueEntityPartition;
-      if (codim_!=0)
-        uniqueEntityPartition = std::make_unique<UniqueEntityPartition>(gridview,codim_);
+      std::unique_ptr<EntityOwnerType<GridView>> uniqueEntityPartition;
+      if (codim_ != 0)
+        uniqueEntityPartition = std::make_unique<EntityOwnerType<GridView>>(gridview, codim_);
 
-      int nLocalEntity = (codim_==0)
-                    ? std::distance(gridview.template begin<0, Dune::Interior_Partition>(), gridview.template end<0, Dune::Interior_Partition>())
-                    : uniqueEntityPartition->numOwners(rank);
+      int nLocalEntity = (codim_ == 0)
+        ? std::distance(
+            gridview.template begin<0, Dune::Interior_Partition>(),
+            gridview.template end<0, Dune::Interior_Partition>())
+        : uniqueEntityPartition->countOwner();
 
       // Compute the global, non-redundant number of entities, i.e. the number of entities in the set
       // without double, aka. redundant entities, on the interprocessor boundary via global reduce. */
@@ -422,7 +310,7 @@ namespace Dune
 
           firstTime[idx] = false;
 
-          if (uniqueEntityPartition->owner(idx) == rank)  /** if the entity is owned by the process, go ahead with computing the global index */
+          if (uniqueEntityPartition->ownerType(*iter,i,codim_) == OwnerType::Owner)  /** if the entity is owned by the process, go ahead with computing the global index */
           {
             const Index gindex = myoffset + globalcontrib;    /** compute global index */
             globalIndex_.insert(std::make_pair(id,gindex)); /** insert pair (key, value) into the map */
