@@ -313,9 +313,9 @@ namespace Dune
     PartitionType partitionType () const { return realEntity.partitionType(); }
 
     //! Return the partition type of the i'th subentity of codimension `codim`
-    PartitionType subPartitionType (int i, unsigned int codim) const
+    PartitionType partitionType (int i, unsigned int codim) const
     {
-      return realEntity.subPartitionType(i, codim);
+      return realEntity.partitionType(i, codim);
     }
 
     //! @copydoc Dune::Entity::geometry()
@@ -672,7 +672,7 @@ namespace Dune
 
     /**\brief Returns the partition type of the i'th subEntity of codimension `codim`
      */
-    PartitionType subPartitionType (int i, unsigned int codim) const
+    PartitionType partitionType (int i, unsigned int codim) const
     {
       return Dune::Hybrid::switchCases(std::make_index_sequence<dim+1>{}, codim,
       [&](auto cd) { return asImp().template subEntity<cd>(i).partitionType(); },

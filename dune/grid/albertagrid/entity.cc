@@ -188,6 +188,13 @@ namespace Dune
 
 
   template< int dim, class Grid >
+  inline PartitionType
+  AlbertaGridEntity< 0, dim, Grid >::partitionType (int /*i*/, unsigned int /*codim*/) const
+  {
+    return InteriorEntity;
+  }
+
+  template< int dim, class Grid >
   inline bool AlbertaGridEntity< 0, dim,Grid >::isLeaf () const
   {
     return elementInfo_.isLeaf();

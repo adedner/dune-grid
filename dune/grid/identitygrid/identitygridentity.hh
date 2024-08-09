@@ -307,9 +307,9 @@ namespace Dune {
     }
 
     //! Return the partition type of the i'th subentity of codimension `codim`
-    PartitionType subPartitionType (int i, unsigned int codim) const
+    PartitionType partitionType (int i, unsigned int codim) const
     {
-      return hostEntity_.subPartitionType(i, codim);
+      return hostEntity_.partitionType(i, codim);
     }
 
     //! Geometry of this entity

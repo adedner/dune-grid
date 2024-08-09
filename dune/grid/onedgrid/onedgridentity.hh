@@ -332,7 +332,7 @@ namespace Dune {
     PartitionType partitionType () const { return InteriorEntity; }
 
     //! only interior entities
-    PartitionType subPartitionType (int /*i*/, unsigned int /*codim*/) const
+    PartitionType partitionType (int /*i*/, unsigned int /*codim*/) const
     {
       return InteriorEntity;
     }

@@ -89,7 +89,7 @@ requires(const E e, int maxLevel, int i, unsigned int codim)
   { e.isNew()                    } -> std::convertible_to<bool>;
   { e.mightVanish()              } -> std::convertible_to<bool>;
   { e.hasBoundaryIntersections() } -> std::convertible_to<bool>;
-  { e.subPartitionType(i,codim)  } -> std::convertible_to<Dune::PartitionType>;
+  { e.partitionType(i,codim)     } -> std::convertible_to<Dune::PartitionType>;
 
   requires std::same_as<E, typename E::template Codim<0>::Entity>;
 } &&
