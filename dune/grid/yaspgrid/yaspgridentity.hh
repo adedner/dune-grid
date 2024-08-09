@@ -487,6 +487,28 @@ namespace Dune {
       return GhostEntity;
     }
 
+    PartitionType partitionType (int i, unsigned int codim) const
+    {
+      if (codim == 0) {
+        assert( i == 0 );
+        return partitionType();
+      } else if (0 < codim && codim <= dim) {
+        I it = subEntityIt(i,codim);
+        if (_g->interior[codim].inside(it.coord(),it.shift()))
+          return InteriorEntity;
+        if (_g->interiorborder[codim].inside(it.coord(),it.shift()))
+          return BorderEntity;
+        if (_g->overlap[codim].inside(it.coord(),it.shift()))
+          return OverlapEntity;
+        if (_g->overlapfront[codim].inside(it.coord(),it.shift()))
+          return FrontEntity;
+        return GhostEntity;
+      } else {
+        DUNE_THROW(GridError, "Impossible codim=" << codim);
+        return PartitionType{};
+      }
+    }
+
     //! geometry of this entity
     Geometry geometry () const {
       // the element geometry
@@ -544,8 +566,16 @@ namespace Dune {
     template<int cc>
     typename Codim<cc>::Entity subEntity (int i) const
     {
+      using SubEntity = typename Codim<cc>::Entity;
+      return SubEntity(YaspEntity<cc,GridImp::dimension,GridImp>(_g, subEntityIt(i,cc)));
+    }
+
+  private:
+    // compute the iterator defining the subEntity
+    I subEntityIt (int i, unsigned int codim) const
+    {
       // calculate move bitset
-      std::bitset<dim> move = Dune::Yasp::entityMove<dim>(i,cc);
+      std::bitset<dim> move = Dune::Yasp::entityMove<dim>(i,codim);
 
       // get the coordinate and modify it
       iTupel coord = _it.coord();
@@ -553,10 +583,11 @@ namespace Dune {
         if (move[j])
           coord[j]++;
 
-      int which = _g->overlapfront[cc].shiftmapping(Dune::Yasp::entityShift<dim>(i,cc));
-      return typename Codim<cc>::Entity(YaspEntity<cc,GridImp::dimension,GridImp>(_g,_g->overlapfront[cc].begin(coord, which)));
+      int which = _g->overlapfront[codim].shiftmapping(Dune::Yasp::entityShift<dim>(i,codim));
+      return _g->overlapfront[codim].begin(coord, which);
     }
 
+  public:
     //! Inter-level access to father element on coarser grid. Assumes that meshes are nested.
     Entity father () const
     {
