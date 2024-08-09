@@ -857,6 +857,8 @@ namespace Dune
         return hostEntity().partitionType(i, codim);
       }
 
+      using Base::partitionType;
+
       bool isRegular () const
       {
         return hostEntity().isRegular();
