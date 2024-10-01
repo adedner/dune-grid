@@ -30,6 +30,9 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 - `MultipleCodimMultipleGeomTypeMapper` is assignable.
 
+- Add member function `partitionType(i,codim)` to grid entity implementations, which returns
+  the partition type of the `i`th subEntity of codimension `codim` of an entity of codimension 0.
+
 ## Python
 
 - Improve pickling support (GridViews and some GridFunction objects can now be pickled).

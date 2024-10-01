@@ -157,6 +157,15 @@ struct CheckPartitionType< GridView, pitype >::CheckCodim
                       << idSet.id( *it ) << " with partition type " << ept << "." << std::endl;
           }
 
+          if( pt != it->partitionType(i,codim) )
+          {
+            std::cerr << "Error: Codim " << codim << " entity " << idSet.subId( *it, i, codim )
+                      << " with partition type " << pt << " has inconsistent partition type"
+                      << " to the sub-partition type of entity "
+                      << idSet.id( *it ) << ", which is " << it->partitionType(i,codim)
+                      << "." << std::endl;
+          }
+
           const MapIterator mapIt = map.find( idSet.subId( *it, i, codim ) );
           if( mapIt == map.end() )
           {

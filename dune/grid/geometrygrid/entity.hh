@@ -851,6 +851,14 @@ namespace Dune
         return HierarchicIteratorImpl( grid(), hostEntity().hend( maxLevel ) );
       }
 
+      //! Return the partition type of the i'th subentity of codimension `codim`
+      PartitionType partitionType (int i, unsigned int codim) const
+      {
+        return hostEntity().partitionType(i, codim);
+      }
+
+      using Base::partitionType;
+
       bool isRegular () const
       {
         return hostEntity().isRegular();

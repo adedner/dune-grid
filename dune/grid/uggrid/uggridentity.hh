@@ -397,6 +397,21 @@ namespace Dune {
 #endif
     }
 
+    /** \brief The partition type of the ith subentity of codimension codim */
+    PartitionType partitionType (int i, unsigned int codim) const
+    {
+#ifndef ModelP
+      return InteriorEntity;
+#else
+      return Dune::Hybrid::switchCases(std::make_index_sequence<dim+1>{}, codim,
+      [&](auto cd) { return this->template subEntity<cd>(i).partitionType(); },
+      [&] {
+          DUNE_THROW(Dune::Exception, "Invalid codimension codim=" << codim);
+          return PartitionType{};
+      });
+#endif
+    }
+
     /** \brief Get the partition type of each copy of a distributed entity
      *
      * This is a non-interface method, intended mainly for debugging and testing.
