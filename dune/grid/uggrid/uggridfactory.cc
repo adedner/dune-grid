@@ -299,9 +299,16 @@ createGrid()
   grid_->numBoundarySegments_ = boundarySegments.size();
   std::string domainName = grid_->name_ + "_Domain";
 
-  auto* ugDomain =UG_NS<dimworld>::CreateDomain(domainName.c_str(),     // The domain name
+  auto ugDomainDeleter = [domainName](auto ptr){
+    std::destroy_at(ptr);
+    UG_NS<dimworld>::RemoveDomain(domainName.c_str());
+  };
+  auto* ugDomainRaw =UG_NS<dimworld>::CreateDomain(domainName.c_str(),     // The domain name
                                                 grid_->numBoundarySegments_,
                                                 noOfBNodes);
+  using UGDomainPtr = std::unique_ptr<std::decay_t<decltype(*ugDomainRaw)>, decltype(ugDomainDeleter)>;
+  UGDomainPtr ugDomain{std::exchange(ugDomainRaw, nullptr), std::move(ugDomainDeleter)};
+
   if (ugDomain == nullptr)
     DUNE_THROW(GridError, "Calling UG::" << dimworld << "d::CreateDomain failed!");
 
@@ -573,12 +580,6 @@ createBegin()
   elementTypes_.resize(0);
   elementVertices_.resize(0);
   vertexPositions_.resize(0);
-
-  // //////////////////////////////////////////////////////////
-  //   Delete the UG domain, if it exists
-  // //////////////////////////////////////////////////////////
-  std::string domainName = grid_->name_ + "_Domain";
-  UG_NS<dimworld>::RemoveDomain(domainName.c_str());
 }
 
 
