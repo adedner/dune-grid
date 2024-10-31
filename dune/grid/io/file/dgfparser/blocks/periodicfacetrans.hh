@@ -79,26 +79,13 @@ namespace Dune
       // initialize block and get dimension of world
       PeriodicFaceTransformationBlock ( std::istream &in, int dimworld );
 
-      const AffineTransformation &transformation ( int i ) const
-      {
-        assert( i < numTransformations() );
-        return transformations_[ i ];
-      }
+      const AffineTransformation& transformation ( int i ) const;
 
-      int numTransformations () const
-      {
-        return transformations_.size();
-      }
+      int numTransformations () const;
 
     private:
       void match ( char what );
     };
-
-
-
-    // PeriodicFaceTransformationBlock::AffineTransformation
-    // -----------------------------------------------------
-
 
     inline std::ostream &
     operator<< ( std::ostream &out, const PeriodicFaceTransformationBlock::AffineTransformation &trafo )
