@@ -63,6 +63,20 @@ namespace Dune
       }
     }
 
+
+    int PeriodicFaceTransformationBlock::numTransformations() const
+    {
+      return transformations_.size();
+    };
+
+
+    const PeriodicFaceTransformationBlock::AffineTransformation&
+    PeriodicFaceTransformationBlock::transformation (int i) const
+    {
+      assert( i < numTransformations() );
+      return transformations_[ i ];
+    }
+
   } // end namespace dgf
 
 } // end namespace Dune
