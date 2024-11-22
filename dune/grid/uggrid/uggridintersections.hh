@@ -303,19 +303,19 @@ namespace Dune {
       const typename UG_NS<dim>::Element* outside = otherFace->first;
 
       // outside is on a lower level.  we have to check whether vertices match
-      int numInsideIntersectionVertices  = UG_NS<dim>::Corners_Of_Side(center_, neighborCount_);
-      int numOutsideIntersectionVertices = UG_NS<dim>::Corners_Of_Side(outside, otherFace->second);
+      unsigned char numInsideIntersectionVertices  = UG_NS<dim>::Corners_Of_Side(center_, neighborCount_);
+      unsigned char numOutsideIntersectionVertices = UG_NS<dim>::Corners_Of_Side(outside, otherFace->second);
       if (numInsideIntersectionVertices != numOutsideIntersectionVertices)
         return false;
 
       // Loop over all vertices of the face of this element that corresponds to this intersection
-      for (int i=0; i<numInsideIntersectionVertices; i++) {
+      for (unsigned char i=0; i<numInsideIntersectionVertices; i++) {
 
         const typename UG_NS<dim>::Vertex* insideVertex = UG_NS<dim>::Corner(center_, UG_NS<dim>::Corner_Of_Side(center_, neighborCount_, i))->myvertex;
 
         // Loop over all vertices of the corresponding element side of the outside element
         bool vertexFound = false;
-        for (int j=0; j<numOutsideIntersectionVertices; j++) {
+        for (unsigned char j=0; j<numOutsideIntersectionVertices; j++) {
 
           // get vertex
           const typename UG_NS<dim>::Vertex* outsideVertex = UG_NS<dim>::Corner(outside, UG_NS<dim>::Corner_Of_Side(outside, otherFace->second, j))->myvertex;

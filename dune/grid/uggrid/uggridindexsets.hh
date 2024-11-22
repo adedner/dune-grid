@@ -464,7 +464,7 @@ namespace Dune {
       // Get all corners of the face
       std::set<const typename UG_NS<dim>::Vertex*> corners;
 
-      for (int i=0; i<UG_NS<dim>::Corners_Of_Side(face.first, face.second); i++)
+      for (unsigned char i=0; i<UG_NS<dim>::Corners_Of_Side(face.first, face.second); i++)
         corners.insert(UG_NS<dim>::Corner(face.first, UG_NS<dim>::Corner_Of_Side(face.first, face.second, i))->myvertex);
 
       // Loop over all faces of the father element and look for a face that has the same vertices
@@ -473,7 +473,7 @@ namespace Dune {
         // Copy father face into set
         std::set<const typename UG_NS<dim>::Vertex*> fatherFaceCorners;
 
-        for (int j=0; j<UG_NS<dim>::Corners_Of_Side(resultFace.first, i); j++)
+        for (unsigned char j=0; j<UG_NS<dim>::Corners_Of_Side(resultFace.first, i); j++)
           fatherFaceCorners.insert(UG_NS<dim>::Corner(resultFace.first, UG_NS<dim>::Corner_Of_Side(resultFace.first, i, j))->myvertex);
 
         // Do the vertex sets match?

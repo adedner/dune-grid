@@ -230,7 +230,7 @@ UGGridEntity < 0, dim, GridImp>::geometryInFather () const
   // loop through all corner nodes
   auto cornerCoordinates = LocalGeometryImpl::makeCornerStorage(UG_NS<dim>::Corners_Of_Elem(target_));
 
-  for (int i=0; i<UG_NS<dim>::Corners_Of_Elem(target_); i++) {
+  for (unsigned char i=0; i != UG_NS<dim>::Corners_Of_Elem(target_); ++i) {
 
     // get corner node pointer
     const typename UG_NS<dim>::Node* fnode = UG_NS<dim>::Corner(target_,i);

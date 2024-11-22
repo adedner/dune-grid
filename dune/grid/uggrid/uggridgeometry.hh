@@ -176,7 +176,7 @@ namespace Dune {
     using MultiLinearGeometry<typename GridImp::ctype, 2, 3, UGGridGeometryTraits<typename GridImp::ctype>>::MultiLinearGeometry;
 
     // factory of uninitialized corner storage used to construct this geometry
-    static auto makeCornerStorage(std::size_t count) {
+    static auto makeCornerStorage(unsigned char count) {
       return ReservedVector<FieldVector<typename GridImp::ctype,3>, 4>(count);
     }
   };
@@ -197,7 +197,8 @@ namespace Dune {
     using MultiLinearGeometry<typename GridImp::ctype, 1, 3, UGGridGeometryTraits<typename GridImp::ctype>>::MultiLinearGeometry;
 
     // factory of uninitialized corner storage used to construct this geometry
-    static auto makeCornerStorage(std::size_t) {
+    static auto makeCornerStorage(unsigned char count) {
+      assert(count == 2);
       return std::array<FieldVector<typename GridImp::ctype, 3>, 2>();
     }
   };
@@ -218,7 +219,8 @@ namespace Dune {
     using MultiLinearGeometry<typename GridImp::ctype,1,2, UGGridGeometryTraits<typename GridImp::ctype>>::MultiLinearGeometry;
 
     // factory of uninitialized corner storage used to construct this geometry
-    static auto makeCornerStorage(std::size_t) {
+    static auto makeCornerStorage(unsigned char count) {
+      assert(count == 2);
       return std::array<FieldVector<typename GridImp::ctype, 2>, 2>();
     }
   };

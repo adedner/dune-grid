@@ -500,10 +500,10 @@ namespace Dune {
       UG_NS< UG_DIM >::Element* center;
       unsigned int side;
       UG_NS< UG_DIM >::GetElementAndSideFromSideVector(theVector, center, side);
-      int n = Corners_Of_Side(center, side);
-      for (int i = 0; i < n; i++)
+      unsigned char n = Corners_Of_Side(center, side);
+      for (unsigned char i = 0; i < n; i++)
       {
-        unsigned idxInElem = Corner_Of_Side(center, side, i);
+        unsigned char idxInElem = Corner_Of_Side(center, side, i);
         x[i] = Corner(center, idxInElem)->myvertex->iv.x.data();
       }
       return n;
@@ -621,38 +621,38 @@ namespace Dune {
     }
 
     //! \todo Please doc me!
-    static int Corners_Of_Elem(const UG_NS< UG_DIM >::Element* theElement) {
+    static unsigned char Corners_Of_Elem(const UG_NS< UG_DIM >::Element* theElement) {
       using UG_NAMESPACE ::element_descriptors;
       using UG::UINT;
-      return CORNERS_OF_ELEM(theElement);
+      return static_cast<unsigned char>(CORNERS_OF_ELEM(theElement));
     }
 
     /** \Brief the 'number of corners' of a vertex, i.e., 1.  Here for consistency
         \return 1
      */
-    static int Corners_Of_Elem(const UG_NS< UG_DIM >::Node* theNode) {
+    static unsigned char Corners_Of_Elem(const UG_NS< UG_DIM >::Node* theNode) {
       return 1;
     }
 
     //! Return number of corners of a given side
-    static int Corners_Of_Side(const UG_NS< UG_DIM >::Element* theElement, int side) {
+    static unsigned char Corners_Of_Side(const UG_NS< UG_DIM >::Element* theElement, int side) {
       using UG_NAMESPACE ::element_descriptors;
       using UG::UINT;
-      return CORNERS_OF_SIDE(theElement, side);
+      return static_cast<unsigned char>(CORNERS_OF_SIDE(theElement, side));
     }
 
     //! Return local number of a given corner of a given element side
-    static int Corner_Of_Side(const UG_NS< UG_DIM >::Element* theElement, int side, int corner) {
+    static unsigned char Corner_Of_Side(const UG_NS< UG_DIM >::Element* theElement, int side, int corner) {
       using UG_NAMESPACE ::element_descriptors;
       using UG::UINT;
-      return CORNER_OF_SIDE(theElement, side, corner);
+      return static_cast<unsigned char>(CORNER_OF_SIDE(theElement, side, corner));
     }
 
     //! Return local number of a given corner of a given element edge
-    static int Corner_Of_Edge(const UG_NS< UG_DIM >::Element* theElement, int edge, int corner) {
+    static unsigned char Corner_Of_Edge(const UG_NS< UG_DIM >::Element* theElement, int edge, int corner) {
       using UG_NAMESPACE ::element_descriptors;
       using UG::UINT;
-      return CORNER_OF_EDGE(theElement, edge, corner);
+      return static_cast<unsigned char>(CORNER_OF_EDGE(theElement, edge, corner));
     }
 
     //! Return number of sons of an element

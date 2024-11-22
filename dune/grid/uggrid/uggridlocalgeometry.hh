@@ -35,11 +35,13 @@ namespace Dune {
     using MultiLinearGeometry<typename GridImp::ctype, mydim, coorddim, UGGridGeometryTraits<typename GridImp::ctype>>::MultiLinearGeometry;
 
     // factory of uninitialized corner storage used to construct this geometry
-    static auto makeCornerStorage(std::size_t count) {
-      if constexpr (mydim < 2) // storage when simplex(dim) == cube(dim)
+    static auto makeCornerStorage(unsigned char count) {
+      if constexpr (mydim < 2) { // storage when simplex(dim) == cube(dim)
+        assert(count == (1 << mydim));
         return std::array<FieldVector<typename GridImp::ctype, coorddim>, (1 << mydim)>{};
-      else // storage when simplex(dim) != cube(dim)
+      } else { // storage when simplex(dim) != cube(dim)
         return ReservedVector<FieldVector<typename GridImp::ctype, coorddim>, (1 << mydim)>(count);
+      }
     }
   };
 
