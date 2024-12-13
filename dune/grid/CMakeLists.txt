@@ -20,5 +20,6 @@ install(FILES
   identitygrid.hh
   onedgrid.hh
   uggrid.hh
+  virtualizedgrid.hh
   yaspgrid.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/grid)
