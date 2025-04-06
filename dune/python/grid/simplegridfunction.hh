@@ -39,7 +39,7 @@ namespace Dune
 
       void bind ( const Element &element ) { element_ = element; }
       void unbind () { element_.reset(); }
-      bool bound () { return element_.has_value(); }
+      bool bound () const { return element_.has_value(); }
 
       template< class X >
       auto operator() ( const X &x ) const
