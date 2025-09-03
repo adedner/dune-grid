@@ -173,6 +173,7 @@ namespace Dune {
 
     using Base = GridDefaultImplementation<dim,dim,typename Coordinates::ctype,YaspGridFamily<dim, Coordinates> >;
   protected:
+    using Base::incrementSequence;
 
   public:
     //! Type used for coordinates
@@ -1262,6 +1263,9 @@ namespace Dune {
 
         indexsets.push_back( std::make_shared<YaspIndexSet<const YaspGrid<dim,Coordinates>, false > >(*this,maxLevel()) );
       }
+
+      // increment counter to indicate change
+      incrementSequence();
     }
 
     /**

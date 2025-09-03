@@ -555,6 +555,10 @@ namespace Dune
       GeoGrid::AdaptCoordFunction< typename CoordFunction::Interface >::adapt( coordFunction() );
 
       levelIndexSets_.resize( maxLevel()+1 );
+
+      // increment sequence counter
+      this->incrementSequence();
+      assert( this->sequence() == hostGrid().sequence() );
     }
 
 
