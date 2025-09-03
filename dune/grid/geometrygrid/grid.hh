@@ -558,6 +558,9 @@ namespace Dune
 
       // increment sequence counter
       this->incrementSequence();
+#ifndef NDEBUG
+      if( this->sequence() != hostGrid().sequence() )
+        std::cout << this->sequence() << " " << hostGrid().sequence() << std::endl;
       assert( this->sequence() == hostGrid().sequence() );
     }
 
