@@ -56,11 +56,21 @@ static_assert(EntityGeneral< Archetypes::Entity<2,0> >);
 
 namespace Impl {
 
+  // only check if Codim<cd>::Entity exists
   template<class E, int codim>
-  concept EntityCodimExtended = requires(const E e, int subEntity)
-  {
-    { e.template subEntity<codim>(subEntity) } -> EntityGeneral;
-  };
+  concept EntityCodimExtended =
+  (
+    !requires
+    {
+      typename E::template Codim<codim>::Entity;
+    }
+  ) || (
+    EntityGeneral<typename E::template Codim<codim>::Entity> &&
+    requires(const E e, int subEntity)
+    {
+      { e.template subEntity<codim>(subEntity) } -> std::same_as<typename E::template Codim<codim>::Entity>;
+    }
+  );
 
   template<typename E, std::size_t... c>
   void entityAllCodimsExtended(std::integer_sequence<std::size_t,c...>)
