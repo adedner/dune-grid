@@ -5,6 +5,8 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 # Master (will become release 2.11)
 
+- Implement missing sub-indices of sub-entities in the index set of `UGGrid`.
+
 - Make `YaspGrid` compatible with MSVC's implementation of the C++ Standard Library.
 
 # Release 2.10
