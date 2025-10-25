@@ -690,6 +690,7 @@ namespace Dune
      * @param v The container with the values of the grid function for each cell.
      * @param name A name to identify the grid function.
      * @param ncomps Number of components (default is 1).
+     * \param prec The precision type with which to write the data.
      */
     template<class Container>
     void addCellData (const Container& v, const std::string &name, int ncomps = 1,
@@ -755,6 +756,7 @@ namespace Dune
      * @param v The container with the values of the grid function for each vertex.
      * @param name A name to identify the grid function.
      * @param ncomps Number of components (default is 1).
+     * \param prec The precision type with which to write the data.
      */
     template<class Container>
     void addVertexData (const Container& v, const std::string &name, int ncomps=1,
