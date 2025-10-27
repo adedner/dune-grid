@@ -633,6 +633,9 @@ void UGGrid < dim >::setIndices(bool setLevelZero,
   leafIndexSet_.update(nodePermutation);
 
   // id sets don't need updating
+
+  // increase sequence counter
+  this->incrementSequence();
 }
 
 // /////////////////////////////////////////////////////////////////////////////////

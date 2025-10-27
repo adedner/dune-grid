@@ -971,8 +971,16 @@ namespace Dune {
       return false;
     }
 
+    /*! \brief return current sequence counter of grid */
+    int sequence() const { return sequence_; }
+
   protected:
     using Grid< dim, dimworld, ct, GridFamily >::asImp;
+
+    //! increment sequence counter when grid has changed
+    void incrementSequence() { ++sequence_; }
+
+    int sequence_ = 0; //! sequence counter
   };
 
   /** @} */
