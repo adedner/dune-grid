@@ -333,7 +333,7 @@ namespace Dune {
     PersistentIndexType persistentIndex () const
     {
       // get size of global grid (in elements)
-      std::array<int,dim> size;
+      std::array<int,dim> size, coord;
 
       for (int i=0; i<dim; i++)
       {
@@ -341,6 +341,9 @@ namespace Dune {
         size[i] = _g->mg->levelSize(_g->level(), i);
         if (!_it.shift(i))
           size[i]++;
+        coord[i] = _it.coord(i);
+        if (coord[i]<0) coord[i] += size[i];
+        if (coord[i]>=size[i]) coord[i] -= size[i];
       }
 
       // encode codim
@@ -354,7 +357,7 @@ namespace Dune {
       for (int i=dim-1; i>=0; i--)
       {
         id = id << yaspgrid_dim_bits;
-        id = id+PersistentIndexType(_it.coord(i));
+        id = id+PersistentIndexType(coord[i]);
       }
 
       return id;
@@ -371,19 +374,33 @@ namespace Dune {
     {
       // get the shift of the entity and the subentity
       // the subentity shift is only available in the space spanned by the entity
-      std::bitset<dim-codim> subent_shift = Dune::Yasp::entityShift<dim-codim>(i,cc-codim);
-      std::bitset<dim-codim> subent_move = Dune::Yasp::entityMove<dim-codim>(i,cc-codim);
-
       std::bitset<dim> shift = _it.shift();
+      std::bitset<dim-codim> subent_shift = Dune::Yasp::entityShift<dim-codim>(i,cc-codim);
+
+      std::bitset<dim-codim> subent_move = Dune::Yasp::entityMove<dim-codim>(i,cc-codim);
+      std::cout << "subent_shift " << subent_shift << std::endl
+                << "subent_move " << subent_move << std::endl;
+      std::array<int, dim> size = _g->mg->levelSize(_g->level());
       std::array<int, dim> coord = _it.coord();
+
+      // identify the correct shift of the subentity in question
       for (int j=0, k=0; j<dim; j++)
       {
-        if (!shift[j])
-          continue;
+        // check entity shift
+        if (shift[i])
+        {
+          coord[j] += subent_move[k];
+          shift[j] = subent_shift[k];
+          k++;
+        }
+      }
 
-        coord[j] += subent_move[k];
-        shift[j] = subent_shift[k];
-        k++;
+      for (int j=0, k=0; j<dim; j++)
+      {
+        size[j] += shift[j] ? 0 : 1;
+        // do correction for periodic boundaries.
+        if (coord[j]<0) coord[j] += size[j];
+        if (coord[j]>=size[j]) coord[j] -= size[j];
       }
 
       int which = _g->overlapfront[cc].shiftmapping(shift);
@@ -490,26 +507,7 @@ namespace Dune {
     //! geometry of this entity
     Geometry geometry () const {
       // the element geometry
-      auto ll = _it.lowerleft();
-      auto ur = _it.upperright();
-
-      // If on periodic overlap, transform coordinates by domain size
-      for (int i=0; i<dimworld; i++) {
-        if (gridlevel()->mg->isPeriodic(i)) {
-          int coord = transformingsubiterator().coord(i);
-          if (coord < 0) {
-            auto size = _g->mg->domainSize()[i];
-            ll[i] += size;
-            ur[i] += size;
-          } else if (coord + 1 > gridlevel()->mg->levelSize(gridlevel()->level(),i)) {
-            auto size = _g->mg->domainSize()[i];
-            ll[i] -= size;
-            ur[i] -= size;
-          }
-        }
-      }
-
-      GeometryImpl _geometry(ll,ur);
+      GeometryImpl _geometry(_it.lowerleft(),_it.upperright());
       return Geometry( _geometry );
     }
 
@@ -682,6 +680,19 @@ namespace Dune {
     //! globally unique, persistent index
     PersistentIndexType persistentIndex () const
     {
+      // get size of global grid
+#warning check other places, perhaps there is a better way to get size
+      const iTupel& size =  _g->mg->levelSize(_g->level());
+
+      // create "unique" coordinate correction for periodic boundaries
+      int coord[dim];
+      for (int i=0; i<dim; i++)
+      {
+        coord[i] = _it.coord(i);
+        if (coord[i]<0) coord[i] += size[i];
+        if (coord[i]>=size[i]) coord[i] -= size[i];
+      }
+
       // encode codim
       PersistentIndexType id(_it.shift().to_ulong());
 
@@ -694,7 +705,7 @@ namespace Dune {
       for (int i=dim-1; i>=0; i--)
       {
         id = id << yaspgrid_dim_bits;
-        id = id+PersistentIndexType(_it.coord(i));
+        id = id+PersistentIndexType(coord[i]);
       }
 
       return id;
@@ -726,10 +737,11 @@ namespace Dune {
         // move the coordinates to the cell on which the entity lives
         if (move[j])
           coord[j]++;
-      }
 
-      for (int j=0; j<dim; j++)
-      {
+        // do correction for periodic boundaries.
+        if (coord[j]<0) coord[j] += size[j];
+        if (coord[j]>=size[j]) coord[j] -= size[j];
+
         // in the codim==dim case, count trailing zeroes.
         if (cc == dim)
         {
@@ -767,9 +779,17 @@ namespace Dune {
       std::bitset<dim> shift = Dune::Yasp::entityShift<dim>(i,cc);
       std::bitset<dim> move = Dune::Yasp::entityMove<dim>(i,cc);
 
+      std::array<int,dim> size = _g->mg->levelSize(_g->level());
       std::array<int, dim> coord = _it.coord();
       for (int j=0; j<dim; j++)
+      {
+        size[j] += !shift[j];
         coord[j] += move[j];
+
+        // do correction for periodic boundaries.
+        if (coord[j]<0) coord[j] += size[j];
+        if (coord[j]>=size[j]) coord[j] -= size[j];
+      }
 
       int which = _g->overlapfront[cc].shiftmapping(shift);
       return _g->overlapfront[cc].superindex(coord,which);
@@ -891,10 +911,18 @@ namespace Dune {
       // get coordinate and size of global grid
       iTupel size = _g->mg->levelSize(_g->level());
 
+      int coord[dim];
+
+      // correction for periodic boundaries
       for (int i=0; i<dim; i++)
       {
         // we have vertices, add 1 size to all directions
         size[i]++;
+        coord[i] = _it.coord(i);
+        if (coord[i]<0)
+          coord[i] += size[i];
+        if (coord[i]>=size[i])
+          coord[i] -= size[i];
       }
 
       // determine min number of trailing zeroes
@@ -904,7 +932,7 @@ namespace Dune {
         // count trailing zeros
         int zeros = 0;
         for (int j=0; j<_g->level(); j++)
-          if (_it.coord(i)&(1<<j))
+          if (coord[i]&(1<<j))
             break;
           else
             zeros++;
@@ -925,7 +953,7 @@ namespace Dune {
       for (int i=dim-1; i>=0; i--)
       {
         id = id << yaspgrid_dim_bits;
-        id = id+PersistentIndexType(_it.coord(i)>>trailing);
+        id = id+PersistentIndexType(coord[i]>>trailing);
       }
 
       return id;
