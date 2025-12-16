@@ -50,10 +50,12 @@ int main (int argc , char **argv) {
                YaspFactory<2,Dune::TensorProductCoordinates<double,2> >::buildGrid(true,0,false,true));
 
     // And periodicity
-//    check_yasp(YaspFactory<2,Dune::EquidistantCoordinates<double,2> >::buildGrid(true, 0, true));
-//    check_yasp(YaspFactory<2,Dune::EquidistantOffsetCoordinates<double,2> >::buildGrid(true, 0, true));
-//    check_yasp(YaspFactory<2,Dune::TensorProductCoordinates<double,2> >::buildGrid(true, 0, true));
-
+    check_yasp(testID + "equidistant-periodic",
+               YaspFactory<2,Dune::EquidistantCoordinates<double,2> >::buildGrid(true, 0, true));
+    check_yasp(testID + "equidistantoffset-periodic",
+               YaspFactory<2,Dune::EquidistantOffsetCoordinates<double,2> >::buildGrid(true, 0, true));
+    check_yasp(testID + "tensor-periodic",
+               YaspFactory<2,Dune::TensorProductCoordinates<double,2> >::buildGrid(true, 0, true));
 
   } catch (Dune::Exception &e) {
     std::cerr << e << std::endl;
