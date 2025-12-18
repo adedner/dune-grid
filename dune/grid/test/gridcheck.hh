@@ -1054,9 +1054,8 @@ void gridcheck (Grid &g)
   iteratorEquals(cg);
   iterate<true>(g);
   iterate<false>(cg);
-#warning fix this for yasp
-  // zeroEntityConsistency(g);
-  // zeroEntityConsistency(cg);
+  zeroEntityConsistency(g);
+  zeroEntityConsistency(cg);
   assertNeighbor(g);
   assertNeighbor(cg);
   checkFatherLevel(g);
@@ -1080,9 +1079,9 @@ void gridcheck (Grid &g)
 #warning fix this for yasp
   // note that for some grid this might fail
   // then un comment this test
-  // Dune :: checkIndexSet( g, g.leafGridView(), Dune :: dvverb );
-  // for( int level = 0; level <= g.maxLevel(); ++level )
-  //   Dune :: checkIndexSet( g, g.levelGridView( level ), Dune :: dvverb, true );
+  Dune :: checkIndexSet( g, g.leafGridView(), Dune :: dvverb );
+  for( int level = 0; level <= g.maxLevel(); ++level )
+    Dune :: checkIndexSet( g, g.levelGridView( level ), Dune :: dvverb, true );
 
   // check id sets
   checkIdSet(g, g.localIdSet());
