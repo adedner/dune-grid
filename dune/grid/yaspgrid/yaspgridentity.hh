@@ -783,12 +783,9 @@ namespace Dune {
       std::array<int, dim> coord = _it.coord();
       for (int j=0; j<dim; j++)
       {
+
         size[j] += !shift[j];
         coord[j] += move[j];
-
-        // do correction for periodic boundaries.
-        if (coord[j]<0) coord[j] += size[j];
-        if (coord[j]>=size[j]) coord[j] -= size[j];
       }
 
       int which = _g->overlapfront[cc].shiftmapping(shift);
