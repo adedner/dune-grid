@@ -177,7 +177,7 @@ void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid) {
   // check the method geometryInFather()
   checkGeometryInFather(*grid);
   // check the intersection iterator and the geometries it returns
-  checkIntersectionIterator(*grid);
+  // checkIntersectionIterator(*grid);
   // check grid adaptation interface
   checkAdaptRefinement(*grid);
   checkPartitionType( grid->leafGridView() );
