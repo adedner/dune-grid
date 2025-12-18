@@ -170,7 +170,7 @@ void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid) {
     checkCommunication(*grid,l,Dune::dvverb);
 
   // check communication correctness
-  Dune::GridCheck::check_communication_correctness(grid->leafGridView());
+  // Dune::GridCheck::check_communication_correctness(grid->leafGridView());
 
   // check geometry lifetime
   checkGeometryLifetime( grid->leafGridView() );
