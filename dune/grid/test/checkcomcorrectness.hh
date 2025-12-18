@@ -34,6 +34,9 @@ namespace Dune {
 
   namespace GridCheck {
 
+      template<typename GV>
+      using PeriodicMap = std::function<typename GV::template Codim<0>::Geometry::GlobalCoordinate(typename GV::template Codim<0>::Geometry::GlobalCoordinate)>;
+
       struct SymmetryVerifyingDataHandle
         : public Dune::CommDataHandleIF<SymmetryVerifyingDataHandle,std::size_t>
       {
@@ -109,6 +112,7 @@ namespace Dune {
                                   typename GV::template Codim<0>::Geometry::GlobalCoordinate>
       {
         using ctype = typename GV::ctype;
+        using Coord = typename GV::template Codim<0>::Geometry::GlobalCoordinate;
 
         bool contains([[maybe_unused]] int dim, int codim) const
         {
@@ -130,10 +134,10 @@ namespace Dune {
         void gather(Buf& buf, const E& e) const
         {
           assert(_allowed_writes.count(e.partitionType()) > 0);
-          auto center = e.geometry().center();
-          buf.write(e.geometry().center());
+          auto center = _periodic_map(e.geometry().center());
+          buf.write(center);
           if (_gv.comm().rank() == 0)
-            std::cout << "Gathering from entity " << _mapper.index(e) << " at " << e.geometry().center() << std::endl;
+            std::cout << "Gathering from entity " << _mapper.index(e) << " at " << center << std::endl;
           ++_writes[_mapper.index(e)];
           center -= _coords[_mapper.index(e)];
           assert(Dune::FloatCmp::eq(center.two_norm(),ctype(0)));
@@ -146,8 +150,10 @@ namespace Dune {
           typename E::Geometry::GlobalCoordinate data;
           buf.read(data);
           ++_reads[_mapper.index(e)];
-          auto center = e.geometry().center();
-          data -= e.geometry().center();
+          auto center = _periodic_map(e.geometry().center());
+          data -= center;
+          if(Dune::FloatCmp::ne(data.two_norm(),ctype(0)))
+            std::cout << e.geometry().center() << "\t" << center << "\t" << data << std::endl;
           assert(Dune::FloatCmp::eq(data.two_norm(),ctype(0)));
           center -= _coords[_mapper.index(e)];
           assert(Dune::FloatCmp::eq(center.two_norm(),ctype(0)));
@@ -175,7 +181,7 @@ namespace Dune {
             }
         }
 
-        CommunicationTestDataHandle(GV gv, int codim, const std::unordered_set<Dune::PartitionType>& allowed_writes, const std::unordered_set<Dune::PartitionType>& allowed_reads, const std::vector<typename GV::template Codim<0>::Geometry::GlobalCoordinate>& coords)
+        CommunicationTestDataHandle(GV gv, int codim, const std::unordered_set<Dune::PartitionType>& allowed_writes, const std::unordered_set<Dune::PartitionType>& allowed_reads, const std::vector<Coord>& coords, PeriodicMap<GV> periodic_map)
           : _gv(gv)
           , _codim(codim)
           , _mapper(gv, CodimLayout{_codim})
@@ -184,6 +190,7 @@ namespace Dune {
           , _reads(_mapper.size(),0)
           , _writes(_mapper.size(),0)
           , _coords(coords)
+          , _periodic_map(periodic_map)
         {}
 
         GV _gv;
@@ -194,11 +201,11 @@ namespace Dune {
         mutable std::vector<std::size_t> _reads;
         mutable std::vector<std::size_t> _writes;
         const std::vector<typename GV::template Codim<0>::Geometry::GlobalCoordinate>& _coords;
-
+        const std::function<Coord(Coord)> _periodic_map;
       };
 
       template<typename GV, int cd>
-      void check_communication_correctness_do(GV gv, Codim<cd> codim)
+      void check_communication_correctness_do(GV gv, PeriodicMap<GV> periodic_map, Codim<cd> codim)
       {
         if (gv.grid().comm().rank() == 0)
           {
@@ -217,7 +224,7 @@ namespace Dune {
         for (const auto& e : entities(gv,codim))
           {
             ++count[e.partitionType()];
-            coords[mapper.index(e)] = e.geometry().center();
+            coords[mapper.index(e)] = periodic_map(e.geometry().center());
           }
 
         {
@@ -272,7 +279,7 @@ namespace Dune {
           PTSet writers({InteriorEntity,BorderEntity});
           PTSet readers({InteriorEntity,BorderEntity,OverlapEntity,FrontEntity,GhostEntity});
 
-          CommunicationTestDataHandle<GV> dh(gv,codim,writers,readers,coords);
+          CommunicationTestDataHandle<GV> dh(gv,codim,writers,readers,coords,periodic_map);
           gv.communicate(dh,InteriorBorder_All_Interface,ForwardCommunication);
 
         }
@@ -282,7 +289,7 @@ namespace Dune {
           PTSet writers({InteriorEntity,BorderEntity,OverlapEntity,FrontEntity,GhostEntity});
           PTSet readers({InteriorEntity,BorderEntity});
 
-          CommunicationTestDataHandle<GV> dh(gv,codim,writers,readers,coords);
+          CommunicationTestDataHandle<GV> dh(gv,codim,writers,readers,coords,periodic_map);
           gv.communicate(dh,InteriorBorder_All_Interface,BackwardCommunication);
 
         }
@@ -292,7 +299,7 @@ namespace Dune {
           PTSet writers({InteriorEntity,BorderEntity});
           PTSet readers({InteriorEntity,BorderEntity});
 
-          CommunicationTestDataHandle<GV> dh(gv,codim,writers,readers,coords);
+          CommunicationTestDataHandle<GV> dh(gv,codim,writers,readers,coords,periodic_map);
           gv.communicate(dh,InteriorBorder_InteriorBorder_Interface,ForwardCommunication);
           dh.verify(
             codim,
@@ -315,36 +322,36 @@ namespace Dune {
 
       // Need a forward declaration here
       template<typename GV, int cd>
-      void check_communication_correctness_iter(GV gv, Codim<cd> codim);
+      void check_communication_correctness_iter(GV gv, PeriodicMap<GV> periodic_map, Codim<cd> codim);
 
       // Statically iterate over all codimensions
       template<typename GV, int cd>
-      void check_communication_correctness_iter(GV, Codim<cd>, std::true_type, std::true_type) {}
+      void check_communication_correctness_iter(GV, PeriodicMap<GV>, Codim<cd>, std::true_type, std::true_type) {}
       template<typename GV, int cd>
-      void check_communication_correctness_iter(GV, Codim<cd>, std::false_type, std::true_type) {}
+      void check_communication_correctness_iter(GV, PeriodicMap<GV>, Codim<cd>, std::false_type, std::true_type) {}
 
       template<typename GV, int cd>
-      void check_communication_correctness_iter(GV gv, Codim<cd> codim, std::true_type, std::false_type) {
-        check_communication_correctness_do(gv, codim);
-        check_communication_correctness_iter (gv, Codim<cd+1>());
+      void check_communication_correctness_iter(GV gv, PeriodicMap<GV> periodic_map, Codim<cd> codim, std::true_type, std::false_type) {
+        check_communication_correctness_do(gv, periodic_map, codim);
+        check_communication_correctness_iter (gv, periodic_map, Codim<cd+1>());
       }
       template<typename GV, int cd>
-      void check_communication_correctness_iter(GV gv, Codim<cd> codim, std::false_type, std::false_type) {
-        check_communication_correctness_iter (gv, Codim<cd+1>());
+      void check_communication_correctness_iter(GV gv, PeriodicMap<GV> periodic_map, Codim<cd> codim, std::false_type, std::false_type) {
+        check_communication_correctness_iter (gv, periodic_map, Codim<cd+1>());
       }
 
       template<typename GV, int cd>
-      void check_communication_correctness_iter(GV gv, Codim<cd> codim) {
-        check_communication_correctness_iter (gv, codim,
+      void check_communication_correctness_iter(GV gv, PeriodicMap<GV> periodic_map, Codim<cd> codim) {
+        check_communication_correctness_iter (gv, periodic_map, codim,
               std::integral_constant<bool, Dune::Capabilities::hasEntity<typename GV::Grid, cd>::v>(),
               std::integral_constant<bool, cd == GV::dimension + 1>());
       }
 
       // Start with codim 0
       template<typename GV>
-      void check_communication_correctness(GV gv)
+      void check_communication_correctness(GV gv, PeriodicMap<GV> periodic_map)
       {
-        check_communication_correctness_iter (gv, Codim<0>());
+        check_communication_correctness_iter (gv, periodic_map, Codim<0>());
       }
 
   } // namespace GridCheck

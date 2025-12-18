@@ -156,7 +156,8 @@ struct YaspFactory<dim, Dune::TensorProductCoordinates<double,dim> >
 };
 
 template <int dim, class CC>
-void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid) {
+void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid,
+    std::function<Dune::FieldVector<double,dim>(Dune::FieldVector<double,dim>)> periodic_map) {
   std::cout << std::endl << "YaspGrid<" << dim << ">";
 
   gridcheck(*grid);
@@ -170,7 +171,7 @@ void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid) {
     checkCommunication(*grid,l,Dune::dvverb);
 
   // check communication correctness
-  // Dune::GridCheck::check_communication_correctness(grid->leafGridView());
+  Dune::GridCheck::check_communication_correctness(grid->leafGridView(), periodic_map);
 
   // check geometry lifetime
   checkGeometryLifetime( grid->leafGridView() );
