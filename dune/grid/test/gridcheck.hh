@@ -1085,8 +1085,8 @@ void gridcheck (Grid &g)
   //   Dune :: checkIndexSet( g, g.levelGridView( level ), Dune :: dvverb, true );
 
   // check id sets
-  // checkIdSet(g, g.localIdSet());
-  // checkIdSet(g, g.globalIdSet());
+  checkIdSet(g, g.localIdSet());
+  checkIdSet(g, g.globalIdSet());
 
   // check at least if the subId method is there
   {

@@ -98,6 +98,7 @@ namespace Dune
               const auto& entity = element.template subEntity<codim>(face);
 
               auto id = idSet.id(entity);
+              auto ptype = entity.partitionType();
 
               // Has the same id already been used by a different entity?
               if (idContainer.find(id) != idContainer.end())
@@ -105,14 +106,24 @@ namespace Dune
                 // Yes.  Then either we have seen the same entity before, or we are now
                 // on the copy of an entity we have seen before.  In either case we must
                 // have the same entity center.
-                // CAVEAT: This last reasoning does not hold if the grid uses parametrized
-                // elements or parametrized boundaries.
-                if (! FloatCmp::eq(entity.geometry().center(), idContainer[id], 1e-12 ))
-                  DUNE_THROW(GridError, "IdSet is not injective");
+                // CAVEATS:
+                // This last reasoning is not guaranteed to hold if
+                // - the grid uses parametrized elements or parametrized boundaries.
+                // - the grid is periodic, (in certain implementations) it only holds for interior cells.
+                if (FloatCmp::ne(entity.geometry().center(), idContainer[id], 1e-12 )
+                  && ptype == InteriorEntity
+                  )
+                  DUNE_THROW(GridError, "IdSet is not injective, "
+                    << "codim " << codim << " --- "
+                    << "ptype " << ptype << " --- "
+                    << entity.geometry().center() << " != " << idContainer[id]
+                    << " error : " << (entity.geometry().center() - idContainer[id]).two_norm());
               }
               else
               {
-                idContainer[id] = entity.geometry().center();
+                // only add the id if it is an interior cell
+                if (ptype == InteriorEntity)
+                  idContainer[id] = entity.geometry().center();
               }
 
               // While we are here: Do subEntity.id and subId return the same value?
