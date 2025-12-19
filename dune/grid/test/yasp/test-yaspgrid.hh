@@ -162,8 +162,8 @@ void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid,
 
   gridcheck(*grid);
 
-  // checkIterators ( grid->leafGridView() );
-  // checkIterators ( grid->levelGridView(0) );
+  checkIterators ( grid->leafGridView() );
+  checkIterators ( grid->levelGridView(0) );
 
   // check communication interface
   checkCommunication(*grid,-1,Dune::dvverb);

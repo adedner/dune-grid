@@ -91,10 +91,15 @@ inline void CheckCodimIterators< GridView, codim, true >
 
   std::map< IdType, int > count;
 
+  // CAVEATS:
+  // The assumptions of the following check might fail if the grid is
+  // parallel periodic; in that case it only holds for interior cells.
   const auto codimEnd = gridView.template end< codim >();
   for( auto it = gridView.template begin< codim >(); it != codimEnd; ++it )
   {
-    ++count[ idSet.id( *it ) ];
+    auto ptype = it->partitionType();
+    if (ptype == Dune::InteriorEntity)
+        ++count[ idSet.id( *it ) ];
   }
 
   const auto elementEnd = gridView.template end< 0 >();
@@ -109,7 +114,7 @@ inline void CheckCodimIterators< GridView, codim, true >
         std::cerr << "Error: Codim " << codim << " iterator"
                   << " visited entity " << id
                   << " " << count[ id ] << " times." << std::endl;
-        assert( count[ id ] == 1 );
+        assert( count[id] == 1 || count[id] == 0);
       }
     }
   }
