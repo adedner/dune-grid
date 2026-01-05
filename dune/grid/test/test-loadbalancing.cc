@@ -13,12 +13,7 @@
 #include <dune/common/parametertree.hh>
 #include <dune/common/parametertreeparser.hh>
 
-#if HAVE_PARMETIS
-#include <parmetis.h>
-#  ifdef PARMETIS_MAJOR_VERSION
-#    include <dune/grid/utility/parmetisgridpartitioner.hh>
-#  endif
-#endif
+#include <dune/grid/utility/parmetisgridpartitioner.hh>
 
 using namespace Dune;
 
@@ -81,8 +76,8 @@ typedef GridType::LeafGridView GV;
 
 int main(int argc, char** argv)
 {
-#if ! (HAVE_PARMETIS && defined(PARMETIS_MAJOR_VERSION))
-  // Skip test -- without ParMetis it doesn't do anything useful
+#if ! HAVE_PARMETIS && ! HAVE_PTSCOTCH
+  // Skip test -- without ParMetis or PTScotch it doesn't do anything useful
   std::cerr << "This test requires ParMetis and will be skipped.\n"
             << "Note that the emulation layer provided by scotch is not sufficient.\n";
   return 77;
@@ -125,6 +120,18 @@ int main(int argc, char** argv)
 
   // Transfer partitioning from ParMETIS to our grid
   grid->loadBalance(part, 0);
+
+  VTKWriter<GV> vtkWriter(gv);
+  std::vector<int> rankField(gv.size(0));
+  std::fill(rankField.begin(), rankField.end(), grid->comm().rank());
+  vtkWriter.addCellData(rankField,"rank");
+  vtkWriter.write("grid-initial");
+
+#if ! HAVE_PARMETIS
+  // Skip test -- without ParMetis or PTScotch it doesn't do anything useful
+  std::cerr << "The repartitioning part of the test requires ParMetis and will be skipped.\n"
+  << "Note that the emulation layer provided by scotch is not sufficient.\n";
+#else
 
   for (size_t s = 0; s < steps; ++s) {
     std::cout << "Step " << s << " on " << mpihelper.rank() << " ..." << std::endl;
@@ -187,6 +194,7 @@ int main(int argc, char** argv)
       }
     }
   }
+#endif
 
   return 0;
 #endif   // (HAVE_PARMETIS && defined(PARMETIS_MAJOR_VERSION))

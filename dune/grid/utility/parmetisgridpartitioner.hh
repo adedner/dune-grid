@@ -70,8 +70,8 @@ namespace Dune
       idx_type ncon = 1;                                     // number of balance constraints
       idx_type nparts = mpihelper.size();                    // number of parts equals number of processes
 
-      std::vector<real_type> xyz;                            // Coordinates of the element centers
-      xyz.reserve(gv.size(0));
+      const auto dimworld = GridView::dimensionworld;
+      std::vector<real_type> xyz(dimworld*gv.size(0));       // Coordinates of the element centers
 
       idx_type options[4] = {0, 0, 0, 0};                    // use default values for random seed, output and coupling
       idx_type edgecut;                                      // will store number of edges cut by partition
@@ -80,27 +80,23 @@ namespace Dune
       vtxdist[0] = 0;
       std::fill(vtxdist.begin()+1, vtxdist.end(), numElements);
 
-      std::vector<idx_type> xadj;
-      xadj.reserve(gv.size(0)+1);
-      xadj.push_back(0);
-
-      std::vector<idx_type> adjncy;
-
       std::vector<real_type> tpwgts(ncon*nparts, 1./nparts); // load per subdomain and weight (same load on every process)
       std::vector<real_type> ubvec(ncon, 1.05);              // weight tolerance (same weight tolerance for every weight there is)
 
-      std::size_t neighborCounter = 0;
+      // Map elements to indices
+      MultipleCodimMultipleGeomTypeMapper<GridView> elementMapper(gv, mcmgElementLayout());
 
-      typedef MultipleCodimMultipleGeomTypeMapper<GridView> ElementMapper;
-      ElementMapper elementMapper(gv, mcmgElementLayout());
+      std::vector<std::vector<std::size_t> > neighbors(gv.size(0));
 
       for (auto&& element : elements(gv, Partitions::interior))
       {
+        const auto index = elementMapper.index(element);
+
         // Store the element center to guide geometry-based partitioning
         const auto center = element.geometry().center();
 
-        for (auto&& coordinate : center)
-          xyz.push_back(coordinate);
+        for (size_t i=0; i<dimworld; ++i)
+          xyz[index*dimworld+i] = center[i];
 
         // Extract the grid connectivity. Elements are considered as connected
         // if they share an intersection.
@@ -109,12 +105,26 @@ namespace Dune
           if (!intersection.neighbor())
             continue;
 
-          adjncy.push_back(elementMapper.index(intersection.outside()));
-          ++neighborCounter;
+          neighbors[index].push_back(elementMapper.index(intersection.outside()));
         }
-
-        xadj.push_back(neighborCounter);
       }
+
+      // Fill the data structures that ParMETIS can understand.
+      // These cannot be filled directly while traversing the grid elements,
+      // because the element loop does not necessarily visit the elements
+      // in order of increasing consecutive index.
+
+      // Neighbors per element
+      std::vector<idx_type> adjncy;
+      for (auto&& element : neighbors)
+        for (auto&& neighbor : element)
+          adjncy.push_back(neighbor);
+
+      // Index of first neighbor of each element
+      std::vector<idx_type> xadj(gv.size(0)+1);
+      xadj[0] = 0;
+      for (size_t i=0; i<numNeighbors.size(); ++i)
+        xadj[i+1] = xadj[i] + neighbors[i].size();
 
       // Partition mesh using ParMETIS
       if (0 == mpihelper.rank()) {
