@@ -20,12 +20,12 @@
 #include <dune/grid/common/rangegenerators.hh>
 
 #if HAVE_PARMETIS
-
 #include <parmetis.h>
+#elif HAVE_PTSCOTCH
+#include <parmetis/parmetis.h>
+#endif
 
-// only enable for ParMETIS because the implementation uses functions that
-// are not emulated by scotch
-#ifdef PARMETIS_MAJOR_VERSION
+#if HAVE_PARMETIS || HAVE_PTSCOTCH
 
 namespace Dune
 {
@@ -64,57 +64,101 @@ namespace Dune
 
       std::vector<unsigned> part(numElements);
 
-      // Setup parameters for ParMETIS
+      // Setup parameters for ParMETIS / PTScotch
       idx_type wgtflag = 0;                                  // we don't use weights
       idx_type numflag = 0;                                  // we are using C-style arrays
       idx_type ncon = 1;                                     // number of balance constraints
-      idx_type ncommonnodes = 2;                             // number of nodes elements must have in common to be considered adjacent to each other
+      idx_type nparts = mpihelper.size();                    // number of parts equals number of processes
+
+      const auto dimworld = GridView::dimensionworld;
+      std::vector<real_type> xyz(dimworld*gv.size(0));       // Coordinates of the element centers
+
       idx_type options[4] = {0, 0, 0, 0};                    // use default values for random seed, output and coupling
       idx_type edgecut;                                      // will store number of edges cut by partition
-      idx_type nparts = mpihelper.size();                    // number of parts equals number of processes
+
+      std::vector<idx_type> vtxdist(mpihelper.size()+1);
+      vtxdist[0] = 0;
+      std::fill(vtxdist.begin()+1, vtxdist.end(), numElements);
+
       std::vector<real_type> tpwgts(ncon*nparts, 1./nparts); // load per subdomain and weight (same load on every process)
       std::vector<real_type> ubvec(ncon, 1.05);              // weight tolerance (same weight tolerance for every weight there is)
 
-      // The difference elmdist[i+1] - elmdist[i] is the number of nodes that are on process i
-      std::vector<idx_type> elmdist(nparts+1);
-      elmdist[0] = 0;
-      std::fill(elmdist.begin()+1, elmdist.end(), gv.size(0)); // all elements are on process zero
+      // Map elements to indices
+      MultipleCodimMultipleGeomTypeMapper<GridView> elementMapper(gv, mcmgElementLayout());
 
-      // Create and fill arrays "eptr", where eptr[i] is the number of vertices that belong to the i-th element, and
-      // "eind" contains the vertex-numbers of the i-the element in eind[eptr[i]] to eind[eptr[i+1]-1]
-      std::vector<idx_type> eptr, eind;
-      int numVertices = 0;
-      eptr.push_back(numVertices);
+      std::vector<std::vector<std::size_t> > neighbors(gv.size(0));
 
-      for (const auto& element : elements(gv, Partitions::interior)) {
-        const size_t curNumVertices = referenceElement<double, dimension>(element.type()).size(dimension);
+      for (auto&& element : elements(gv, Partitions::interior))
+      {
+        const auto index = elementMapper.index(element);
 
-        numVertices += curNumVertices;
-        eptr.push_back(numVertices);
+        // Store the element center to guide geometry-based partitioning
+        const auto center = element.geometry().center();
 
-        for (size_t k = 0; k < curNumVertices; ++k)
-          eind.push_back(gv.indexSet().subIndex(element, k, dimension));
+        for (size_t i=0; i<dimworld; ++i)
+          xyz[index*dimworld+i] = center[i];
+
+        // Extract the grid connectivity. Elements are considered as connected
+        // if they share an intersection.
+        for (auto&& intersection : intersections(gv, element))
+        {
+          if (!intersection.neighbor())
+            continue;
+
+          neighbors[index].push_back(elementMapper.index(intersection.outside()));
+        }
       }
+
+      // Fill the data structures that ParMETIS can understand.
+      // These cannot be filled directly while traversing the grid elements,
+      // because the element loop does not necessarily visit the elements
+      // in order of increasing consecutive index.
+
+      // Neighbors per element
+      std::vector<idx_type> adjncy;
+      for (auto&& element : neighbors)
+        for (auto&& neighbor : element)
+          adjncy.push_back(neighbor);
+
+      // Index of first neighbor of each element
+      std::vector<idx_type> xadj(gv.size(0)+1);
+      xadj[0] = 0;
+      for (size_t i=0; i<numNeighbors.size(); ++i)
+        xadj[i+1] = xadj[i] + neighbors[i].size();
 
       // Partition mesh using ParMETIS
       if (0 == mpihelper.rank()) {
         MPI_Comm comm = Dune::MPIHelper::getLocalCommunicator();
 
-#if PARMETIS_MAJOR_VERSION >= 4
         const int OK =
-#endif
-        ParMETIS_V3_PartMeshKway(elmdist.data(), eptr.data(), eind.data(), NULL, &wgtflag, &numflag,
-                                 &ncon, &ncommonnodes, &nparts, tpwgts.data(), ubvec.data(),
-                                 options, &edgecut, reinterpret_cast<idx_type*>(part.data()), &comm);
+        ParMETIS_V3_PartGeomKway(vtxdist.data(),
+                                 xadj.data(),
+                                 adjncy.data(),
+                                 nullptr,      // Vertex weights
+                                 nullptr,      // Edge weights
+                                 &wgtflag,     // No weights on graph vertices or edges
+                                 &numflag,     // C-style numbering
+                                 &GridView::dimension,
+                                 xyz.data(),
+                                 &ncon,        // Number of balance constraints
+                                 &nparts,      // Desired number of parts
+                                 tpwgts.data(),
+                                 ubvec.data(),
+                                 options,
+                                 &edgecut,     // [out] Number of edges that are cut by the partitioning
+                                 reinterpret_cast<idx_type*>(part.data()),
+                                 &comm);
 
-#if PARMETIS_MAJOR_VERSION >= 4
         if (OK != METIS_OK)
           DUNE_THROW(Dune::Exception, "ParMETIS returned an error code.");
-#endif
       }
 
       return part;
     }
+
+// Only enable the following code if ParMETIS is available because the implementation
+// uses functions that are not emulated by PTScotch.
+#ifdef PARMETIS_MAJOR_VERSION
 
     /** \brief Create a repartitioning of a distributed Dune grid
      *
@@ -209,16 +253,13 @@ namespace Dune
 
       return part;
     }
+#endif
   };
 
 }  // namespace Dune
 
-#else // PARMETIS_MAJOR_VERSION
-#warning "You seem to be using the ParMETIS emulation layer of scotch, which does not work with this file."
-#endif
-
-#else // HAVE_PARMETIS
-#warning "PARMETIS was not found, please check your configuration"
+#else // HAVE_PARMETIS || HAVE_PTSCOTCH
+#warning "Neither PARMETIS nor PTScotch were not found, please check your configuration!"
 #endif
 
 #endif // DUNE_GRID_UTILITY_PARMETISGRIDPARTITIONER_HH
