@@ -287,15 +287,56 @@ namespace Dune
       return impl().ghostSize(codim);
     }
 
-    /** \brief Communicate data on this view */
+    /**
+     * \brief Communicate data on this view
+     *
+     * \details The method communicate() is used to exchange data between processes in parallel computations.
+     * The user provides a data handle, which is an implementation of the CommDataHandleIF interface, and
+     * specifies the type of communication through the InterfaceType and CommunicationDirection parameters.
+     * The method has two modes of usage:
+     *
+     * - Synchronous:  If the future is valid, it will wait for the communication to complete when it goes out of scope.
+     *
+     *   \code{cpp}
+     *   // blocking communication, finished upon return from method
+     *   grid.communicate(...); // blocking
+     *   \endcode
+     *
+     * - Asynchronous: The method returns a Future object that can be used to wait for the communication to complete.
+     *
+     *   \code{cpp}
+     *   // non-blocking communication
+     *   auto future = grid.communicate(...); // non-blocking
+     *
+     *   // other computations potentially done
+     *
+     *   // wait for communication to finish
+     *   future.wait(); // blocking
+     *   \endcode
+    */
     template< class DataHandleImp, class DataType >
-    auto communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
-                       InterfaceType iftype,
-                       CommunicationDirection dir ) const
+    Future<void> communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
+                               InterfaceType iftype,
+                               CommunicationDirection dir ) const
+    requires requires(Implementation impl) { { impl.communicate(data,iftype,dir) } -> std::constructible_from<Future<void>>; }
     {
-      typedef decltype( impl().communicate(data,iftype,dir) ) CommFuture;
-      return communicate( data,iftype, dir,
-            std::integral_constant< bool, std::is_same< CommFuture, void > :: value >() );
+      return { WaitingFuture{ impl().communicate( data,iftype, dir) } };
+    }
+
+    //! @copydoc communicate(const CommDataHandleIF<DataHandleImp,DataType>&, InterfaceType, CommunicationDirection) const
+    template< class DataHandleImp, class DataType >
+    [[deprecated("Implementation of GridView::communicate should return a Future<void> object. Please update implementation to new interface!")]]
+    auto communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
+                               InterfaceType iftype,
+                               CommunicationDirection dir ) const
+    requires (not requires(Implementation impl) { { impl.communicate(data,iftype,dir) } -> std::constructible_from<Future<void>>; })
+    {
+      if constexpr (std::is_same_v<void, decltype(impl().communicate(data,iftype,dir))>) {
+        impl().communicate(data,iftype,dir);
+        return Future<void>{ PseudoFuture<void>(true) };
+      } else {
+        return WaitingFuture{ impl().communicate(data,iftype,dir) };
+      }
     }
 
     /**
@@ -313,40 +354,23 @@ namespace Dune
     const Implementation &impl () const { return impl_; }
 
   protected:
-    /** \brief Communicate data on this view */
-    template< class DataHandleImp, class DataType >
-    auto communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
-                       InterfaceType iftype,
-                       CommunicationDirection dir, std::integral_constant< bool, false > ) const
-    {
-      return impl().communicate(data,iftype,dir);
-    }
 
-    struct DeprecatedMethodEmptyFuture : public Future<void>
+    template<class F>
+    struct WaitingFuture : public F
     {
-      void printMessage() const
-      {
-        std::cerr << "WARNING: GridView::communicate of '" <<
-          typeid( Implementation ).name() << "' still returns void. Please update implementation to new interface returning a future object!" << std::endl;
-      }
+      WaitingFuture() = default;
+      WaitingFuture(F&& f) : F(std::move(f)) {}
+      WaitingFuture(const WaitingFuture&) = delete;
+      WaitingFuture(WaitingFuture&&) = default;
 
-      bool ready () {
-        printMessage();
-        return true;
+      WaitingFuture& operator=(const WaitingFuture&) = delete;
+      WaitingFuture& operator=(WaitingFuture&&) = default;
+
+      ~WaitingFuture() {
+        if (this->valid() && !this->ready())
+          this->wait();
       }
-      void wait () { printMessage(); }
-      bool valid () const { printMessage(); return true; }
     };
-
-    /** \brief Communicate data on this view */
-    template< class DataHandleImp, class DataType >
-    auto communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
-                       InterfaceType iftype,
-                       CommunicationDirection dir, std::integral_constant< bool, true > ) const
-    {
-      impl().communicate(data,iftype,dir);
-      return DeprecatedMethodEmptyFuture();
-    }
 
     Implementation impl_;
   };

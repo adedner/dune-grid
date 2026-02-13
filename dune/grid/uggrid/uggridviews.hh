@@ -211,7 +211,7 @@ namespace Dune
 
       /** communicate data on this view */
       template< class DataHandleImp, class DataType >
-      void communicate ( CommDataHandleIF< DataHandleImp, DataType > &dataHandle, InterfaceType iftype, CommunicationDirection dir ) const
+      Future<void> communicate ( CommDataHandleIF< DataHandleImp, DataType > &dataHandle, InterfaceType iftype, CommunicationDirection dir ) const
       {
 #ifdef ModelP
         Hybrid::forEach(std::make_index_sequence< Grid::dimension+1 >{},
@@ -221,6 +221,7 @@ namespace Dune
             grid().template communicateUG_<codim>(*this, level_, dataHandle, iftype, dir);
         });
 #endif // ModelP
+        return { PseudoFuture<void>{true} };
       }
 
     private:
@@ -406,7 +407,7 @@ namespace Dune
 
       /** communicate data on this view */
       template< class DataHandleImp, class DataType >
-      void communicate ( CommDataHandleIF< DataHandleImp, DataType > &dataHandle, InterfaceType iftype, CommunicationDirection dir ) const
+      Future<void> communicate ( CommDataHandleIF< DataHandleImp, DataType > &dataHandle, InterfaceType iftype, CommunicationDirection dir ) const
       {
 #ifdef ModelP
         Hybrid::forEach(std::make_index_sequence< Grid::dimension+1 >{},
@@ -416,6 +417,7 @@ namespace Dune
             grid().template communicateUG_<codim>(*this, -1, dataHandle, iftype, dir);
         });
 #endif // ModelP
+        return { PseudoFuture<void>{true} };
       }
 
     private:

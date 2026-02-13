@@ -379,7 +379,7 @@ namespace Dune
 
     /** communicate data on this view */
     template< class DataHandleImp, class DataType >
-    void communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
+    Future<void> communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
                        InterfaceType iftype,
                        CommunicationDirection dir ) const
     {

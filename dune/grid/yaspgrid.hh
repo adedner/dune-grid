@@ -1478,9 +1478,10 @@ namespace Dune {
        communicate objects for all codims on the leaf grid
      */
     template<class DataHandleImp, class DataType>
-    void communicate (CommDataHandleIF<DataHandleImp,DataType> & data, InterfaceType iftype, CommunicationDirection dir) const
+    Future<void> communicate (CommDataHandleIF<DataHandleImp,DataType> & data, InterfaceType iftype, CommunicationDirection dir) const
     {
       YaspCommunicateMeta<dim,dim>::comm(*this,data,iftype,dir,this->maxLevel());
+      return { PseudoFuture<void>{true} };
     }
 
     /*! The new communication interface

@@ -200,10 +200,12 @@ namespace Dune
 
     /** communicate data on this view */
     template< class DataHandleImp, class DataType >
-    void communicate ( [[maybe_unused]] CommDataHandleIF< DataHandleImp, DataType > &data,
+    Future<void> communicate ( [[maybe_unused]] CommDataHandleIF< DataHandleImp, DataType > &data,
                        [[maybe_unused]] InterfaceType iftype,
                        [[maybe_unused]] CommunicationDirection dir ) const
-    {}
+    {
+      return { PseudoFuture<void>{true} };
+    }
 
   private:
     const Grid *grid_;
@@ -381,10 +383,12 @@ namespace Dune
 
     /** \brief Communicate data on this view -- does nothing because OneDGrid is purely sequential */
     template< class DataHandleImp, class DataType >
-    void communicate ( [[maybe_unused]] CommDataHandleIF< DataHandleImp, DataType > &data,
+    Future<void> communicate ( [[maybe_unused]] CommDataHandleIF< DataHandleImp, DataType > &data,
                        [[maybe_unused]] InterfaceType iftype,
                        [[maybe_unused]] CommunicationDirection dir ) const
-    {}
+    {
+      return { PseudoFuture<void>{true} };
+    }
 
   private:
     const Grid *grid_;
