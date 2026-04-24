@@ -331,7 +331,8 @@ namespace Dune
      *  \endcode
      */
     template< class DataHandleImp, class DataType >
-    auto communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
+    [[nodiscard]] auto
+    communicate ( CommDataHandleIF< DataHandleImp, DataType > &data,
                        InterfaceType iftype,
                        CommunicationDirection dir ) const
     {
