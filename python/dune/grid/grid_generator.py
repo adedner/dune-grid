@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
-import os, inspect
+import os, inspect, warnings
 from ..generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 from dune.common import FieldVector
@@ -311,6 +311,16 @@ def function(gv,callback,includeFiles=None,*args,name=None,order=None,dimRange=N
     gf.order = order
     return gf
 
+class HasBoundaryIntersection:
+    def __init__(self,b):
+        self._b = b
+    def __bool__(self):
+        return self._b
+    def __call__(self):
+        print("deprecated")
+        warnings.warn("Call to deprecated function 'hasBoundaryIntersections' on entity - use property with same name instead.",
+                      category=DeprecationWarning)
+        return self._b
 def addAttr(module, cls):
     setattr(cls, "_module", module)
     setattr(cls, "writeVTK", writeVTK)
@@ -337,6 +347,12 @@ def addAttr(module, cls):
     setattr(cls,"mapper",mapper)
     setattr(cls,"function",function)
     setattr(cls,"_gfCounter",0)
+
+    eCls = cls.Entity_0
+    eCls.hasBoundaryIntersections = property(lambda self:
+              HasBoundaryIntersection(self._hasBoundaryIntersections)
+            )
+
 def addHAttr(module):
     # register reference element for this grid
     import dune.geometry
