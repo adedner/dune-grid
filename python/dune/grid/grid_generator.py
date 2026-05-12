@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 import os, inspect, warnings
+# this might be needed to get the deprecation warning to at least be shown
+# once and not simply be ignored:
+# warnings.simplefilter('default', DeprecationWarning)
+
 from ..generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 from dune.common import FieldVector
@@ -317,9 +321,8 @@ class HasBoundaryIntersection:
     def __bool__(self):
         return self._b
     def __call__(self):
-        print("deprecated")
         warnings.warn("Call to deprecated function 'hasBoundaryIntersections' on entity - use property with same name instead.",
-                      category=DeprecationWarning)
+                      category=DeprecationWarning, stacklevel=2)
         return self._b
 def addAttr(module, cls):
     setattr(cls, "_module", module)
