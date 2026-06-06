@@ -186,7 +186,7 @@ namespace Dune
              Returns true, if entity might disappear during the next call to adapt()
           )doc"
           );
-        cls.def( "hasBoundaryIntersections", [] ( const Entity &self ) { return self.hasBoundaryIntersections(); },
+        cls.def_property_readonly( "_hasBoundaryIntersections", [] ( const Entity &self ) { return self.hasBoundaryIntersections(); },
           R"doc(
              Returns true, if entity has intersections with boundary,
                this implementation uses the Level- and LeafIntersectionIterator to
