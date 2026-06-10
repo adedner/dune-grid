@@ -48,6 +48,7 @@ dune_add_test(SOURCES test-parallel-ug.cc
 
 dune_add_test(SOURCES test-loadbalancing.cc
               CMAKE_GUARD dune-uggrid_FOUND)
+add_dune_ptscotch_flags(test-loadbalancing)
 
 dune_add_test(SOURCES issue-53-uggrid-intersections.cc
               CMAKE_GUARD dune-uggrid_FOUND)
