@@ -10,8 +10,10 @@
  */
 // system includes
 #include <iostream>
+#include <typeindex>
 #include <string>
 #include <vector>
+#include <map>
 
 // dune-common includes
 #include <dune/common/fvector.hh>
@@ -29,6 +31,7 @@
 #include <dune/grid/common/gridview.hh>
 #include <dune/grid/common/defaultgridview.hh>
 #include <dune/grid/common/entityseed.hh>
+#include <dune/grid/common/userdata.hh>
 
 // include this file after all other, because other files might undef the
 // macros that are defined in that file
@@ -989,8 +992,42 @@ namespace Dune {
       return false;
     }
 
+    /*! \brief return shared_ptr to user data object of given type
+     *
+     * \return shared_ptr< UserData > which either contains a pointer to a
+     * previously registered object or is empty.
+     */
+    template <class UserData>
+    std::shared_ptr< UserData > getUserData() const
+    {
+      const std::type_index idx( typeid( UserData ) );
+      auto it = userData_.find( idx );
+      if( it != userData_.end() )
+        return it->second->template get< UserData >();
+      else
+        return std::shared_ptr< UserData >();
+    }
+
+    /*! \brief register shared_ptr to user data object provided as shared
+     *
+     *  \note: Only one object of each type can be registered.
+     */
+    template <class UserData>
+    void registerUserData( std::shared_ptr< UserData > userData ) const
+    {
+      const std::type_index idx( typeid( UserData ) );
+      auto it = userData_.find( idx );
+      if( it != userData_.end() )
+        DUNE_THROW(InvalidStateException,"addUserData: can only add a type once! obj = " << typeid( UserData ).name() );
+
+      typedef GridUserDataObject< UserData > ObjectType;
+      std::shared_ptr< GridUserDataIF > ptr( new ObjectType( userData ) );
+      userData_.insert( std::make_pair( idx, ptr ) );
+    }
+
   protected:
     using Grid< dim, dimworld, ct, GridFamily >::asImp;
+    mutable std::map< const std::type_index, std::shared_ptr< GridUserDataIF > > userData_;
   };
 
   /** @} */
