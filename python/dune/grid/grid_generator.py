@@ -322,7 +322,9 @@ def addAttr(module, cls):
     setattr(cls,"tesselate", tesselate)
     [[deprecated("use 'tessellate' (note spelling)")]]
 
-    if cls.dimension == 2:
+    if cls.dimension == 1:
+        setattr(cls, "plot", plot)
+    elif cls.dimension == 2:
         setattr(cls, "plot", plot)
         setattr(cls, "triangulation", triangulation)
     else:
