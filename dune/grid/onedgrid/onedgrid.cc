@@ -460,6 +460,9 @@ bool Dune::OneDGrid::adapt()
   // ////////////////////////////////////
   setIndices();
 
+  // increase sequence counter
+  this->incrementSequence();
+
   return refinedGrid;
 }
 
