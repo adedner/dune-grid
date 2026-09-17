@@ -71,6 +71,20 @@ namespace Dune
         break;
       }
 
+      case VTKDataType::CellTensor:
+      {
+        VTK::FieldInfo info( std::move( name ), VTK::FieldInfo::Type::tensor, GetDimension<Range>::value );
+        vtkWriter.addCellData( gf, info );
+        break;
+      }
+
+      case VTKDataType::PointTensor:
+      {
+        VTK::FieldInfo info( std::move( name ), VTK::FieldInfo::Type::tensor, GetDimension<Range>::value );
+        vtkWriter.addVertexData( gf, info );
+        break;
+      }
+
       default:
         DUNE_THROW( InvalidStateException, "Invalid vtk data type" );
       }
