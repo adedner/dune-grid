@@ -7,6 +7,12 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 - Implement missing sub-indices of sub-entities in the index set of `UGGrid`.
 
+- Fix `VTKSequenceWriter`: The `.pvd` collection file now contains correct
+  path references to `.pvtu` header files when `path` and `extendpath`
+  parameters are used. Previously, the `.pvd` file incorrectly included
+  `extendpath` in the referenced paths, making the collection file unusable
+  in ParaView/VisIt.
+
 # Release 2.11
 
 - The grid concepts are now able to check grids that have entity types disabled.

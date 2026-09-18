@@ -8,9 +8,12 @@
 #include <fstream>
 #include <string>
 #include <unistd.h>
+#include <filesystem>
+#include <regex>
 
 // dune headers
 #include <dune/common/math.hh>
+#include <dune/common/parallel/mpihelper.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/io/file/vtk/vtksequencewriter.hh>
 
@@ -159,6 +162,132 @@ void vtkCheck(const std::array<int,dim>& n,
   doWrite( g.levelGridView( g.maxLevel() ), Dune::VTK::nonconforming );
 }
 
+// Test that VTKSequenceWriter generates correct PVD file references when
+// using path and extendpath parameters (issue #92).
+int checkPvdFileReferences(const Dune::MPIHelper& mpiHelper)
+{
+  constexpr int dim = 2;
+  const int nRanks = mpiHelper.size();
+
+  // Only test in parallel mode
+  if (nRanks < 2)
+    return 0;
+
+  // Create a unique temp directory
+  auto tempBase = std::filesystem::temp_directory_path();
+  auto testDir = tempBase / ("vtkseq-pvd-test-" + std::to_string(getpid()));
+  std::filesystem::create_directories(testDir);
+
+  const std::string testDirStr = testDir.string();
+  const std::string outputPath = testDirStr + "/output";
+  const std::string extendPath = "pieces";
+
+  // Create output directory (needed for VTK output)
+  std::filesystem::create_directories(outputPath);
+  std::filesystem::create_directories(outputPath + "/" + extendPath);
+
+  if (mpiHelper.rank() == 0)
+    std::cout << "\n--- Testing PVD file references with path='" << outputPath
+              << "', extendpath='" << extendPath << "' ---\n"
+              << "Temp directory: " << testDirStr << "\n" << std::endl;
+
+  int result = 0;
+
+  try {
+    // Create a distributed grid
+    std::array<int, dim> n = { { 8, 8 } };
+    Dune::FieldVector<double, dim> h = { { 1.0, 1.0 } };
+    Dune::YaspGrid<dim> grid(
+      Dune::EquidistantCoordinates<double, dim>(h, n),
+      std::bitset<dim>(0),
+      1,
+      Dune::YaspCommunication(MPI_COMM_WORLD)
+    );
+
+    auto vtkWriter = std::make_shared<Dune::VTKWriter<decltype(grid.leafGridView())> >(
+      grid.leafGridView(), Dune::VTK::conforming);
+
+    const auto& is = grid.leafGridView().indexSet();
+    std::vector<int> vertexdata(is.size(dim), dim);
+    std::vector<int> celldata(is.size(0), 0);
+
+    Dune::VTKSequenceWriter<decltype(grid.leafGridView())> vtk(
+      vtkWriter, "testseq", outputPath, extendPath);
+
+    vtk.addVertexData(vertexdata, "vertexData");
+    vtk.addCellData(celldata, "cellData");
+
+    // Write two timesteps
+    vtk.write(0.0);
+    vtk.write(0.1);
+
+    // Wait for all ranks to finish writing
+    grid.leafGridView().comm().barrier();
+
+    // Only rank 0 checks the PVD file
+    if (mpiHelper.rank() == 0) {
+      // The PVD file is written to the current working directory with name "testseq.pvd"
+      std::string pvdPath = "testseq.pvd";
+      std::ifstream pvdFile(pvdPath);
+      if (!pvdFile.is_open()) {
+        std::cerr << "ERROR: Could not open PVD file: " << pvdPath << std::endl;
+        result = 1;
+      } else {
+        std::string content((std::istreambuf_iterator<char>(pvdFile)),
+                            std::istreambuf_iterator<char>());
+        pvdFile.close();
+
+        // Extract file="..." attributes from the PVD file
+        std::regex fileRegex("file=\"([^\"]+)\"");
+        auto begin = std::sregex_iterator(content.begin(), content.end(), fileRegex);
+        auto end = std::sregex_iterator();
+
+        int fileCount = 0;
+        for (auto it = begin; it != end; ++it) {
+          std::string referencedFile = (*it)[1].str();
+
+          if (!std::filesystem::exists(referencedFile)) {
+            std::cerr << "ERROR: Referenced file does not exist: " << referencedFile << std::endl;
+            result = 1;
+          } else {
+            ++fileCount;
+          }
+        }
+
+        if (result == 0) {
+          std::cout << "OK: All " << fileCount << " file references in PVD file resolve correctly." << std::endl;
+        }
+      }
+
+      // Clean up the PVD file from cwd
+      std::filesystem::remove("testseq.pvd");
+    }
+
+    // Broadcast result from rank 0 to all ranks
+    int globalResult = result;
+    MPI_Allreduce(&result, &globalResult, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    result = globalResult;
+
+  } catch (const std::exception& e) {
+    std::cerr << "Exception in checkPvdFileReferences: " << e.what() << std::endl;
+    result = 1;
+  }
+
+  // Cleanup on success, leave files for inspection on failure
+  if (result == 0) {
+    if (mpiHelper.rank() == 0) {
+      std::filesystem::remove_all(testDir);
+      std::cout << "Cleaned up temp directory: " << testDirStr << std::endl;
+    }
+  } else {
+    if (mpiHelper.rank() == 0) {
+      std::cerr << "\nFiles left for inspection in: " << testDirStr << std::endl;
+    }
+  }
+
+  return result;
+}
+
 int main(int argc, char **argv)
 {
   try {
@@ -184,6 +313,11 @@ int main(int argc, char **argv)
       Dune::FieldVector<double,3> h = { 1.0, 2.0, 3.0 };
       vtkCheck<3>(n,h, /*testRestart=*/true);
     }
+
+    // Test PVD file references with path/extendpath (issue #92)
+    int pvdResult = checkPvdFileReferences(mpiHelper);
+    if (pvdResult != 0)
+      return pvdResult;
 
   } catch (Dune::Exception &e) {
     std::cerr << e << std::endl;
