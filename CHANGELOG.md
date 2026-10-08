@@ -9,6 +9,11 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 - `OneDGrid` now sets `Capabilities::viewThreadSafe::v` to `true`.
 
+- `IndexSet::size(GeometryType)` and `GridView::size(GeometryType)` return 0 for geometry types
+  whose dimension exceeds the grid dimension, e.g., `size(GeometryTypes::tetrahedron)` on a 2d grid.
+  This is now documented and checked by `checkIndexSet` in the grid tests. Before, `YaspGrid`,
+  `AlbertaGrid` and the level index set of `UGGrid` crashed, asserted or threw for such types.
+
 # Release 2.11
 
 - The grid concepts are now able to check grids that have entity types disabled.
