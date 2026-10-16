@@ -331,14 +331,46 @@ namespace Dune
 
       //! VTK data type
       enum class Type {
-        //! scalar field (may also be multi-component, but is treated as a simply
-        //! array by ParaView
+        //! no automatic adjustment, write exactly the number of components specified in size()
+        unspecified,
+        //! scalar field (always 1 component)
         scalar,
         //! vector-valued field (always 3D, will be padded if necessary)
         vector,
         //! tensor field (always 3x3)
         tensor
       };
+
+      //! Determine the number of components to write to the VTK file based on the Type.
+      /**
+       * For Type::unspecified, the size is returned as-is.
+       * For Type::scalar, always returns 1.
+       * For Type::vector, always returns 3 (ParaView requirement).
+       *   Throws IOError if size > 3.
+       * For Type::tensor, always returns 9.
+       *   Throws NotImplemented (reserved for future implementation).
+       *
+       * \param type   The Type of the field.
+       * \param size   The number of components available from the data source.
+       * \returns      The number of components to write to the VTK file.
+       */
+      static std::size_t writeComponents(Type type, std::size_t size)
+      {
+        switch (type)
+        {
+        case Type::unspecified:
+          return size;
+        case Type::scalar:
+          return 1;
+        case Type::vector:
+          if (size > 3)
+            DUNE_THROW(IOError, "Cannot write VTK vectors with more than 3 components (components was " << size << ")");
+          return 3;
+        case Type::tensor:
+          DUNE_THROW(NotImplemented, "VTK output for tensors not implemented yet");
+        }
+        return size; // unreachable, silence warning
+      }
 
       //! Create a FieldInfo instance with the given name, type and size.
       FieldInfo(std::string name, Type type, std::size_t size, Precision prec = Precision::float32)
