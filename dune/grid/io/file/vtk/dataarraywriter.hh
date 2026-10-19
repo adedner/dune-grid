@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cmath>
 
+#include <dune/common/asnumber.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/indent.hh>
 
@@ -71,15 +72,15 @@ namespace Dune
         switch(prec)
         {
           case Precision::float32:
-            writeFloat32(data); break;
+            writeFloat32(Dune::Impl::asNumber(data)); break;
           case Precision::float64:
-            writeFloat64(data); break;
+            writeFloat64(Dune::Impl::asNumber(data)); break;
           case Precision::uint32:
-            writeUInt32(data); break;
+            writeUInt32(Dune::Impl::asNumber(data)); break;
           case Precision::uint8:
-            writeUInt8(data); break;
+            writeUInt8(Dune::Impl::asNumber(data)); break;
           case Precision::int32:
-            writeInt32(data); break;
+            writeInt32(Dune::Impl::asNumber(data)); break;
           default:
             DUNE_THROW(Dune::NotImplemented, "Unknown precision type");
         }
