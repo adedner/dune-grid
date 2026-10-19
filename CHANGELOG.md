@@ -26,6 +26,23 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
   could return the index of a different entity; now every partition iterator returns the
   index of the (single) index set of the grid view.
 
+- Fix periodic `YaspGrid` (#195). The overlap of a periodic `YaspGrid` contains copies of
+  the entities at the opposite side of the domain, also on a single process. The geometry of
+  such a copy is no longer moved back into the domain (this was changed in 2.5); it is the
+  translated geometry of the original, consistently for all codimensions and intersections.
+  Copies have their own index, but share the (local and global) id of the original, as
+  documented. Before, ids of copies differed, and coordinates in the lower overlap led to an
+  exception in the construction of the id.
+
+- Fix `YaspGrid` with overlap 0: entities on the lower domain boundary are interior entities
+  (not border entities), border entities are part of the overlap partition, and periodic
+  directions do not contribute boundary segments.
+
+- The grid checks in `dune/grid/test` (`gridcheck`, `checkIterators`, `checkPartitionType`,
+  `checkCommunication`, `check_communication_correctness`) accept an optional periodic map,
+  see `dune/grid/test/periodicmap.hh`, to check grids that store periodic copies of entities.
+  `checkPartitionType` now identifies entities by their index instead of their id.
+
 # Release 2.11
 
 - The grid concepts are now able to check grids that have entity types disabled.

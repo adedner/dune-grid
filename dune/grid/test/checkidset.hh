@@ -7,13 +7,17 @@
 
 #include <iostream>
 #include <map>
+#include <tuple>
 #include <utility>
 
 #include <dune/common/hybridutilities.hh>
 
+#include <dune/geometry/type.hh>
+
 #include <dune/grid/common/exceptions.hh>
 
 #include <dune/grid/test/coordinatetolerance.hh>
+#include <dune/grid/test/periodicmap.hh>
 
 /** @file
    @brief Unit tests for IdSet implementations
@@ -22,6 +26,25 @@
 
 namespace Dune
 {
+  namespace GridCheck::Impl
+  {
+    // order (codim, geometry type, center) tuples, comparing centers up to an absolute tolerance
+    struct PositionLess
+    {
+      double tolerance;
+
+      template<class Tuple>
+      bool operator() (const Tuple& a, const Tuple& b) const
+      {
+        if (std::get<0>(a) != std::get<0>(b))
+          return std::get<0>(a) < std::get<0>(b);
+        if (std::get<1>(a) != std::get<1>(b))
+          return std::get<1>(a) < std::get<1>(b);
+        return ApproxLess{ tolerance }(std::get<2>(a), std::get<2>(b));
+      }
+    };
+  }
+
   // Check the type used for ids
   template <class Grid, class IdSet>
   void checkIdType(const Grid& grid, const IdSet& idSet)
@@ -71,8 +94,16 @@ namespace Dune
     std::cout << someId << std::endl;
   }
 
+  /** \brief Check that ids identify entities
+   *
+   * Two entities with the same id must have the same center, up to the
+   * periodic map. Conversely, a periodic copy must have the same id as all
+   * other entities on the same level whose centers are mapped to the same
+   * point (this part is only active for a non-trivial periodic map).
+   */
   template <class Grid, class IdSet>
-  void checkInjectivity(const Grid& grid, const IdSet& idSet)
+  void checkInjectivity(const Grid& grid, const IdSet& idSet,
+                        const GridCheck::PeriodicMap<Grid>& periodicMap = GridCheck::noPeriodicMap<Grid>())
   {
     const int dim = Grid::dimension;
 
@@ -88,6 +119,11 @@ namespace Dune
     {
       const auto gridView = grid.levelGridView(i);
 
+      // ids of the entities on this level, by codim, geometry type, and mapped center
+      // the flag records whether the id belongs to a periodic copy
+      std::map<std::tuple<int,GeometryType,GlobalCoordinate>, std::pair<IdType,bool>,
+               GridCheck::Impl::PositionLess> positionContainer(GridCheck::Impl::PositionLess{ tolerance });
+
       for (const auto& element: elements(gridView))
       {
         // Loop over all faces of all codimensions
@@ -101,21 +137,42 @@ namespace Dune
               const auto& entity = element.template subEntity<codim>(face);
 
               auto id = idSet.id(entity);
+              const auto center = entity.geometry().center();
+              const auto mappedCenter = periodicMap(center);
 
               // Has the same id already been used by a different entity?
               if (idContainer.find(id) != idContainer.end())
               {
                 // Yes.  Then either we have seen the same entity before, or we are now
                 // on the copy of an entity we have seen before.  In either case we must
-                // have the same entity center.
+                // have the same entity center, up to the periodic map.
                 // CAVEAT: This last reasoning does not hold if the grid uses parametrized
                 // elements or parametrized boundaries.
-                if (! GridCheck::coordinatesEqual(entity.geometry().center(), idContainer[id], tolerance))
-                  DUNE_THROW(GridError, "IdSet is not injective");
+                if (! GridCheck::coordinatesEqual(mappedCenter, idContainer[id], tolerance))
+                  DUNE_THROW(GridError, "IdSet is not injective: entities at "
+                             << idContainer[id] << " and " << mappedCenter
+                             << " (codim " << codim << ") have the same id " << id);
               }
               else
               {
-                idContainer[id] = entity.geometry().center();
+                idContainer[id] = mappedCenter;
+              }
+
+              // Is this a periodic copy of an entity on this level and process (or vice versa)?
+              // Then both must have the same id. This only sees local coincidences; copies of
+              // entities stored on other processes are checked by check_communication_correctness.
+              const bool isCopy = GridCheck::isPeriodicCopy(periodicMap, center, tolerance);
+              const auto key = std::make_tuple(int(codim), entity.type(), mappedCenter);
+              auto it = positionContainer.find(key);
+              if (it == positionContainer.end())
+                positionContainer.emplace(key, std::make_pair(id, isCopy));
+              else
+              {
+                if ((isCopy || it->second.second) && it->second.first != id)
+                  DUNE_THROW(GridError, "Periodic copies have different ids: entity at "
+                             << center << " (codim " << codim << ") has id " << id
+                             << ", another copy of it has id " << it->second.first);
+                it->second.second = it->second.second || isCopy;
               }
 
               // While we are here: Do subEntity.id and subId return the same value?
@@ -129,12 +186,17 @@ namespace Dune
   }
 
 
-  // Run all available tests for a given IdSet
+  /** \brief Run all available tests for a given IdSet
+   *
+   * \param periodicMap maps each coordinate to its representative in the periodic
+   *                    unit cell, see dune/grid/test/periodicmap.hh
+   */
   template <class Grid, class IdSet>
-  void checkIdSet ( const Grid &grid, const IdSet& idSet)
+  void checkIdSet ( const Grid &grid, const IdSet& idSet,
+                    const GridCheck::PeriodicMap<Grid>& periodicMap = GridCheck::noPeriodicMap<Grid>())
   {
     checkIdType(grid,idSet);
-    checkInjectivity(grid, idSet);
+    checkInjectivity(grid, idSet, periodicMap);
   }
 
 } // end namespace Dune

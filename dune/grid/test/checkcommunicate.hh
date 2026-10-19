@@ -5,6 +5,7 @@
 #ifndef DUNE_GRID_TEST_CHECKCOMMUNICATE_HH
 #define DUNE_GRID_TEST_CHECKCOMMUNICATE_HH
 
+#include <functional>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <dune/grid/common/gridview.hh>
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/datahandleif.hh>
+#include <dune/grid/test/periodicmap.hh>
 
 /*  Communication Test for Parallel Grids
  *  -------------------------------------
@@ -66,24 +68,30 @@ namespace
 }
 
 
+/* The corners are compared after applying the periodic map, i.e. a periodic
+ * copy of an entity has to receive the corners of the original.
+ */
 template <class IndexSetImp,
     class GlobalIdSetImp,
-    class DataVectorType >
+    class DataVectorType,
+    class PeriodicMapImp = std::identity >
 class ExampleDataHandle
-  : public Dune::CommDataHandleIF< ExampleDataHandle< IndexSetImp, GlobalIdSetImp, DataVectorType >, typename DataVectorType::value_type >
+  : public Dune::CommDataHandleIF< ExampleDataHandle< IndexSetImp, GlobalIdSetImp, DataVectorType, PeriodicMapImp >, typename DataVectorType::value_type >
 {
   const IndexSetImp & iset_;
   const GlobalIdSetImp & ids_;
   int cdim_;
   DataVectorType & data1_;
   DataVectorType & data2_;
+  PeriodicMapImp periodicMap_;
 public:
   typedef typename DataVectorType :: value_type DataType;
   ExampleDataHandle(const IndexSetImp & iset,
                     const GlobalIdSetImp & ids,
                     int cdim,
-                    DataVectorType & d1, DataVectorType & d2) :
-    iset_(iset), ids_(ids) , cdim_(cdim), data1_(d1) , data2_(d2)
+                    DataVectorType & d1, DataVectorType & d2,
+                    PeriodicMapImp periodicMap = {}) :
+    iset_(iset), ids_(ids) , cdim_(cdim), data1_(d1) , data2_(d2), periodicMap_(periodicMap)
   {}
 
   //! returns true if data for this codim should be communicated
@@ -129,7 +137,7 @@ public:
     for( int i = 0; i < geometry.corners(); ++i )
     {
       typedef Dune::FieldVector< typename Geometry::ctype, Geometry::coorddimension > Vector;
-      const Vector corner = geometry.corner( i );
+      const Vector corner = periodicMap_( geometry.corner( i ) );
       for( int j = 0; j < Geometry::coorddimension; ++j )
         buff.write( corner[ j ] );
     }
@@ -186,7 +194,7 @@ public:
     for( int i = 0; i < geometry.corners(); ++i )
     {
       typedef Dune::FieldVector< ctype, Geometry::coorddimension > Vector;
-      const Vector corner = geometry.corner( i );
+      const Vector corner = periodicMap_( geometry.corner( i ) );
       for( int j = 0; j < Geometry::coorddimension; ++j )
       {
         buff.read(x);
@@ -234,13 +242,14 @@ class CheckCommunication
   const GridView &gridView_;
   const IndexSet &indexSet_;
   const int level_;
+  const Dune::GridCheck::PeriodicMap< GridView > periodicMap_;
 
-  // the function
+  // the function, periodic w.r.t. the periodic map
   ctype f ( const CoordinateVector &x )
   {
     CoordinateVector a( 1.0 );
     a[0] = -0.5;
-    return a*x+1.5; //+cos(x*x);
+    return a*periodicMap_(x)+1.5; //+cos(x*x);
   }
 
   // compute the data on the upwind entities
@@ -462,8 +471,8 @@ class CheckCommunication
     sout_ << "Test before Communication on <" << myrank << "> " << preresult << std :: endl;
     // Communicate
     typedef typename Grid :: Traits :: GlobalIdSet GlobalIdSet;
-    ExampleDataHandle< IndexSet, GlobalIdSet, ArrayType >
-    dh( indexSet_, gridView_.grid().globalIdSet(), cdim, data, weight );
+    ExampleDataHandle< IndexSet, GlobalIdSet, ArrayType, Dune::GridCheck::PeriodicMap< GridView > >
+    dh( indexSet_, gridView_.grid().globalIdSet(), cdim, data, weight, periodicMap_ );
 
     // call communication of grid
     try
@@ -493,12 +502,14 @@ class CheckCommunication
   }
 
 public:
-  CheckCommunication ( const GridView &gridView, OutputStream &sout, int level )
+  CheckCommunication ( const GridView &gridView, OutputStream &sout, int level,
+                       const Dune::GridCheck::PeriodicMap< GridView > &periodicMap = Dune::GridCheck::noPeriodicMap< GridView >() )
     : upwind_( -1.0 ),
       sout_( sout ),
       gridView_( gridView ),
       indexSet_( gridView_.indexSet() ),
-      level_( level )
+      level_( level ),
+      periodicMap_( periodicMap )
   {
     // if no overlap and ghost is available we skip the check
     const bool skipCheck = ( cdim == 0 ) ? (gridView_.overlapSize(0) == 0 && gridView_.ghostSize(0) == 0) : false ;
@@ -515,7 +526,7 @@ public:
 
     // for automatic testing of all codims
     CheckCommunication< GridView, NextCodim< Grid, cdim >::v, OutputStream >
-    test( gridView_, sout_, level_ );
+    test( gridView_, sout_, level_, periodicMap_ );
   }
 };
 
@@ -524,27 +535,34 @@ template< class GridView, class OutputStream >
 class CheckCommunication< GridView, -1, OutputStream >
 {
 public:
-  CheckCommunication ( const GridView &, OutputStream &, int)
+  CheckCommunication ( const GridView &, OutputStream &, int,
+                       const Dune::GridCheck::PeriodicMap< GridView > & = Dune::GridCheck::noPeriodicMap< GridView >() )
   {}
 };
 
 
+/** \brief check the communication of a leaf (level < 0) or level grid view
+ *
+ * \param periodicMap maps each coordinate to its representative in the periodic
+ *                    unit cell, see dune/grid/test/periodicmap.hh
+ */
 template< class Grid, class OutputStream >
-void checkCommunication( const Grid &grid, int level, OutputStream &sout )
+void checkCommunication( const Grid &grid, int level, OutputStream &sout,
+                         const Dune::GridCheck::PeriodicMap< Grid > &periodicMap = Dune::GridCheck::noPeriodicMap< Grid >() )
 {
   if( level < 0 )
   {
     typedef typename Grid::LeafGridView GridView;
     GridView gridView = grid.leafGridView();
     CheckCommunication< GridView, NextCodim< Grid >::v, OutputStream >
-    test( gridView, sout, level );
+    test( gridView, sout, level, periodicMap );
   }
   else
   {
     typedef typename Grid::LevelGridView GridView;
     GridView gridView = grid.levelGridView( level );
     CheckCommunication< GridView, NextCodim< Grid >::v, OutputStream >
-    test( gridView, sout, level );
+    test( gridView, sout, level, periodicMap );
   }
 }
 

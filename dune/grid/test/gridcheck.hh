@@ -1007,8 +1007,15 @@ void checkCodim1Mapping(const Grid &g)
 }
 
 
+/** \brief Run the generic checks of the grid interface
+ *
+ * \param periodicMap maps each coordinate to its representative in the periodic
+ *                    unit cell, see dune/grid/test/periodicmap.hh; the default is
+ *                    the identity, i.e. a grid without periodic copies of entities
+ */
 template <class Grid>
-void gridcheck (Grid &g)
+void gridcheck (Grid &g,
+                const Dune::GridCheck::PeriodicMap<Grid>& periodicMap = Dune::GridCheck::noPeriodicMap<Grid>())
 {
   /*
    * first do the compile-test: this will not produce any code but
@@ -1084,13 +1091,13 @@ void gridcheck (Grid &g)
 
   // note that for some grid this might fail
   // then un comment this test
-  Dune :: checkIndexSet( g, g.leafGridView(), Dune :: dvverb );
+  Dune :: checkIndexSet( g, g.leafGridView(), Dune :: dvverb, false, periodicMap );
   for( int level = 0; level <= g.maxLevel(); ++level )
-    Dune :: checkIndexSet( g, g.levelGridView( level ), Dune :: dvverb, true );
+    Dune :: checkIndexSet( g, g.levelGridView( level ), Dune :: dvverb, true, periodicMap );
 
   // check id sets
-  checkIdSet(g, g.localIdSet());
-  checkIdSet(g, g.globalIdSet());
+  checkIdSet(g, g.localIdSet(), periodicMap);
+  checkIdSet(g, g.globalIdSet(), periodicMap);
 
   // check at least if the subId method is there
   {

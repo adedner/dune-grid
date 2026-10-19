@@ -11,15 +11,22 @@
 #include <bitset>
 #include <set>
 #include <map>
+#include <tuple>
 #include <utility>
 
+#include <dune/common/exceptions.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/typetraits.hh>
 
+#include <dune/geometry/type.hh>
+#include <dune/geometry/typeindex.hh>
+
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/datahandleif.hh>
+#include <dune/grid/common/exceptions.hh>
 #include <dune/grid/common/gridenums.hh>
 #include <dune/grid/utility/entitycommhelper.hh>
+#include <dune/grid/test/periodicmap.hh>
 
 template< Dune::PartitionIteratorType pitype >
 struct PartitionFilter;
@@ -124,7 +131,14 @@ struct CheckPartitionType< GridView, pitype >::CheckCodim
     typedef typename GridView::template Codim< codim >::template Partition< pitype >::Iterator Iterator;
     typedef typename GridView::template Codim< 0 >::template Partition< Dune::All_Partition >::Iterator AllIterator;
 
-    typedef std::map< typename IdSet::IdType, Dune::PartitionType > Map;
+    // entities are identified by geometry type and index, as periodic copies
+    // of an entity are different entities, but share the same id
+    const auto &indexSet = gridView.indexSet();
+    // (the type is stored as GlobalGeometryTypeIndex, std::pair would compare
+    // GeometryTypes by their exact topology id)
+    typedef std::pair< std::size_t, typename GridView::IndexSet::IndexType > Key;
+
+    typedef std::map< Key, Dune::PartitionType > Map;
     typedef typename Map::iterator MapIterator;
     Map map;
 
@@ -139,7 +153,7 @@ struct CheckPartitionType< GridView, pitype >::CheckCodim
                     << " visited entity " << idSet.id( *it )
                     << " with partition type " << pt << "." << std::endl;
         }
-        map[ idSet.id( *it ) ] = pt;
+        map[ Key( Dune::GlobalGeometryTypeIndex::index( it->type() ), indexSet.index( *it ) ) ] = pt;
       }
 
       const AllIterator allEnd = gridView.template end< 0, Dune::All_Partition >();
@@ -149,7 +163,8 @@ struct CheckPartitionType< GridView, pitype >::CheckCodim
         const int subEntities = it->subEntities(codim);
         for( int i = 0; i < subEntities; ++i )
         {
-          Dune::PartitionType pt = it->template subEntity< codim >( i ).partitionType();
+          const auto subEntity = it->template subEntity< codim >( i );
+          Dune::PartitionType pt = subEntity.partitionType();
           if( !possibleSubPartitionType( ept, pt ) )
           {
             std::cerr << "Error: Codim " << codim << " entity " << idSet.subId( *it, i, codim )
@@ -157,7 +172,8 @@ struct CheckPartitionType< GridView, pitype >::CheckCodim
                       << idSet.id( *it ) << " with partition type " << ept << "." << std::endl;
           }
 
-          const MapIterator mapIt = map.find( idSet.subId( *it, i, codim ) );
+          const MapIterator mapIt = map.find( Key( Dune::GlobalGeometryTypeIndex::index( subEntity.type() ),
+                                                   indexSet.subIndex( *it, i, codim ) ) );
           if( mapIt == map.end() )
           {
             if( PartitionFilter< pitype >::contains( pt ) )
@@ -211,15 +227,24 @@ class CheckPartitionDataHandle
   static const int dimension = GridView::dimension;
 
   typedef typename GridView::Grid Grid;
-  typedef typename Grid::LocalIdSet IdSet;
+  typedef typename GridView::IndexSet IndexSet;
 
-  typedef std::set< typename IdSet::IdType > CommSet;
+  // entities are identified by codim, geometry type and index, as periodic
+  // copies of an entity are different entities, but share the same id
+  typedef std::tuple< int, std::size_t, typename IndexSet::IndexType > Key;
+  typedef std::set< Key > CommSet;
+
+  template< class Entity >
+  Key key ( const Entity &entity ) const
+  {
+    return Key( Entity::codimension, Dune::GlobalGeometryTypeIndex::index( entity.type() ), indexSet_.index( entity ) );
+  }
 
 public:
   explicit CheckPartitionDataHandle ( const GridView &gridView )
     : gridView_( gridView ),
       rank_( gridView_.comm().rank() ),
-      idSet_( gridView_.grid().localIdSet() ),
+      indexSet_( gridView_.indexSet() ),
       invalidDimension_( false ),
       invalidCodimension_( false ),
       invalidEntity_( false ),
@@ -249,7 +274,7 @@ public:
       if( entity.partitionType() == Dune::InteriorEntity )
         continue;
 
-      const bool wasSent = (sendSet_.find( idSet_.id( entity ) ) != sendSet_.end());
+      const bool wasSent = (sendSet_.find( key( entity ) ) != sendSet_.end());
       if( Dune::EntityCommHelper< iftype >::send( entity.partitionType() ) && !wasSent )
       {
         std::cout << "[ " << rank_ << " ] Error: No data sent on non-interior entity "
@@ -258,7 +283,7 @@ public:
         sendFailure = true;
       }
 
-      const bool wasReceived = (receiveSet_.find( idSet_.id( entity ) ) != receiveSet_.end());
+      const bool wasReceived = (receiveSet_.find( key( entity ) ) != receiveSet_.end());
       if( Dune::EntityCommHelper< iftype >::receive( entity.partitionType() ) && !wasReceived )
       {
         std::cout << "[ " << rank_ << " ] Error: No data received on non-interior entity "
@@ -326,7 +351,7 @@ public:
     buffer.write( rank_ );
     buffer.write( int( entity.partitionType() ) );
 
-    sendSet_.insert( idSet_.id( entity ) );
+    sendSet_.insert( key( entity ) );
   }
 
   template< class Buffer, class Entity >
@@ -343,7 +368,7 @@ public:
     buffer.read( rank );
     buffer.read( partitionType );
 
-    receiveSet_.insert( idSet_.id( entity ) );
+    receiveSet_.insert( key( entity ) );
 
     selfReceive_ |= (rank == rank_);
     if( (partitionType == int( Dune::InteriorEntity )) && (entity.partitionType() == Dune::InteriorEntity) )
@@ -380,7 +405,7 @@ public:
 private:
   const GridView &gridView_;
   const int rank_;
-  const IdSet &idSet_;
+  const IndexSet &indexSet_;
   std::bitset< dimension+1 > contains_;
   mutable CommSet sendSet_, receiveSet_;
   mutable bool invalidDimension_;
@@ -396,9 +421,62 @@ private:
 
 
 
+/** \brief check the partition types of the periodic copies of an entity on this process
+ *
+ * An interior entity is owned by this process and does not lie on a process
+ * boundary. Hence, all its periodic copies on this process are overlap, front,
+ * or ghost entities. A border entity can have border copies, e.g., the
+ * vertices on opposite sides of a periodic domain.
+ *
+ * Only local coincidences are checked; copies on other processes are not visible here.
+ */
 template< class GridView >
-inline void checkPartitionType ( const GridView &gridView )
+inline void checkPeriodicPartitionTypes ( const GridView &gridView,
+                                          const Dune::GridCheck::PeriodicMap< GridView > &periodicMap )
 {
+  Dune::Hybrid::forEach( std::make_index_sequence< GridView::dimension+1 >{}, [ & ]( auto codim )
+  {
+    if constexpr( Dune::Capabilities::hasEntity< typename GridView::Grid, codim >::v )
+    {
+      typedef Dune::GridCheck::PeriodicIdentification< GridView > Identification;
+      const Identification periodic( gridView, codim, periodicMap );
+      if( !periodic.hasCoincidences() )
+        return;
+
+      std::map< typename Identification::Key, Dune::PartitionType > partitionType;
+      for( const auto &element : elements( gridView ) )
+        for( unsigned int i = 0; i < element.subEntities( codim ); ++i )
+          partitionType[ periodic.subKey( element, i, codim ) ] = element.template subEntity< codim >( i ).partitionType();
+
+      for( std::size_t c = 0; c < periodic.size(); ++c )
+      {
+        int interior = 0, border = 0;
+        for( const auto &key : periodic.members( c ) )
+        {
+          interior += (partitionType[ key ] == Dune::InteriorEntity);
+          border += (partitionType[ key ] == Dune::BorderEntity);
+        }
+        if( (interior > 1) || ((interior == 1) && (border > 0)) )
+          DUNE_THROW( Dune::GridError, "Codim " << codim << " entity has " << interior << " interior and "
+                      << border << " border periodic copies (expected: at most one interior and no border copy"
+                      << " or no interior copy)." );
+      }
+    }
+  } );
+}
+
+
+/** \brief check the partition types and the communication interfaces of a grid view
+ *
+ * \param periodicMap maps each coordinate to its representative in the periodic
+ *                    unit cell, see dune/grid/test/periodicmap.hh
+ */
+template< class GridView >
+inline void checkPartitionType ( const GridView &gridView,
+                                 const Dune::GridCheck::PeriodicMap< GridView > &periodicMap = Dune::GridCheck::noPeriodicMap< GridView >() )
+{
+  checkPeriodicPartitionTypes( gridView, periodicMap );
+
   CheckPartitionType< GridView, Dune::Interior_Partition >::apply( gridView );
   CheckPartitionType< GridView, Dune::InteriorBorder_Partition >::apply( gridView );
   CheckPartitionType< GridView, Dune::Overlap_Partition >::apply( gridView );

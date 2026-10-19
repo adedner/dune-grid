@@ -388,14 +388,14 @@ namespace Dune {
         }
         else
         {
-          //check lower boundary
+          //check lower boundary: there is a neighbor unless the interior starts
+          //at the domain boundary (note that o_interior - overlap >= 0 also
+          //holds at the domain boundary for overlap 0)
           if (o_interior[i] - overlap < 0)
             o_overlap[i] = 0;
           else
-          {
             o_overlap[i] = o_interior[i] - overlap;
-            ovlp_low[i] = true;
-          }
+          ovlp_low[i] = (o_interior[i] > 0);
 
           //check upper boundary
           if (o_overlap[i] + g.coords.size(i) < globalSize(i))
@@ -438,10 +438,13 @@ namespace Dune {
               size[i]++;
           *overlapfront_it = YGridComponent<Coordinates>(origin, r, &g.coords, size, n, size);
 
-          // build overlap
+          // build overlap: remove the front, i.e. the outer layer of
+          // entities without shift; for overlap 0 there is no front, the
+          // outer layer consists of border entities
+          const bool hasFront = (overlap > 0);
           for (int i=0; i<dim; i++)
           {
-            if (!r[i])
+            if (!r[i] && hasFront)
             {
               if (ovlp_low[i])
               {
@@ -461,7 +464,7 @@ namespace Dune {
             {
               origin[i] += overlap;
               size[i] -= overlap;
-              if (!r[i])
+              if (!r[i] && hasFront)
               {
                 origin[i]--;
                 size[i]++;
@@ -470,7 +473,7 @@ namespace Dune {
             if (ovlp_up[i])
             {
               size[i] -= overlap;
-              if (!r[i])
+              if (!r[i] && hasFront)
                 size[i]++;
             }
           }
@@ -687,7 +690,9 @@ namespace Dune {
       {
         for (int i=0; i<dim; i++)
         {
-          sides[i] =
+          // periodic directions have no boundary (this matters for overlap 0,
+          // otherwise the origin of the overlap grid is negative)
+          sides[i] = _periodic[i] ? 0 :
             ((begin()->overlap[0].dataBegin()->origin(i) == 0)+
              (begin()->overlap[0].dataBegin()->origin(i) + begin()->overlap[0].dataBegin()->size(i)
                     == levelSize(0,i)));
@@ -762,13 +767,13 @@ namespace Dune {
         || std::is_same<Coordinates,EquidistantOffsetCoordinates<ctype,dim> >::value)
       {
         for (std::size_t i=0; i<dim; i++)
-          _L[i] = coordinates.size(i) * coordinates.meshsize(i,0);
+          _LL[i] =coordinates.size(i) * coordinates.meshsize(i,0);
       }
       if (std::is_same<Coordinates,TensorProductCoordinates<ctype,dim> >::value)
       {
         //determine sizes of vector to correctly construct torus structure and store for later size requests
         for (int i=0; i<dim; i++)
-          _L[i] = coordinates.coordinate(i,_coarseSize[i]) - coordinates.coordinate(i,0);
+          _LL[i] =coordinates.coordinate(i,_coarseSize[i]) - coordinates.coordinate(i,0);
       }
 
 #if HAVE_MPI
@@ -908,7 +913,7 @@ namespace Dune {
               Communication comm = Communication(),
               const Yasp::Partitioning<dim>* partitioner = defaultPartitioner())
       : ccobj(comm), _torus(comm,tag,s,overlap,partitioner), leafIndexSet_(*this),
-        _L(L), _periodic(periodic), _coarseSize(s), _overlap(overlap),
+        _LL(L), _periodic(periodic), _coarseSize(s), _overlap(overlap),
         keep_ovlp(true), adaptRefCount(0), adaptActive(false)
     {
       _levels.resize(1);
@@ -979,7 +984,7 @@ namespace Dune {
               Communication comm = Communication(),
               const Yasp::Partitioning<dim>* partitioner = defaultPartitioner())
       : ccobj(comm), _torus(comm,tag,s,overlap,partitioner), leafIndexSet_(*this),
-        _L(upperright - lowerleft),
+        _LL(upperright - lowerleft),
         _periodic(periodic), _coarseSize(s), _overlap(overlap),
         keep_ovlp(true), adaptRefCount(0), adaptActive(false)
     {
@@ -1057,7 +1062,7 @@ namespace Dune {
       //determine sizes of vector to correctly construct torus structure and store for later size requests
       for (int i=0; i<dim; i++) {
         _coarseSize[i] = coords[i].size() - 1;
-        _L[i] = coords[i][_coarseSize[i]] - coords[i][0];
+        _LL[i] =coords[i][_coarseSize[i]] - coords[i][0];
       }
 
       iTupel o;
@@ -1171,7 +1176,7 @@ namespace Dune {
         DUNE_THROW(Dune::GridError,"Setup of a tensorproduct grid requires monotonous sequences of coordinates.");
 
       for (int i=0; i<dim; i++)
-        _L[i] = coords[i][coords[i].size() - 1] - coords[i][0];
+        _LL[i] =coords[i][coords[i].size() - 1] - coords[i][0];
 
       _levels.resize(1);
 
@@ -1460,7 +1465,7 @@ namespace Dune {
 
     //! \brief returns the size of the physical domain
     const Dune::FieldVector<ctype, dim>& domainSize () const {
-      return _L;
+      return _LL;
     }
 
     /*! The new communication interface
@@ -1857,7 +1862,8 @@ namespace Dune {
     YaspIndexSet<const YaspGrid<dim,Coordinates>, true> leafIndexSet_;
     YaspGlobalIdSet<const YaspGrid<dim,Coordinates> > theglobalidset;
 
-    Dune::FieldVector<ctype, dim> _L;
+    // do not call this _L, which is a macro on some BSD systems
+    Dune::FieldVector<ctype, dim> _LL;
     iTupel _s;
     std::bitset<dim> _periodic;
     iTupel _coarseSize;

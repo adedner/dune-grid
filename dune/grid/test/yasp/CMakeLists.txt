@@ -50,4 +50,10 @@ dune_add_test(NAME test-yaspgrid-yaspfactory-3d
               TIMEOUT 666
               )
 
+dune_add_test(NAME test-yaspgrid-periodic
+              SOURCES test-yaspgrid-periodic.cc
+              MPI_RANKS 1 2
+              TIMEOUT 666
+              )
+
 dune_add_test(SOURCES test-yaspgrid-constructor.cc)

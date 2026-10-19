@@ -92,6 +92,7 @@ install(FILES basicunitcube.hh
               coordinatetolerance.hh
               functions.hh
               gridcheck.hh
+              periodicmap.hh
               staticcheck.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/grid/test)
 

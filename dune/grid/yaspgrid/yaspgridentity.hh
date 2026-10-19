@@ -232,6 +232,31 @@ namespace Dune {
       return EntityShiftTable<calculate_entity_move<dim>,dim>::evaluate(index,cc);
     }
 
+    /** \brief map an integer coordinate into the periodic unit cell
+     *  \param coord integer coordinate (of the cell an entity lives on) on level `level`
+     *  \param mg the YaspGrid
+     *  \param level the grid level of `coord`
+     *
+     *  In a periodic direction the overlap holds copies of entities from
+     *  the opposite side of the domain. Their integer coordinates lie
+     *  outside of [0,levelSize) and differ from the coordinate of the
+     *  original by a multiple of levelSize. Reducing modulo levelSize gives
+     *  the same representative for all copies. This holds for all
+     *  codimensions, i.e. the vertices 0 and levelSize are identified, too.
+     *  Non-periodic directions are not changed.
+     */
+    template<class MG, std::size_t dim>
+    std::array<int,dim> periodicCoordinate(std::array<int,dim> coord, const MG& mg, int level)
+    {
+      for (std::size_t i=0; i<dim; i++)
+        if (mg.isPeriodic(i))
+        {
+          const int size = mg.levelSize(level,i);
+          coord[i] = ((coord[i] % size) + size) % size;
+        }
+      return coord;
+    }
+
 #endif //DOXYGEN
 
   } // namespace Yasp.
@@ -332,16 +357,8 @@ namespace Dune {
     //! globally unique, persistent index
     PersistentIndexType persistentIndex () const
     {
-      // get size of global grid (in elements)
-      std::array<int,dim> size;
-
-      for (int i=0; i<dim; i++)
-      {
-        // correct size according to shift
-        size[i] = _g->mg->levelSize(_g->level(), i);
-        if (!_it.shift(i))
-          size[i]++;
-      }
+      // periodic copies share the id of the original
+      std::array<int,dim> coord = Dune::Yasp::periodicCoordinate(_it.coord(), *_g->mg, _g->level());
 
       // encode codim
       PersistentIndexType id(_it.shift().to_ulong());
@@ -354,7 +371,7 @@ namespace Dune {
       for (int i=dim-1; i>=0; i--)
       {
         id = id << yaspgrid_dim_bits;
-        id = id+PersistentIndexType(_it.coord(i));
+        id = id+PersistentIndexType(coord[i]);
       }
 
       return id;
@@ -490,26 +507,7 @@ namespace Dune {
     //! geometry of this entity
     Geometry geometry () const {
       // the element geometry
-      auto ll = _it.lowerleft();
-      auto ur = _it.upperright();
-
-      // If on periodic overlap, transform coordinates by domain size
-      for (int i=0; i<dimworld; i++) {
-        if (gridlevel()->mg->isPeriodic(i)) {
-          int coord = transformingsubiterator().coord(i);
-          if (coord < 0) {
-            auto size = _g->mg->domainSize()[i];
-            ll[i] += size;
-            ur[i] += size;
-          } else if (coord + 1 > gridlevel()->mg->levelSize(gridlevel()->level(),i)) {
-            auto size = _g->mg->domainSize()[i];
-            ll[i] -= size;
-            ur[i] -= size;
-          }
-        }
-      }
-
-      GeometryImpl _geometry(ll,ur);
+      GeometryImpl _geometry(_it.lowerleft(),_it.upperright());
       return Geometry( _geometry );
     }
 
@@ -571,8 +569,9 @@ namespace Dune {
       // coordinates of the cell
       iTupel coord = _it.coord();
 
-      // get coordinates on next coarser level
-      for (int k=0; k<dim; k++) coord[k] = coord[k]/2;
+      // get coordinates on next coarser level; round down, coordinates in the
+      // periodic overlap can be negative
+      for (int k=0; k<dim; k++) coord[k] = coord[k] >> 1;
 
       return Entity(YaspEntity<0,GridImp::dimension,GridImp>(cg,cg->overlap[0].begin(coord)));
     }
@@ -682,6 +681,9 @@ namespace Dune {
     //! globally unique, persistent index
     PersistentIndexType persistentIndex () const
     {
+      // periodic copies share the id of the original
+      std::array<int,dim> coord = Dune::Yasp::periodicCoordinate(_it.coord(), *_g->mg, _g->level());
+
       // encode codim
       PersistentIndexType id(_it.shift().to_ulong());
 
@@ -694,7 +696,7 @@ namespace Dune {
       for (int i=dim-1; i>=0; i--)
       {
         id = id << yaspgrid_dim_bits;
-        id = id+PersistentIndexType(_it.coord(i));
+        id = id+PersistentIndexType(coord[i]);
       }
 
       return id;
@@ -715,18 +717,16 @@ namespace Dune {
 
       int trailing = (cc == dim) ? 1000 : 0;
 
-      std::array<int,dim> size = _g->mg->levelSize(_g->level());
       std::array<int, dim> coord = _it.coord();
       for (int j=0; j<dim; j++)
       {
-        // correct size according to shift
-        if (!shift[j])
-          size[j]++;
-
         // move the coordinates to the cell on which the entity lives
         if (move[j])
           coord[j]++;
       }
+
+      // periodic copies share the id of the original
+      coord = Dune::Yasp::periodicCoordinate(coord, *_g->mg, _g->level());
 
       for (int j=0; j<dim; j++)
       {
@@ -888,14 +888,10 @@ namespace Dune {
     //! globally unique, persistent index
     PersistentIndexType persistentIndex () const
     {
-      // get coordinate and size of global grid
-      iTupel size = _g->mg->levelSize(_g->level());
-
-      for (int i=0; i<dim; i++)
-      {
-        // we have vertices, add 1 size to all directions
-        size[i]++;
-      }
+      // periodic copies share the id of the original
+      // (levelSize is a multiple of 2^level, so this does not change the
+      // number of trailing zeroes, i.e. the level a vertex is created on)
+      iTupel coord = Dune::Yasp::periodicCoordinate(_it.coord(), *_g->mg, _g->level());
 
       // determine min number of trailing zeroes
       int trailing = 1000;
@@ -904,7 +900,7 @@ namespace Dune {
         // count trailing zeros
         int zeros = 0;
         for (int j=0; j<_g->level(); j++)
-          if (_it.coord(i)&(1<<j))
+          if (coord[i]&(1<<j))
             break;
           else
             zeros++;
@@ -925,7 +921,7 @@ namespace Dune {
       for (int i=dim-1; i>=0; i--)
       {
         id = id << yaspgrid_dim_bits;
-        id = id+PersistentIndexType(_it.coord(i)>>trailing);
+        id = id+PersistentIndexType(coord[i]>>trailing);
       }
 
       return id;

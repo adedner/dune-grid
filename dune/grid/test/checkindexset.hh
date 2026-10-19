@@ -23,6 +23,7 @@
 #include <dune/grid/common/partitionset.hh>
 #include <dune/grid/common/rangegenerators.hh>
 #include <dune/grid/test/coordinatetolerance.hh>
+#include <dune/grid/test/periodicmap.hh>
 
 /** @file
    @author Robert Kloefkorn
@@ -395,7 +396,8 @@ namespace Dune
   // check some functionality of grid
   template< int codim, class Grid, class GridView, class OutputStream >
   void checkIndexSetForCodim ( const Grid &grid, const GridView &view,
-                               OutputStream &sout, bool levelIndex )
+                               OutputStream &sout, bool levelIndex,
+                               const GridCheck::PeriodicMap< GridView > &periodicMap )
   {
     constexpr static int dim = Grid :: dimension;
     constexpr static int dimworld = Grid :: dimensionworld;
@@ -493,6 +495,16 @@ namespace Dune
       if( itC == enditC )
         return;
 
+      // periodic copies of an entity are different entities (with different
+      // indices) that share the same id; group the entities by id
+      const GridCheck::PeriodicIdentification< GridView > periodic( view, codim, periodicMap );
+      using Key = typename GridCheck::PeriodicIdentification< GridView >::Key;
+      std::set< Key > keys;
+      std::map< IdType, std::vector< Key > > keysOfId;
+      // center and partition type of each entity, for error messages
+      using Coordinate = typename GridView::template Codim< 0 >::Geometry::GlobalCoordinate;
+      std::map< Key, std::pair< Coordinate, PartitionType > > info;
+
       const auto &localIdSet = grid.localIdSet();
       for( ; itC != enditC; ++itC )
       {
@@ -505,15 +517,68 @@ namespace Dune
         const int subcount = entity.subEntities(codim);
         for( int i = 0; i < subcount; ++i )
         {
-          const auto id = localIdSet.id( entity.template subEntity< codim >( i ) );
+          const auto subEntity = entity.template subEntity< codim >( i );
+          const auto id = localIdSet.id( subEntity );
           entityfound.insert( id );
+          const Key key = periodic.subKey( entity, i, codim );
+          if( keys.insert( key ).second )
+          {
+            // ghosts are virtual copies of entities of other processes with less
+            // consistency requirements (e.g., ALUGrid may store the same remote
+            // element several times as ghost, with different indices and ids);
+            // they are skipped in the check of ids against periodic copies
+            if( subEntity.partitionType() != GhostEntity )
+              keysOfId[ id ].push_back( key );
+            info[ key ] = { subEntity.geometry().center(), subEntity.partitionType() };
+          }
         }
       }
 
-      if( (size_t)gridsize != entityfound.size() )
+      // the indices of the subentities of the elements are 0, ..., size-1 for each geometry type
+      // (the number of entities visited by the codim iterator is compared to the size above)
+      for( const auto &type : lset.types( codim ) )
+      {
+        const std::size_t typeIndex = GlobalGeometryTypeIndex::index( type );
+        const std::size_t count = std::count_if( keys.begin(), keys.end(),
+                                                 [ typeIndex ] ( const Key &key ) { return key.first == typeIndex; } );
+        const bool inRange = std::all_of( keys.begin(), keys.end(), [ & ] ( const Key &key )
+                                          { return (key.first != typeIndex) || (std::size_t( key.second ) < std::size_t( lset.size( type ) )); } );
+        if( (count != (size_t)lset.size( type )) || !inRange )
+        {
+          std::cerr << "Error: the indices of the " << count << " entities of type " << type
+                    << " are not 0, ..., " << lset.size( type )-1 << " [codim " << codim << "]" << std::endl;
+          assert( false );
+        }
+      }
+
+      // the entities with the same id are exactly the periodic copies of one entity
+      std::size_t copies = 0;
+      for( const auto &[ id, idKeys ] : keysOfId )
+      {
+        const std::size_t c = periodic.classOf( idKeys.front() );
+        const bool sameClass = std::all_of( idKeys.begin(), idKeys.end(),
+                                            [ & ] ( const Key &key ) { return periodic.classOf( key ) == c; } );
+        if( !sameClass || (idKeys.size() != periodic.members( c ).size()) )
+        {
+          std::cerr << "Error: the " << idKeys.size() << " entities with id " << id
+                    << " are not the " << periodic.members( c ).size() << " periodic copies of one entity"
+                    << " [codim " << codim << "]" << std::endl;
+          for( const auto &key : periodic.members( c ) )
+            std::cerr << "  periodic copy: index " << key.second << " at " << info[ key ].first
+                      << " (" << info[ key ].second << ")" << std::endl;
+          for( const auto &key : idKeys )
+            std::cerr << "  entity with this id: index " << key.second << " at " << info[ key ].first
+                      << " (" << info[ key ].second << ")" << std::endl;
+          assert( false );
+        }
+        copies += idKeys.size() - 1;
+      }
+
+      if( (size_t)gridsize != entityfound.size() + copies )
       {
         std::cerr << "Warning: gridsize = " << gridsize << " entities"
                   << ", set of entities = " << entityfound.size()
+                  << ", periodic copies = " << copies
                   << " [codim " << codim << "]" << std::endl;
       }
 
@@ -685,15 +750,22 @@ namespace Dune
     }
   }
 
+  /** \brief check the index set of a grid view
+   *
+   * \param periodicMap maps each coordinate to its representative in the periodic
+   *                    unit cell, see dune/grid/test/periodicmap.hh; periodic copies
+   *                    of an entity have different indices but the same id
+   */
   template< class Grid, class GridView, class OutputStream >
   void checkIndexSet ( const Grid &grid, const GridView &view,
-                       OutputStream &sout,  bool levelIndex = false )
+                       OutputStream &sout,  bool levelIndex = false,
+                       const GridCheck::PeriodicMap< GridView > &periodicMap = GridCheck::noPeriodicMap< GridView >() )
   {
     Hybrid::forEach( std::make_index_sequence< Grid :: dimension+1 >{},
       [ & ]( auto codim )
     {
       if constexpr (Capabilities :: hasEntityIterator< Grid, codim>::v)
-        checkIndexSetForCodim< codim >( grid, view, sout, levelIndex );
+        checkIndexSetForCodim< codim >( grid, view, sout, levelIndex, periodicMap );
       else
         derr << "WARNING: Entities for codim " << int(codim)
              << " are not being tested!" << std::endl;
