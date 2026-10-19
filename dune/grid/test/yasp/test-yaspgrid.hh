@@ -33,9 +33,21 @@ template<int dim, class CC>
 struct YaspFactory
 {};
 
+// the periodic map for a grid built by YaspFactory, which is periodic in direction 0 if periodic==true
+template<int dim, class CC>
+Dune::GridCheck::PeriodicMap<Dune::YaspGrid<dim,CC> > yaspPeriodicMap(bool periodic)
+{
+  std::bitset<dim> p(0);
+  p[0] = periodic;
+  return Dune::GridCheck::periodicBoxMap(YaspFactory<dim,CC>::lowerLeft(), YaspFactory<dim,CC>::upperRight(), p);
+}
+
 template<int dim>
 struct YaspFactory<dim, Dune::EquidistantCoordinates<double,dim> >
 {
+  static Dune::FieldVector<double,dim> lowerLeft () { return Dune::FieldVector<double,dim>(0.0); }
+  static Dune::FieldVector<double,dim> upperRight () { return Dune::FieldVector<double,dim>(1.0); }
+
   static Dune::YaspGrid<dim>* buildGrid(
       bool keepPhysicalOverlap = true, int refCount = 0, bool periodic = false,
       bool useGenericConstructor = false)
@@ -45,7 +57,7 @@ struct YaspFactory<dim, Dune::EquidistantCoordinates<double,dim> >
       std::cout << " with generic constructor";
     std::cout << "!" << std::endl << std::endl;
 
-    Dune::FieldVector<double,dim> len(1.0);
+    Dune::FieldVector<double,dim> len = upperRight();
     std::array<int,dim> s;
     std::fill(s.begin(), s.end(), 4);
     s[0] = 8;
@@ -72,6 +84,9 @@ struct YaspFactory<dim, Dune::EquidistantCoordinates<double,dim> >
 template<int dim>
 struct YaspFactory<dim, Dune::EquidistantOffsetCoordinates<double,dim> >
 {
+  static Dune::FieldVector<double,dim> lowerLeft () { return Dune::FieldVector<double,dim>(-1.0); }
+  static Dune::FieldVector<double,dim> upperRight () { return Dune::FieldVector<double,dim>(1.0); }
+
   static Dune::YaspGrid<dim, Dune::EquidistantOffsetCoordinates<double,dim> >* buildGrid(
       bool keepPhysicalOverlap = true, int refCount = 0, bool periodic = false,
       bool useGenericConstructor = false)
@@ -81,8 +96,8 @@ struct YaspFactory<dim, Dune::EquidistantOffsetCoordinates<double,dim> >
     else
       std::cout << " using equidistant coordinate container with non-zero origin!" << std::endl << std::endl;
 
-    Dune::FieldVector<double,dim> lowerleft(-1.0);
-    Dune::FieldVector<double,dim> upperright(1.0);
+    Dune::FieldVector<double,dim> lowerleft = lowerLeft();
+    Dune::FieldVector<double,dim> upperright = upperRight();
     std::array<int,dim> s;
     std::fill(s.begin(), s.end(), 4);
     s[0] = 8;
@@ -109,6 +124,9 @@ struct YaspFactory<dim, Dune::EquidistantOffsetCoordinates<double,dim> >
 template<int dim>
 struct YaspFactory<dim, Dune::TensorProductCoordinates<double,dim> >
 {
+  static Dune::FieldVector<double,dim> lowerLeft () { return Dune::FieldVector<double,dim>(-1.0); }
+  static Dune::FieldVector<double,dim> upperRight () { return Dune::FieldVector<double,dim>(1.0); }
+
   static Dune::YaspGrid<dim, Dune::TensorProductCoordinates<double,dim> >* buildGrid(
       bool keepPhysicalOverlap = true, int refCount = 0, bool periodic = false,
       bool useGenericConstructor = false)
@@ -162,21 +180,23 @@ struct YaspFactory<dim, Dune::TensorProductCoordinates<double,dim> >
 };
 
 template <int dim, class CC>
-void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid) {
+void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid,
+                const Dune::GridCheck::PeriodicMap<Dune::YaspGrid<dim,CC> >& periodicMap
+                  = Dune::GridCheck::noPeriodicMap<Dune::YaspGrid<dim,CC> >()) {
   std::cout << std::endl << "YaspGrid<" << dim << ">";
 
-  gridcheck(*grid);
+  gridcheck(*grid, periodicMap);
 
-  checkIterators ( grid->leafGridView() );
-  checkIterators ( grid->levelGridView(0) );
+  checkIterators ( grid->leafGridView(), periodicMap );
+  checkIterators ( grid->levelGridView(0), periodicMap );
 
   // check communication interface
-  checkCommunication(*grid,-1,Dune::dvverb);
+  checkCommunication(*grid,-1,Dune::dvverb,periodicMap);
   for(int l=0; l<=grid->maxLevel(); ++l)
-    checkCommunication(*grid,l,Dune::dvverb);
+    checkCommunication(*grid,l,Dune::dvverb,periodicMap);
 
   // check communication correctness
-  Dune::GridCheck::check_communication_correctness(grid->leafGridView());
+  Dune::GridCheck::check_communication_correctness(grid->leafGridView(), periodicMap);
 
   // check geometry lifetime
   checkGeometryLifetime( grid->leafGridView() );
@@ -186,7 +206,7 @@ void check_yasp(std::string testID, Dune::YaspGrid<dim,CC>* grid) {
   checkIntersectionIterator(*grid);
   // check grid adaptation interface
   checkAdaptRefinement(*grid);
-  checkPartitionType( grid->leafGridView() );
+  checkPartitionType( grid->leafGridView(), periodicMap );
 
   std::ofstream file;
   std::ostringstream filename;

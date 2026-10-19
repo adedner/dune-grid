@@ -8,12 +8,14 @@
 #include <iostream>
 #include <map>
 #include <utility>
+#include <vector>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/test/iteratortest.hh>
 
 #include <dune/grid/common/capabilities.hh>
+#include <dune/grid/test/periodicmap.hh>
 
 template<class T>
 class NoopFunctor {
@@ -32,7 +34,8 @@ struct CheckCodimIterators;
 template< class GridView, int codim >
 struct CheckCodimIterators< GridView, codim, false >
 {
-  static void apply ( const GridView &gridView )
+  static void apply ( const GridView &gridView,
+                      const Dune::GridCheck::PeriodicMap< GridView > & = Dune::GridCheck::noPeriodicMap< GridView >() )
   {
     std::cerr << "Warning: Not checking iterators for codimension " << codim
               << ", because the corresponding entities are not implemented." << std::endl;
@@ -42,7 +45,8 @@ struct CheckCodimIterators< GridView, codim, false >
 template< class GridView, int codim >
 struct CheckCodimIterators< GridView, codim, true >
 {
-  static void apply ( const GridView &gridView );
+  static void apply ( const GridView &gridView,
+                      const Dune::GridCheck::PeriodicMap< GridView > &periodicMap = Dune::GridCheck::noPeriodicMap< GridView >() );
 };
 
 
@@ -56,10 +60,11 @@ class CheckIterators
   struct CheckCodim;
 
 public:
-  static void apply ( const GridView &gridView )
+  static void apply ( const GridView &gridView,
+                      const Dune::GridCheck::PeriodicMap< GridView > &periodicMap = Dune::GridCheck::noPeriodicMap< GridView >() )
   {
     std::cout << "Checking iterators for higher codimension..." << std::endl;
-    Dune::Hybrid::forEach( std::make_index_sequence< GridView::dimension >{}, [ & ]( auto i ){ CheckCodim< i+1 >::apply( gridView ); } );
+    Dune::Hybrid::forEach( std::make_index_sequence< GridView::dimension >{}, [ & ]( auto i ){ CheckCodim< i+1 >::apply( gridView, periodicMap ); } );
   }
 };
 
@@ -71,9 +76,9 @@ template< class GridView >
 template< int codim >
 struct CheckIterators< GridView >::CheckCodim
 {
-  static void apply ( const GridView &gridView )
+  static void apply ( const GridView &gridView, const Dune::GridCheck::PeriodicMap< GridView > &periodicMap )
   {
-    return CheckCodimIterators< GridView, codim >::apply( gridView );
+    return CheckCodimIterators< GridView, codim >::apply( gridView, periodicMap );
   }
 };
 
@@ -83,18 +88,25 @@ struct CheckIterators< GridView >::CheckCodim
 
 template< class GridView, int codim >
 inline void CheckCodimIterators< GridView, codim, true >
-::apply ( const GridView &gridView )
+::apply ( const GridView &gridView, const Dune::GridCheck::PeriodicMap< GridView > &periodicMap )
 {
   typedef typename GridView::Grid::Traits::LocalIdSet::IdType IdType;
 
   const auto &idSet = gridView.grid().localIdSet();
 
+  // periodic copies of the same entity are different entities of the grid view
+  // (with different indices), but they share the same id
+  const Dune::GridCheck::PeriodicIdentification< GridView > periodic( gridView, codim, periodicMap );
+  using Key = typename Dune::GridCheck::PeriodicIdentification< GridView >::Key;
+
   std::map< IdType, int > count;
+  std::map< Key, int > keyCount;
 
   const auto codimEnd = gridView.template end< codim >();
   for( auto it = gridView.template begin< codim >(); it != codimEnd; ++it )
   {
     ++count[ idSet.id( *it ) ];
+    ++keyCount[ periodic.key( *it ) ];
   }
 
   const auto elementEnd = gridView.template end< 0 >();
@@ -103,13 +115,26 @@ inline void CheckCodimIterators< GridView, codim, true >
     const auto &entity = *it;
     for( std::size_t i = 0; i < entity.subEntities(codim); ++i )
     {
+      // each entity is visited exactly once ...
+      const Key key = periodic.subKey( entity, i, codim );
+      if( keyCount[ key ] != 1 )
+      {
+        std::cerr << "Error: Codim " << codim << " iterator"
+                  << " visited entity with index " << key.second
+                  << " " << keyCount[ key ] << " times." << std::endl;
+        assert( keyCount[ key ] == 1 );
+      }
+
+      // ... and so is each id, once for each periodic copy on this process
       IdType id = idSet.subId( entity, i, codim );
-      if( count[ id ] != 1 )
+      const int copies = periodic.members( periodic.classOf( key ) ).size();
+      if( count[ id ] != copies )
       {
         std::cerr << "Error: Codim " << codim << " iterator"
                   << " visited entity " << id
-                  << " " << count[ id ] << " times." << std::endl;
-        assert( count[ id ] == 1 );
+                  << " " << count[ id ] << " times"
+                  << " (expected " << copies << " periodic copies)." << std::endl;
+        assert( count[ id ] == copies );
       }
     }
   }
@@ -125,10 +150,16 @@ inline void CheckCodimIterators< GridView, codim, true >
 
 
 
+/** \brief check the codim iterators of a grid view
+ *
+ * \param periodicMap maps each coordinate to its representative in the periodic
+ *                    unit cell, see dune/grid/test/periodicmap.hh
+ */
 template< class GridView >
-inline void checkIterators ( const GridView &gridView )
+inline void checkIterators ( const GridView &gridView,
+                             const Dune::GridCheck::PeriodicMap< GridView > &periodicMap = Dune::GridCheck::noPeriodicMap< GridView >() )
 {
-  CheckIterators< GridView >::apply( gridView );
+  CheckIterators< GridView >::apply( gridView, periodicMap );
 }
 
 #endif // DUNE_GRID_TEST_CHECKITERATORS_HH
