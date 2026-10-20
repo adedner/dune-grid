@@ -346,6 +346,9 @@ namespace Dune
       return hostgrid_->postAdapt();
     }
 
+    /** \brief return grid sequence counter */
+    int sequence() const { return hostgrid_->sequence(); }
+
     /*@}*/
 
     /** \brief Size of the overlap on the leaf level */
