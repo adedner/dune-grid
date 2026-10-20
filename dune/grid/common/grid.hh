@@ -9,9 +9,11 @@
     \brief Different resources needed by all grid implementations
  */
 // system includes
+#include <any>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 
 // dune-common includes
 #include <dune/common/fvector.hh>
@@ -874,6 +876,9 @@ namespace Dune {
      */
     typedef typename GridFamily::Traits Traits;
 
+    //! map storing user data that on the grid structure, e.g. for memory handling etc.
+    using UserDataContainer = std::map< std::string, std::any >;
+
     //! View for a grid level for All_Partition
     typename Traits::LevelGridView levelGridView(int level) const
     {
@@ -989,8 +994,18 @@ namespace Dune {
       return false;
     }
 
+    /** \brief return internal map storing user data that need to be attached to the grid.
+     *
+     * \return reference to userData (std::map<std::string, std::any>)
+     */
+    UserDataContainer& userData() const
+    {
+      return userData_;
+    }
+
   protected:
     using Grid< dim, dimworld, ct, GridFamily >::asImp;
+    mutable UserDataContainer userData_;
   };
 
   /** @} */
