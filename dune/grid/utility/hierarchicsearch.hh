@@ -13,6 +13,7 @@
  */
 
 #include <cstddef>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -20,6 +21,8 @@
 #include <dune/common/classname.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/fvector.hh>
+
+#include <dune/geometry/referenceelements.hh>
 
 #include <dune/grid/common/grid.hh>
 #include <dune/grid/common/gridenums.hh>
@@ -48,6 +51,10 @@ namespace Dune
 
     //! type of HierarchicIterator
     typedef typename Grid::HierarchicIterator HierarchicIterator;
+
+    typedef decltype( referenceElement< ct, Entity::Geometry::mydimension >(GeometryType())) ReferenceElementType;
+    //! default tolerance for checkInside method
+    constexpr static ct defaultTolerance = ReferenceElementType::tolerance;
 
     static std::string formatEntityInformation ( const Entity &e ) {
       const typename Entity::Geometry &geo = e.geometry();
@@ -89,7 +96,7 @@ namespace Dune
         Geometry geo = child.geometry();
 
         LocalCoordinate local = geo.local(global);
-        if (referenceElement( geo ).checkInside(local))
+        if (referenceElement( geo ).checkInside(local, tolerance_ ) )
         {
           // return if we found the leaf, else search through the child entities
           if( indexSet_.contains( child ) )
@@ -116,7 +123,9 @@ namespace Dune
     /**
        @brief Construct a HierarchicSearch object from a Grid and an IndexSet
      */
-    HierarchicSearch(const Grid & g, const IS & is) : grid_(g), indexSet_(is) {}
+    HierarchicSearch(const Grid & g, const IS & is,
+                     const ct tolerance = defaultTolerance )
+      : grid_(g), indexSet_(is), tolerance_( tolerance ) {}
 
     /**
        @brief Search the IndexSet of this HierarchicSearch for an Entity
@@ -157,7 +166,7 @@ namespace Dune
         Geometry geo = entity.geometry();
 
         LocalCoordinate local = geo.local( global );
-        if( !referenceElement( geo ).checkInside( local ) )
+        if( !referenceElement( geo ).checkInside( local, tolerance_ ) )
           continue;
 
         if( (int(dim) != int(dimw)) && ((geo.global( local ) - global).two_norm() > 1e-8) )
@@ -175,6 +184,7 @@ namespace Dune
   protected:
     const Grid& grid_;
     const IS&   indexSet_;
+    const ct tolerance_;
   };
 
 } // end namespace Dune
